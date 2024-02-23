@@ -38,26 +38,26 @@ BEGIN
             [CodMarca] SMALLINT      NOT NULL,
             [Marca]    NVARCHAR (40) NOT NULL,
             [Ativo]    CHAR (1)      NOT NULL,
+            [DtAtualizacao] DATETIME      NULL,
             CONSTRAINT [PK_Marca] PRIMARY KEY CLUSTERED ([CodMarca] ASC, [Marca] ASC, [Ativo] ASC)
         );
 
         CREATE UNIQUE NONCLUSTERED INDEX [Index_Marca_1]
             ON [dbo].[Marca]([CodMarca] ASC);
 
-
         CREATE NONCLUSTERED INDEX [Index_Marca_2]
             ON [dbo].[Marca]([Marca] ASC);
-
 
         CREATE NONCLUSTERED INDEX [Index_Marca_3]
             ON [dbo].[Marca]([Ativo] ASC);
 
-
         CREATE UNIQUE NONCLUSTERED INDEX [Index_Marca_4]
             ON [dbo].[Marca]([CodMarca] ASC, [Ativo] ASC);
 
-
         CREATE NONCLUSTERED INDEX [Index_Marca_5]
             ON [dbo].[Marca]([Marca] ASC, [Ativo] ASC);
+        
+        CREATE NONCLUSTERED INDEX [Index_Marca_6]
+            ON [dbo].[Marca]([DtAtualizacao] ASC);
     END
 END
