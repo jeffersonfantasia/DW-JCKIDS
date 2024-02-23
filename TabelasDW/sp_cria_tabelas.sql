@@ -4,7 +4,7 @@ BEGIN
     IF NOT EXISTS (SELECT 1	FROM INFORMATION_SCHEMA.TABLES	WHERE TABLE_NAME = 'FILIAL')
     BEGIN
         CREATE TABLE [dbo].[Filial] (
-            [CodFilial] NCHAR (2)      NOT NULL,
+            [CodFilial]  CHAR (3)      NOT NULL,
             [Empresa]    NVARCHAR (150) NULL,
             [Filial]     NVARCHAR (50)  NULL,
             [Ordem]      SMALLINT       NOT NULL,
@@ -35,14 +35,14 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'MARCA')
     BEGIN
         CREATE TABLE [dbo].[Marca] (
-            [codMarca] SMALLINT      NOT NULL,
+            [CodMarca] SMALLINT      NOT NULL,
             [Marca]    NVARCHAR (40) NOT NULL,
             [Ativo]    CHAR (1)      NOT NULL,
-            CONSTRAINT [PK_Marca] PRIMARY KEY CLUSTERED ([codMarca] ASC, [Marca] ASC, [Ativo] ASC)
+            CONSTRAINT [PK_Marca] PRIMARY KEY CLUSTERED ([CodMarca] ASC, [Marca] ASC, [Ativo] ASC)
         );
 
         CREATE UNIQUE NONCLUSTERED INDEX [Index_Marca_1]
-            ON [dbo].[Marca]([codMarca] ASC);
+            ON [dbo].[Marca]([CodMarca] ASC);
 
 
         CREATE NONCLUSTERED INDEX [Index_Marca_2]
@@ -54,7 +54,7 @@ BEGIN
 
 
         CREATE UNIQUE NONCLUSTERED INDEX [Index_Marca_4]
-            ON [dbo].[Marca]([codMarca] ASC, [Ativo] ASC);
+            ON [dbo].[Marca]([CodMarca] ASC, [Ativo] ASC);
 
 
         CREATE NONCLUSTERED INDEX [Index_Marca_5]
