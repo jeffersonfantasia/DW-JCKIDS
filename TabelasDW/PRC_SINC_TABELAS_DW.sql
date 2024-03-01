@@ -5,17 +5,15 @@ BEGIN
   SELECT COUNT(*)
     INTO v_table_exists
     FROM user_tables
-   WHERE table_name = 'BI_SINCMARCA';
+   WHERE table_name = 'BI_SINC_MARCA';
   IF v_table_exists = 0
   THEN
-    EXECUTE IMMEDIATE 'CREATE TABLE BI_SINCMARCA (
+    EXECUTE IMMEDIATE 'CREATE TABLE BI_SINC_MARCA (
             CODMARCA NUMBER(8),
             MARCA VARCHAR2(40),
             ATIVO VARCHAR2(1),
             DT_UPDATE DATE,
             DT_SINC DATE,
-            DTSINC_ERRO DATE,
-            MSG_ERRO VARCHAR2(200),
             CONSTRAINT PK_CODMARCA PRIMARY KEY (CODMARCA)
         )';
   END IF;
