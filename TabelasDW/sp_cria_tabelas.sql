@@ -8,6 +8,7 @@ BEGIN
             [Empresa]    NVARCHAR (150) NULL,
             [Filial]     NVARCHAR (50)  NULL,
             [Ordem]      SMALLINT       NOT NULL,
+            [DtUpdate] DATETIME      NULL,
             CONSTRAINT [PK_Filial] PRIMARY KEY CLUSTERED ([CodFilial] ASC)
         );
 
@@ -29,6 +30,9 @@ BEGIN
 
         CREATE NONCLUSTERED INDEX [Index_Filial_3]
             ON [dbo].[Filial]([Filial] ASC)
+
+        CREATE NONCLUSTERED INDEX [Index_Filial_6]
+            ON [dbo].[Filial]([DtUpdate] ASC);
     END
 
     ----TABELA MARCA
@@ -38,7 +42,7 @@ BEGIN
             [CodMarca] SMALLINT      NOT NULL,
             [Marca]    NVARCHAR (40) NOT NULL,
             [Ativo]    CHAR (1)      NOT NULL,
-            [DtAtualizacao] DATETIME      NULL,
+            [DtUpdate] DATETIME      NULL,
             CONSTRAINT [PK_Marca] PRIMARY KEY CLUSTERED ([CodMarca] ASC, [Marca] ASC, [Ativo] ASC)
         );
 
@@ -58,6 +62,6 @@ BEGIN
             ON [dbo].[Marca]([Marca] ASC, [Ativo] ASC);
         
         CREATE NONCLUSTERED INDEX [Index_Marca_6]
-            ON [dbo].[Marca]([DtAtualizacao] ASC);
+            ON [dbo].[Marca]([DtUpdate] ASC);
     END
 END
