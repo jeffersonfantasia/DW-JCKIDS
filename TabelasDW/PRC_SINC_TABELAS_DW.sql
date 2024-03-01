@@ -1,4 +1,4 @@
-CREATE OR REPLACE PROCEDURE PCR_SINC_TABELAS_DW AS
+CREATE OR REPLACE PROCEDURE PRC_SINC_TABELAS_DW AS
   v_table_exists NUMBER;
 BEGIN
   -- Verifica se a tabela BI_SINCMARCA existe e a cria se não existir
