@@ -5,17 +5,17 @@ BEGIN
     (CODMARCA, MARCA, ATIVO)
     SELECT M.CODMARCA, M.MARCA, M.ATIVO
       FROM PCMARCA M
-      LEFT JOIN BI_SINCMARCA S ON S.CODMARCA = M.CODMARCA
+      LEFT JOIN BI_SINC_MARCA S ON S.CODMARCA = M.CODMARCA
      WHERE S.DT_UPDATE IS NULL
         OR M.MARCA <> S.MARCA
         OR M.ATIVO <> S.ATIVO;
-				
+        
   -- Atualiza ou insere os resultados na tabela BI_SINCMARCA conforme as condições mencionadas
   FOR temp_rec IN (SELECT * FROM TEMP_PCMARCA)
   
   LOOP
     BEGIN
-      UPDATE BI_SINCMARCA
+      UPDATE BI_SINC_MARCA
          SET MARCA     = temp_rec.MARCA,
              ATIVO     = temp_rec.ATIVO,
              DT_UPDATE = SYSDATE
@@ -23,21 +23,17 @@ BEGIN
     
       IF SQL%NOTFOUND
       THEN
-        INSERT INTO BI_SINCMARCA
+        INSERT INTO BI_SINC_MARCA
           (CODMARCA,
            MARCA,
            ATIVO,
            DT_UPDATE,
-           DT_SINC,
-           DTSINC_ERRO,
-           MSG_ERRO)
+           DT_SINC)
         VALUES
           (temp_rec.CODMARCA,
            temp_rec.MARCA,
            temp_rec.ATIVO,
            SYSDATE,
-           NULL,
-           NULL,
            NULL);
       END IF;
     EXCEPTION
@@ -53,4 +49,4 @@ BEGIN
 
   -- Exclui os registros da tabela temporária TEMP_PCMARCA criada;
   EXECUTE IMMEDIATE 'DELETE TEMP_PCMARCA';
-END PRC_SINC_MARCA;
+END;
