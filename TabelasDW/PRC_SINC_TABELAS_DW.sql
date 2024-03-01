@@ -1,7 +1,7 @@
 CREATE OR REPLACE PROCEDURE PRC_SINC_TABELAS_DW AS
   v_table_exists NUMBER;
 BEGIN
-  -- Verifica se a tabela BI_SINCMARCA existe e a cria se não existir
+  ----BI_SINC_MARCA
   SELECT COUNT(*)
     INTO v_table_exists
     FROM user_tables
@@ -18,20 +18,49 @@ BEGIN
         )';
   END IF;
 
-  -- Verifica se a tabela TEMP_PCMARCA existe e a cria se não existir
+  ----TEMP_PCMARCA
   SELECT COUNT(*)
     INTO v_table_exists
     FROM user_tables
    WHERE table_name = 'TEMP_PCMARCA';
   IF v_table_exists = 0
   THEN
-    EXECUTE IMMEDIATE 'CREATE GLOBAL TEMPORARY TABLE TEMP_PCMARCA ON COMMIT PRESERVE ROWS AS
-     SELECT M.CODMARCA, M.MARCA, M.ATIVO
-       FROM PCMARCA M
-       LEFT JOIN BI_SINCMARCA S ON S.CODMARCA = M.CODMARCA
-      WHERE S.DT_UPDATE IS NULL
-         OR M.MARCA <> S.MARCA
-         OR M.ATIVO <> S.ATIVO';
+    EXECUTE IMMEDIATE 'CREATE GLOBAL TEMPORARY TABLE TEMP_PCMARCA (
+		        CODMARCA NUMBER(8),
+            MARCA VARCHAR2(40),
+            ATIVO VARCHAR2(1)
+		) ON COMMIT PRESERVE ROWS';
   END IF;
-END;
 
+  ----BI_SINC_FILIAL
+  SELECT COUNT(*)
+    INTO v_table_exists
+    FROM user_tables
+   WHERE table_name = 'BI_SINC_FILIAL';
+  IF v_table_exists = 0
+  THEN
+    EXECUTE IMMEDIATE 'CREATE TABLE BI_SINC_FILIAL (
+            CODFILIAL VARCHAR2(2),
+            EMPRESA VARCHAR2(150),
+            FILIAL VARCHAR2(25),
+            DT_UPDATE DATE,
+            DT_SINC DATE,
+            CONSTRAINT PK_CODFILIAL PRIMARY KEY (CODFILIAL)
+        )';
+  END IF;
+
+  ----TEMP_PCFILIAL
+  SELECT COUNT(*)
+    INTO v_table_exists
+    FROM user_tables
+   WHERE table_name = 'TEMP_PCFILIAL';
+  IF v_table_exists = 0
+  THEN
+    EXECUTE IMMEDIATE 'CREATE GLOBAL TEMPORARY TABLE TEMP_PCFILIAL (
+				CODFILIAL VARCHAR2(2),
+				EMPRESA VARCHAR2(150),
+				FILIAL VARCHAR2(25)
+		) ON COMMIT PRESERVE ROWS';
+  END IF;
+
+END;
