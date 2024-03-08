@@ -1,4 +1,4 @@
-CREATE OR REPLACE PROCEDURE PRC_SINC_TABELAS_DW AS
+ CREATE OR REPLACE PROCEDURE PRC_SINC_TABELAS_DW AS
   v_table_exists NUMBER;
 BEGIN
   ----BI_SINC_MARCA
@@ -145,4 +145,218 @@ BEGIN
             DTEXCLUSAO DATE
     ) ON COMMIT PRESERVE ROWS';
   END IF;
+	
+	----BI_SINC_FORNECEDOR
+  SELECT COUNT(*)
+    INTO v_table_exists
+    FROM user_tables
+   WHERE table_name = 'BI_SINC_FORNECEDOR';
+  IF v_table_exists = 0
+  THEN
+    EXECUTE IMMEDIATE 'CREATE TABLE BI_SINC_FORNECEDOR (
+            CODFORNEC NUMBER(6),
+            FORNECEDOR VARCHAR2(60),
+            CNPJ VARCHAR2(18),
+						TIPO VARCHAR2(35),
+            DT_UPDATE DATE,
+            DT_SINC DATE,
+            CONSTRAINT PK_CODFORNEC PRIMARY KEY (CODFORNEC)
+        )';
+  END IF;
+	
+	----TEMP_PCFORNEC
+  SELECT COUNT(*)
+    INTO v_table_exists
+    FROM user_tables
+   WHERE table_name = 'TEMP_PCFORNEC';
+  IF v_table_exists = 0
+  THEN
+    EXECUTE IMMEDIATE 'CREATE GLOBAL TEMPORARY TABLE TEMP_PCFORNEC (
+            CODFORNEC NUMBER(6),
+            FORNECEDOR VARCHAR2(60),
+            CNPJ VARCHAR2(18),
+						TIPO VARCHAR2(35)
+    ) ON COMMIT PRESERVE ROWS';
+  END IF;
+
+  ----BI_SINC_VENDEDOR
+  SELECT COUNT(*)
+    INTO v_table_exists
+    FROM user_tables
+   WHERE table_name = 'BI_SINC_VENDEDOR';
+  IF v_table_exists = 0
+  THEN
+    EXECUTE IMMEDIATE 'CREATE TABLE BI_SINC_VENDEDOR (
+            CODUSUR NUMBER(6),
+            NOME VARCHAR2(40),
+            BLOQUEIO VARCHAR2(1),
+            CODSUPERVISOR NUMBER(4),
+						SUPERVISOR VARCHAR2(40),
+						CODGERENTE NUMBER(4),
+						GERENTE VARCHAR2(40),
+						CODAREA NUMBER(2),
+						AREACOMERCIAL VARCHAR2(40),
+            DT_UPDATE DATE,
+            DT_SINC DATE,
+            CONSTRAINT PK_CODUSUR PRIMARY KEY (CODUSUR)
+        )';
+  END IF;
+  
+  ----TEMP_PCUSUARI
+  SELECT COUNT(*)
+    INTO v_table_exists
+    FROM user_tables
+   WHERE table_name = 'TEMP_PCUSUARI';
+  IF v_table_exists = 0
+  THEN
+    EXECUTE IMMEDIATE 'CREATE GLOBAL TEMPORARY TABLE TEMP_PCUSUARI (
+            CODUSUR NUMBER(6),
+            NOME VARCHAR2(40),
+            BLOQUEIO VARCHAR2(1),
+            CODSUPERVISOR NUMBER(4),
+            SUPERVISOR VARCHAR2(40),
+            CODGERENTE NUMBER(4),
+            GERENTE VARCHAR2(40),
+            CODAREA NUMBER(2),
+            AREACOMERCIAL VARCHAR2(40)
+    ) ON COMMIT PRESERVE ROWS';
+  END IF;
+
+  ----BI_SINC_COMPRADOR
+  SELECT COUNT(*)
+    INTO v_table_exists
+    FROM user_tables
+   WHERE table_name = 'BI_SINC_COMPRADOR';
+  IF v_table_exists = 0
+  THEN
+    EXECUTE IMMEDIATE 'CREATE TABLE BI_SINC_COMPRADOR (
+            MATRICULA NUMBER(6),
+            COMPRADOR VARCHAR2(15),
+            DT_UPDATE DATE,
+            DT_SINC DATE,
+            CONSTRAINT PK_MATRICULA PRIMARY KEY (MATRICULA)
+        )';
+  END IF;
+  
+  ----TEMP_PCEMPR
+  SELECT COUNT(*)
+    INTO v_table_exists
+    FROM user_tables
+   WHERE table_name = 'TEMP_PCEMPR';
+  IF v_table_exists = 0
+  THEN
+    EXECUTE IMMEDIATE 'CREATE GLOBAL TEMPORARY TABLE TEMP_PCEMPR (
+            MATRICULA NUMBER(6),
+            COMPRADOR VARCHAR2(15)
+    ) ON COMMIT PRESERVE ROWS';
+  END IF;
+	
+	----BI_SINC_CLIENTE
+  SELECT COUNT(*)
+    INTO v_table_exists
+    FROM user_tables
+   WHERE table_name = 'BI_SINC_CLIENTE';
+  IF v_table_exists = 0
+  THEN
+    EXECUTE IMMEDIATE 'CREATE TABLE BI_SINC_CLIENTE (
+            CODCLI NUMBER(6),
+            CLIENTE VARCHAR2(40),
+            CODREDE NUMBER(4),
+            REDE VARCHAR2(60),
+            CNPJ VARCHAR2(18),
+            CEP VARCHAR2(9),
+            UF VARCHAR2(2),
+            CODUSUR NUMBER(4),
+            CODPRACA NUMBER(4),
+						PRACA VARCHAR2(25),
+						CODATIVIDADE NUMBER(6),
+						RAMOATIVIDADE VARCHAR2(40),
+						BLOQUEIODEFINITIVO VARCHAR2(1),
+						BLOQUEIOATUAL VARCHAR2(1),
+						LIMITECREDITO NUMBER(12,2),
+            DT_UPDATE DATE,
+            DT_SINC DATE,
+            CONSTRAINT PK_CODCLI PRIMARY KEY (CODCLI)
+        )';
+  END IF;
+  
+  ----TEMP_PCCLIENT
+  SELECT COUNT(*)
+    INTO v_table_exists
+    FROM user_tables
+   WHERE table_name = 'TEMP_PCCLIENT';
+  IF v_table_exists = 0
+  THEN
+    EXECUTE IMMEDIATE 'CREATE GLOBAL TEMPORARY TABLE TEMP_PCCLIENT (
+            CODCLI NUMBER(6),
+            CLIENTE VARCHAR2(40),
+            CODREDE NUMBER(4),
+            REDE VARCHAR2(60),
+            CNPJ VARCHAR2(18),
+            CEP VARCHAR2(9),
+            UF VARCHAR2(2),
+            CODUSUR NUMBER(4),
+            CODPRACA NUMBER(4),
+            PRACA VARCHAR2(25),
+            CODATIVIDADE NUMBER(6),
+            RAMOATIVIDADE VARCHAR2(40),
+            BLOQUEIODEFINITIVO VARCHAR2(1),
+            BLOQUEIOATUAL VARCHAR2(1),
+            LIMITECREDITO NUMBER(12,2)
+    ) ON COMMIT PRESERVE ROWS';
+  END IF;
+
+  ----BI_SINC_ESTOQUE
+  SELECT COUNT(*)
+    INTO v_table_exists
+    FROM user_tables
+   WHERE table_name = 'BI_SINC_ESTOQUE';
+  IF v_table_exists = 0
+  THEN
+    EXECUTE IMMEDIATE 'CREATE TABLE BI_SINC_ESTOQUE (
+            CODFILIAL VARCHAR2(2),
+            CODPROD VARCHAR2(40),
+            QTCONTABIL NUMBER(22,8),
+            QTGERENCIAL NUMBER(22,8),
+            QTBLOQUEADA NUMBER(20,6),
+						QTRESERVADA NUMBER(22,6), 
+            QTAVARIADA NUMBER(20,6),
+            QTFRENTELOJA NUMBER(22,6),
+            VALORULTENT NUMBER(18,6),
+            CUSTOREPOSICAO NUMBER(18,6),
+            CUSTOFINANCEIRO NUMBER(18,6),
+            CUSTOCONTABIL NUMBER(18,6),
+            CODBLOQUEIO NUMBER(4),
+						MOTIVOBLOQUEIO VARCHAR2(30),
+            DT_UPDATE DATE,
+            DT_SINC DATE,
+            CONSTRAINT PK_CODFILIAL_CODPROD PRIMARY KEY (CODFILIAL, CODPROD)
+        )';
+  END IF;
+  
+  ----TEMP_PCEST
+  SELECT COUNT(*)
+    INTO v_table_exists
+    FROM user_tables
+   WHERE table_name = 'TEMP_PCEST';
+  IF v_table_exists = 0
+  THEN
+    EXECUTE IMMEDIATE 'CREATE GLOBAL TEMPORARY TABLE TEMP_PCEST (
+            CODFILIAL VARCHAR2(2),
+            CODPROD VARCHAR2(40),
+            QTCONTABIL NUMBER(22,8),
+            QTGERENCIAL NUMBER(22,8),
+            QTBLOQUEADA NUMBER(20,6),
+            QTRESERVADA NUMBER(22,6), 
+            QTAVARIADA NUMBER(20,6),
+            QTFRENTELOJA NUMBER(22,6),
+            VALORULTENT NUMBER(18,6),
+            CUSTOREPOSICAO NUMBER(18,6),
+            CUSTOFINANCEIRO NUMBER(18,6),
+            CUSTOCONTABIL NUMBER(18,6),
+            CODBLOQUEIO NUMBER(4),
+            MOTIVOBLOQUEIO VARCHAR2(30)
+    ) ON COMMIT PRESERVE ROWS';
+  END IF;
+
 END;
