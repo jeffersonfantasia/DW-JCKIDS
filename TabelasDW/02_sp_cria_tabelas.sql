@@ -170,6 +170,7 @@ BEGIN
         CREATE TABLE [dbo].[Fornecedor] (
         [CodFornec]  INT           NOT NULL,
         [Fornecedor] NVARCHAR (60) NOT NULL,
+        [CodFornecPrinc]  INT           NULL,
         [CNPJ]       NVARCHAR (18) NOT NULL,
         [Tipo]       NVARCHAR (35) NULL,
         [DtUpdate]   DATETIME      NULL,
@@ -190,6 +191,9 @@ BEGIN
 
     CREATE NONCLUSTERED INDEX [Index_Fornecedor_5]
         ON [dbo].[Fornecedor]([DtUpdate] ASC);
+    
+    CREATE NONCLUSTERED INDEX [Index_Fornecedor_6]
+        ON [dbo].[Fornecedor]([CodFornecPrinc] ASC);
     
     END
 
