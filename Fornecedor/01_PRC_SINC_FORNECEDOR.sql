@@ -3,7 +3,12 @@ BEGIN
   -- Insere os resultados novos ou alterados na tabela TEMP
   INSERT INTO TEMP_PCFORNEC
     (CODFORNEC, FORNECEDOR, CNPJ, TIPO)
-    SELECT F.CODFORNEC, F.FORNECEDOR, F.CGC, F.OBS2
+    SELECT F.CODFORNEC,
+           F.FORNECEDOR,
+           REGEXP_REPLACE(F.CGC,
+                          '([0-9]{2})([0-9]{3})([0-9]{3})([0-9]{4})',
+                          '\1.\2.\3/\4-') CGC,
+           F.OBS2
       FROM PCFORNEC F
       LEFT JOIN BI_SINC_FORNECEDOR S ON S.CODFORNEC = F.CODFORNEC
      WHERE S.DT_UPDATE IS NULL
