@@ -32,7 +32,7 @@ BEGIN
      CERTIFICACAO,
      DTEXCLUSAO)
     SELECT P.CODPROD,
-           P.DESCRICAO,
+           REPLACE (P.DESCRICAO, '"', '') DESCRICAO,
            P.CODEPTO,
            D.DESCRICAO,
            P.CODSEC,
