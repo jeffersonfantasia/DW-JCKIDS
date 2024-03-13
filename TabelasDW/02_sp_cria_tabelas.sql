@@ -327,6 +327,7 @@ BEGIN
             [QtContabil]      NUMERIC (22, 8) NULL,
             [QtGerencial]     NUMERIC (22, 8) NULL,
             [QtBloqueada]     NUMERIC (20, 6) NULL,
+            [QtPendente]      NUMERIC (16, 3) NULL,
             [QtReservada]     NUMERIC (22, 6) NULL,
             [QtAvariada]      NUMERIC (20, 6) NULL,
             [QtDisponivel]    NUMERIC (22, 8) NULL,
