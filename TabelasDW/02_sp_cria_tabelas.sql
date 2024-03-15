@@ -161,7 +161,6 @@ BEGIN
 
     CREATE NONCLUSTERED INDEX [Index_Produto_14]
         ON [dbo].[Produto]([Importado] ASC);
-
     END
 
     ----TABELA FORNECEDOR
@@ -194,7 +193,7 @@ BEGIN
     
     CREATE NONCLUSTERED INDEX [Index_Fornecedor_6]
         ON [dbo].[Fornecedor]([CodFornecPrinc] ASC);
-    
+
     END
 
     ----TABELA VENDEDOR
@@ -239,7 +238,6 @@ BEGIN
 
     CREATE NONCLUSTERED INDEX [Index_Vendedor_9]
         ON [dbo].[Vendedor]([Vendedor] ASC);
-
     END
 
     ----TABELA COMPRADOR
@@ -260,7 +258,6 @@ BEGIN
 
     CREATE NONCLUSTERED INDEX [Index_Comprador_3]
         ON [dbo].[Comprador]([DtUpdate] ASC);
-
     END
 
     ----TABELA CLIENTE
@@ -315,7 +312,6 @@ BEGIN
 
         CREATE NONCLUSTERED INDEX [Index_Cliente_10]
             ON [dbo].[Cliente]([UF] ASC);
-
     END
 
     ----TABELA ESTOQUE
@@ -357,7 +353,53 @@ BEGIN
 
         CREATE NONCLUSTERED INDEX [Index_Estoque_5]
             ON [dbo].[Estoque]([CodFilial] ASC, [CodProd] ASC);
+    END
 
+    ----TABELA PRECO DE COMPRA
+    IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'PRECOCOMPRA')
+    BEGIN
+        CREATE TABLE [dbo].[PrecoCompra] (
+            [CodFilial]       NVARCHAR (2)    NOT NULL,
+            [CodProd]         INT             NOT NULL,
+            [PrecoTabela]     NUMERIC (18, 6) NULL,
+            [PrecoCompra]     NUMERIC (18, 6) NULL,
+            [ValorIPI]        NUMERIC (18, 6) NULL,
+            [ValorST]         NUMERIC (18, 6) NULL,
+            [PrecoBruto]      NUMERIC (18, 6) NULL,
+            [ValorCredICMS]   NUMERIC (18, 6) NULL,
+            [ValorPIS]        NUMERIC (18, 6) NULL,
+            [ValorCOFINS]     NUMERIC (18, 6) NULL,
+            [CustoLiquido]    NUMERIC (18, 6) NULL,
+            [BaseICMS]        NUMERIC (18, 6) NULL,
+            [BaseST]          NUMERIC (18, 6) NULL,
+            [BasePISCOFINS]   NUMERIC (18, 6) NULL,
+            [PercPIS]         NUMERIC (18, 6) NULL,
+            [PercCOFINS]      NUMERIC (18, 6) NULL,
+            [PercIPI]         NUMERIC (18, 6) NULL,
+            [PercICMS]        NUMERIC (18, 6) NULL,
+            [PercICMSRed]     NUMERIC (18, 6) NULL,
+            [PercCredICMS]    NUMERIC (18, 6) NULL,
+            [PercIVA]         NUMERIC (18, 6) NULL,
+            [PercAliqExt]     NUMERIC (18, 6) NULL,
+            [PercAliqInt]     NUMERIC (18, 6) NULL,
+            [PercAliqExtGuia] NUMERIC (18, 6) NULL,
+            [RedBaseAliqExt]  NUMERIC (18, 6) NULL,
+            [PercAliqSTRed]   NUMERIC (18, 6) NULL,
+            [DtUpdate]        INT             NULL,
+            CONSTRAINT [PK_PrecoCompra] PRIMARY KEY CLUSTERED ([CodFilial] ASC, [CodProd] ASC)
+        );
+
+        CREATE NONCLUSTERED INDEX [Index_PrecoCompra_1]
+            ON [dbo].[PrecoCompra]([CodFilial] ASC);
+
+        CREATE NONCLUSTERED INDEX [Index_PrecoCompra_2]
+            ON [dbo].[PrecoCompra]([CodProd] ASC);
+
+        CREATE NONCLUSTERED INDEX [Index_PrecoCompra_3]
+            ON [dbo].[PrecoCompra]([CodFilial] ASC, [CodProd] ASC);
+
+        CREATE NONCLUSTERED INDEX [Index_PrecoCompra_4]
+            ON [dbo].[PrecoCompra]([DtUpdate] ASC);
     END
 
 END
