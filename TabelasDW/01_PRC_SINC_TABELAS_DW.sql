@@ -427,7 +427,7 @@ BEGIN
     EXECUTE IMMEDIATE 'CREATE TABLE BI_SINC_PRECO_COMPRA
   (
      CODFILIAL       VARCHAR2(2),
-     CODPROD         VARCHAR2(40),
+     CODPROD         NUMBER(6),
      PTABELA         NUMBER(18, 6),
      PCOMPRA         NUMBER(18, 6),
      VLIPI           NUMBER(18, 6),
@@ -437,6 +437,7 @@ BEGIN
      VLPIS           NUMBER(18, 6),
      VLCOFINS        NUMBER(18, 6),
      CUSTOLIQ        NUMBER(18, 6),
+     BASEICMS        NUMBER(18, 6),
      BASEST          NUMBER(18, 6),
      BASEPISCOFINS   NUMBER(18, 6),
      PERCPIS         NUMBER(18, 6),
@@ -444,6 +445,7 @@ BEGIN
      PERCIPI         NUMBER(18, 6),
      PERCICMS        NUMBER(18, 6),
      PERCICMSRED     NUMBER(18, 6),
+     PERCCREDICMS    NUMBER(18, 6),
      PERCIVA         NUMBER(18, 6),
      PERCALIQEXT     NUMBER(18, 6),
      PERCALIQINT     NUMBER(18, 6),
@@ -466,7 +468,7 @@ BEGIN
     EXECUTE IMMEDIATE 'CREATE GLOBAL TEMPORARY TABLE TEMP_PRECO_COMPRA
   (
      CODFILIAL       VARCHAR2(2),
-     CODPROD         VARCHAR2(40),
+     CODPROD         NUMBER(6),
      PTABELA         NUMBER(18, 6),
      PCOMPRA         NUMBER(18, 6),
      VLIPI           NUMBER(18, 6),
@@ -476,6 +478,7 @@ BEGIN
      VLPIS           NUMBER(18, 6),
      VLCOFINS        NUMBER(18, 6),
      CUSTOLIQ        NUMBER(18, 6),
+     BASEICMS        NUMBER(18, 6),
      BASEST          NUMBER(18, 6),
      BASEPISCOFINS   NUMBER(18, 6),
      PERCPIS         NUMBER(18, 6),
@@ -483,6 +486,7 @@ BEGIN
      PERCIPI         NUMBER(18, 6),
      PERCICMS        NUMBER(18, 6),
      PERCICMSRED     NUMBER(18, 6),
+     PERCCREDICMS    NUMBER(18, 6),
      PERCIVA         NUMBER(18, 6),
      PERCALIQEXT     NUMBER(18, 6),
      PERCALIQINT     NUMBER(18, 6),
