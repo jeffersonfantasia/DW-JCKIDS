@@ -127,8 +127,8 @@ BEGIN
        WHERE E.CODFILIAL IN ('5', '6', '9', '10'))
     SELECT T.CODFILIAL,
            T.CODPROD,
-           T.PTABELA,
-           T.PCOMPRA,
+           NVL(T.PTABELA,0) PTABELA,
+           NVL(T.PCOMPRA,0) PCOMPRA,
            ROUND(T.PCOMPRA * T.PERCIPI, 4) VLIPI,
            FN_JF_VALOR_ICMS_ST(T.PCOMPRA,
                                T.PERCIPI,
