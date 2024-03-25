@@ -3,20 +3,24 @@ BEGIN
   -- Insere os resultados novos ou alterados na tabela TEMP
   INSERT INTO TEMP_PCFORNEC
     (CODFORNEC, FORNECEDOR, CODFORNECPRINC, CNPJ, TIPO)
-    SELECT F.CODFORNEC,
-           F.FORNECEDOR,
-           COALESCE(F.CODFORNECPRINC,F.CODFORNEC) CODFORNECPRINC,
-           REGEXP_REPLACE(F.CGC,
-                          '([0-9]{2})([0-9]{3})([0-9]{3})([0-9]{4})',
-                          '\1.\2.\3/\4-') CGC,
-           F.OBS2
-      FROM PCFORNEC F
+    WITH FORNECEDORES AS
+     (SELECT F.CODFORNEC,
+             F.FORNECEDOR,
+             COALESCE(F.CODFORNECPRINC, F.CODFORNEC) CODFORNECPRINC,
+             REGEXP_REPLACE(F.CGC,
+                            '([0-9]{2})([0-9]{3})([0-9]{3})([0-9]{4})',
+                            '\1.\2.\3/\4-') CGC,
+             NVL(F.OBS2, 'N') TIPO
+        FROM PCFORNEC F)
+    
+    SELECT F.*
+      FROM FORNECEDORES F
       LEFT JOIN BI_SINC_FORNECEDOR S ON S.CODFORNEC = F.CODFORNEC
      WHERE S.DT_UPDATE IS NULL
         OR S.FORNECEDOR <> F.FORNECEDOR
         OR S.CODFORNECPRINC <> F.CODFORNECPRINC
         OR S.CNPJ <> F.CGC
-        OR S.TIPO <> F.OBS2;
+        OR NVL(S.TIPO, 'S') <> F.TIPO;
 
   -- Atualiza ou insere os resultados na tabela BI_SINC conforme as condições mencionadas
   FOR temp_rec IN (SELECT * FROM TEMP_PCFORNEC)
