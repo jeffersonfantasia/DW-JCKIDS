@@ -13,8 +13,8 @@ BEGIN
       FROM FILIAIS F
       LEFT JOIN BI_SINC_FILIAL S ON S.CODFILIAL = F.CODFILIAL
      WHERE S.DT_UPDATE IS NULL
-        OR NVL(S.EMPRESA, '0') <> NVL(F.EMPRESA, 'JC BROTHERS')
-        OR NVL(S.FILIAL, '0') <> NVL(F.FILIAL, 'JC BROTHERS');
+        OR NVL(S.EMPRESA, '0') <> F.EMPRESA
+        OR NVL(S.FILIAL, '0') <> F.FILIAL;
   -- Atualiza ou insere os resultados na tabela BI_SINC conforme as condições mencionadas
   FOR temp_rec IN (SELECT * FROM TEMP_PCFILIAL)
   
