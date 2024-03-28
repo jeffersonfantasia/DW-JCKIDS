@@ -10,46 +10,62 @@ BEGIN
      QTPENDENTE,
      QTRESERVADA,
      QTAVARIADA,
+     QTDISPONIVEL,
      QTFRENTELOJA,
+     QTDEPOSITO,
      VALORULTENT,
      CUSTOREPOSICAO,
      CUSTOFINANCEIRO,
      CUSTOCONTABIL,
      CODBLOQUEIO,
      MOTIVOBLOQUEIO)
-    SELECT E.CODFILIAL,
-           E.CODPROD,
-           NVL(E.QTEST, 0) QTEST,
-           NVL(E.QTESTGER, 0) QTESTGER,
-           NVL(E.QTBLOQUEADA, 0) QTBLOQUEADA,
-           NVL(E.QTPENDENTE, 0) QTPENDENTE,
-           NVL(E.QTRESERV, 0) QTRESERV,
-           NVL(E.QTINDENIZ, 0) QTINDENIZ,
-           NVL(E.QTFRENTELOJA, 0) QTFRENTELOJA,
-           NVL(E.VALORULTENT, 0) VALORULTENT,
-           NVL(E.CUSTOREP, 0) CUSTOREP,
-           NVL(E.CUSTOFIN, 0) CUSTOFIN,
-           NVL(E.CUSTOCONT, 0) CUSTOCONT,
-           E.CODDEVOL,
-           D.MOTIVO
-      FROM PCEST E
-      LEFT JOIN PCTABDEV D ON D.CODDEVOL = E.CODDEVOL
+    WITH ESTOQUE AS
+     (SELECT E.CODFILIAL,
+             E.CODPROD,
+             NVL(E.QTEST, 0) QTCONTABIL,
+             NVL(E.QTESTGER, 0) QTGERENCIAL,
+             NVL(E.QTBLOQUEADA, 0) QTBLOQUEADA,
+             NVL(E.QTPENDENTE, 0) QTPENDENTE,
+             NVL(E.QTRESERV, 0) QTRESERVADA,
+             NVL(E.QTINDENIZ, 0) QTAVARIADA,
+             (NVL(E.QTESTGER, 0) - NVL(E.QTBLOQUEADA, 0) -
+             NVL(E.QTRESERV, 0)) QTDISPONIVEL,
+             NVL(E.QTFRENTELOJA, 0) QTFRENTELOJA,
+             (NVL(E.QTESTGER, 0) - NVL(E.QTFRENTELOJA, 0)) QTDEPOSITO,
+             NVL(E.VALORULTENT, 0) VALORULTENT,
+             NVL(E.CUSTOREP, 0) CUSTOREPOSICAO,
+             NVL(E.CUSTOFIN, 0) CUSTOFINANCEIRO,
+             NVL(E.CUSTOCONT, 0) CUSTOCONTABIL,
+             (CASE
+               WHEN (E.CODDEVOL = 29 AND NVL(E.QTBLOQUEADA, 0) > 0 AND  NVL(E.QTINDENIZ, 0) <= 0) THEN E.CODDEVOL
+               WHEN (NVL(E.CODDEVOL, 0) IN (0, 29) OR NVL(E.QTINDENIZ, 0) <= 0 OR NVL(E.QTBLOQUEADA, 0) <= 0) THEN 0
+               ELSE E.CODDEVOL
+             END) CODBLOQUEIO,
+             (CASE
+               WHEN (E.CODDEVOL = 29 AND NVL(E.QTBLOQUEADA, 0) > 0 AND NVL(E.QTINDENIZ, 0) <= 0) THEN 'ENTRADA MERCADORIA'
+               WHEN (NVL(E.CODDEVOL, 0) IN (0, 29) OR NVL(E.QTINDENIZ, 0) <= 0 OR NVL(E.QTBLOQUEADA, 0) <= 0) THEN 'SEM BLOQUEIO'
+               ELSE D.MOTIVO
+             END) MOTIVOBLOQUEIO
+        FROM PCEST E
+        LEFT JOIN PCTABDEV D ON D.CODDEVOL = E.CODDEVOL)
+    SELECT E.*
+      FROM ESTOQUE E
       LEFT JOIN BI_SINC_ESTOQUE S ON S.CODFILIAL = E.CODFILIAL
                                  AND S.CODPROD = E.CODPROD
      WHERE S.DT_UPDATE IS NULL
-        OR S.QTCONTABIL <> NVL(E.QTEST, 0)
-        OR S.QTGERENCIAL <> NVL(E.QTESTGER, 0)
-        OR S.QTBLOQUEADA <> NVL(E.QTBLOQUEADA, 0)
-        OR S.QTPENDENTE <> NVL(E.QTPENDENTE, 0)
-        OR S.QTRESERVADA <> NVL(E.QTRESERV, 0)
-        OR S.QTAVARIADA <> NVL(E.QTINDENIZ, 0)
-        OR S.QTFRENTELOJA <> NVL(E.QTFRENTELOJA, 0)
-        OR S.VALORULTENT <> NVL(E.VALORULTENT, 0)
-        OR S.CUSTOREPOSICAO <> NVL(E.CUSTOREP, 0)
-        OR S.CUSTOFINANCEIRO <> NVL(E.CUSTOFIN, 0)
-        OR S.CUSTOCONTABIL <> NVL(E.CUSTOCONT, 0)
-        OR S.CODBLOQUEIO <> E.CODDEVOL
-        OR S.MOTIVOBLOQUEIO <> D.MOTIVO;
+        OR S.QTCONTABIL <> E.QTCONTABIL
+        OR S.QTGERENCIAL <> E.QTGERENCIAL
+        OR S.QTBLOQUEADA <> E.QTBLOQUEADA
+        OR S.QTPENDENTE <> E.QTPENDENTE
+        OR S.QTRESERVADA <> E.QTRESERVADA
+        OR S.QTAVARIADA <> E.QTAVARIADA
+        OR S.QTFRENTELOJA <> E.QTFRENTELOJA
+        OR S.VALORULTENT <> E.VALORULTENT
+        OR S.CUSTOREPOSICAO <> E.CUSTOREPOSICAO
+        OR S.CUSTOFINANCEIRO <> E.CUSTOFINANCEIRO
+        OR S.CUSTOCONTABIL <> E.CUSTOCONTABIL
+        OR S.CODBLOQUEIO <> E.CODBLOQUEIO
+        OR S.MOTIVOBLOQUEIO <> E.MOTIVOBLOQUEIO;
 
   -- Atualiza ou insere os resultados na tabela BI_SINC conforme as condições mencionadas
   FOR temp_rec IN (SELECT * FROM TEMP_PCEST)
@@ -63,7 +79,9 @@ BEGIN
              QTPENDENTE      = temp_rec.QTPENDENTE,
              QTRESERVADA     = temp_rec.QTRESERVADA,
              QTAVARIADA      = temp_rec.QTAVARIADA,
+             QTDISPONIVEL    = temp_rec.QTDISPONIVEL,
              QTFRENTELOJA    = temp_rec.QTFRENTELOJA,
+             QTDEPOSITO      = temp_rec.QTDEPOSITO,
              VALORULTENT     = temp_rec.VALORULTENT,
              CUSTOREPOSICAO  = temp_rec.CUSTOREPOSICAO,
              CUSTOFINANCEIRO = temp_rec.CUSTOFINANCEIRO,
@@ -85,7 +103,9 @@ BEGIN
            QTPENDENTE,
            QTRESERVADA,
            QTAVARIADA,
+           QTDISPONIVEL,
            QTFRENTELOJA,
+           QTDEPOSITO,
            VALORULTENT,
            CUSTOREPOSICAO,
            CUSTOFINANCEIRO,
@@ -102,7 +122,9 @@ BEGIN
            temp_rec.QTPENDENTE,
            temp_rec.QTRESERVADA,
            temp_rec.QTAVARIADA,
+           temp_rec.QTDISPONIVEL,
            temp_rec.QTFRENTELOJA,
+           temp_rec.QTDEPOSITO,
            temp_rec.VALORULTENT,
            temp_rec.CUSTOREPOSICAO,
            temp_rec.CUSTOFINANCEIRO,
@@ -115,7 +137,7 @@ BEGIN
       WHEN OTHERS THEN
         DBMS_OUTPUT.PUT_LINE('Erro encontrado: ' || SQLERRM);
         RAISE_APPLICATION_ERROR(-20000,
-                                'Erro durante a criação da tabela: ' ||
+                                'Erro durante insercao na tabela: ' ||
                                 SQLERRM);
     END;
   END LOOP;
