@@ -3,6 +3,7 @@ BEGIN
   -- Insere os resultados novos ou alterados na tabela TEMP
   INSERT INTO TEMP_PCUSUARI
     (CODUSUR,
+     NOMEORIGINAL,
      VENDEDOR,
      BLOQUEIO,
      CODSUPERVISOR,
@@ -11,29 +12,44 @@ BEGIN
      GERENTE,
      CODAREA,
      AREACOMERCIAL)
-    SELECT U.CODUSUR,
-           COALESCE(U.USURDIRFV, U.NOME) VENDEDOR,
-           U.BLOQUEIO,
-           U.CODSUPERVISOR,
-           S.NOME SUPERVISOR,
-           S.CODGERENTE,
-           G.NOMEGERENTE,
-           C.CODAREA,
-           C.AREACOMERCIAL
-      FROM PCUSUARI U
-      LEFT JOIN PCSUPERV S ON S.CODSUPERVISOR = U.CODSUPERVISOR
-      LEFT JOIN PCGERENTE G ON G.CODGERENTE = S.CODGERENTE
-      LEFT JOIN JFAREACOMERCIAL C ON C.CODAREA = G.CODGERENTESUPERIOR
-      LEFT JOIN BI_SINC_VENDEDOR V ON V.CODUSUR = U.CODUSUR
-     WHERE V.DT_UPDATE IS NULL
-        OR V.VENDEDOR <> COALESCE(U.USURDIRFV, U.NOME)
-        OR V.BLOQUEIO <> U.BLOQUEIO
-        OR V.CODSUPERVISOR <> U.CODSUPERVISOR
-        OR V.SUPERVISOR <> S.NOME
-        OR V.CODGERENTE <> S.CODGERENTE
-        OR V.GERENTE <> G.NOMEGERENTE
-        OR V.CODAREA <> C.CODAREA
-        OR V.AREACOMERCIAL <> C.AREACOMERCIAL;
+    WITH VENDEDORES AS
+     (SELECT U.CODUSUR,
+             U.NOME NOMEORIGINAL,
+             (CASE
+               WHEN (U.BLOQUEIO = 'S' AND U.CODSUPERVISOR = 1) THEN
+                'OUTROS CAPITAL'
+               WHEN (U.BLOQUEIO = 'S' AND U.CODSUPERVISOR = 2) THEN
+                'OUTROS INTERIOR'
+               WHEN (U.BLOQUEIO = 'S' AND S.CODGERENTE = 3) THEN
+                'OUTROS LOJA'
+               WHEN (U.BLOQUEIO = 'S' AND S.CODGERENTE = 4) THEN
+                'OUTROS MARKETPLACES'
+               ELSE
+                COALESCE(U.USURDIRFV, U.NOME)
+             END) VENDEDOR,
+             U.BLOQUEIO,
+             U.CODSUPERVISOR,
+             S.NOME SUPERVISOR,
+             S.CODGERENTE,
+             G.NOMEGERENTE GERENTE,
+             C.CODAREA,
+             C.AREACOMERCIAL
+        FROM PCUSUARI U
+        LEFT JOIN PCSUPERV S ON S.CODSUPERVISOR = U.CODSUPERVISOR
+        LEFT JOIN PCGERENTE G ON G.CODGERENTE = S.CODGERENTE
+        LEFT JOIN JFAREACOMERCIAL C ON C.CODAREA = G.CODGERENTESUPERIOR)
+    SELECT V.*
+      FROM VENDEDORES V
+      LEFT JOIN BI_SINC_VENDEDOR S ON S.CODUSUR = V.CODUSUR
+     WHERE S.DT_UPDATE IS NULL
+        OR S.VENDEDOR <> V.VENDEDOR
+        OR S.BLOQUEIO <> V.BLOQUEIO
+        OR S.CODSUPERVISOR <> V.CODSUPERVISOR
+        OR S.SUPERVISOR <> V.SUPERVISOR
+        OR S.CODGERENTE <> V.CODGERENTE
+        OR S.GERENTE <> V.GERENTE
+        OR S.CODAREA <> V.CODAREA
+        OR S.AREACOMERCIAL <> V.AREACOMERCIAL;
 
   -- Atualiza ou insere os resultados na tabela BI_SINC conforme as condições mencionadas
   FOR temp_rec IN (SELECT * FROM TEMP_PCUSUARI)
@@ -41,7 +57,8 @@ BEGIN
   LOOP
     BEGIN
       UPDATE BI_SINC_VENDEDOR
-         SET VENDEDOR      = temp_rec.VENDEDOR,
+         SET NOMEORIGINAL  = temp_rec.NOMEORIGINAL,
+             VENDEDOR      = temp_rec.VENDEDOR,
              BLOQUEIO      = temp_rec.BLOQUEIO,
              CODSUPERVISOR = temp_rec.CODSUPERVISOR,
              SUPERVISOR    = temp_rec.SUPERVISOR,
@@ -56,6 +73,7 @@ BEGIN
       THEN
         INSERT INTO BI_SINC_VENDEDOR
           (CODUSUR,
+           NOMEORIGINAL,
            VENDEDOR,
            BLOQUEIO,
            CODSUPERVISOR,
@@ -67,6 +85,7 @@ BEGIN
            DT_UPDATE)
         VALUES
           (temp_rec.CODUSUR,
+           temp_rec.NOMEORIGINAL,
            temp_rec.VENDEDOR,
            temp_rec.BLOQUEIO,
            temp_rec.CODSUPERVISOR,
@@ -81,7 +100,7 @@ BEGIN
       WHEN OTHERS THEN
         DBMS_OUTPUT.PUT_LINE('Erro encontrado: ' || SQLERRM);
         RAISE_APPLICATION_ERROR(-20000,
-                                'Erro durante a criação da tabela: ' ||
+                                'Erro durante a insercao da tabela: ' ||
                                 SQLERRM);
     END;
   END LOOP;
