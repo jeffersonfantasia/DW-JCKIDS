@@ -29,72 +29,85 @@ BEGIN
      NCMEX,
      TIPOMERCADORIA,
      FORALINHA,
-     CERTIFICACAO,
-     DTEXCLUSAO)
-    SELECT P.CODPROD,
-           REPLACE (P.DESCRICAO, '"', '') DESCRICAO,
-           P.CODEPTO,
-           D.DESCRICAO,
-           P.CODSEC,
-           C.DESCRICAO,
-           P.CODCATEGORIA,
-           A.CATEGORIA,
-           P.CODLINHAPROD,
-           L.DESCRICAO,
-           P.CODFORNEC,
-           P.CODMARCA,
-           P.CODFAB,
-           P.CODAUXILIAR,
-           P.CODAUXILIAR2,
-           P.PESOLIQ,
-           P.LARGURAM3,
-           P.ALTURAM3,
-           P.COMPRIMENTOM3,
-           P.VOLUME,
-           P.QTUNITCX,
-           P.IMPORTADO,
-           P.REVENDA,
-           P.NBM,
-           P.CODNCMEX,
-           P.TIPOMERC,
-           P.OBS2,
-           P.SUBTITULOECOMMERCE,
-           P.DTEXCLUSAO
-      FROM PCPRODUT P
-      LEFT JOIN PCDEPTO D ON D.CODEPTO = P.CODEPTO
-      LEFT JOIN PCSECAO C ON C.CODSEC = P.CODSEC
-      LEFT JOIN PCCATEGORIA A ON A.CODCATEGORIA = P.CODCATEGORIA
-      LEFT JOIN PCLINHAPROD L ON L.CODLINHA = P.CODLINHAPROD
+     CERTIFICACAO)
+    WITH PRODUTOS AS
+     (SELECT P.CODPROD,
+             P.DESCRICAO PRODUTO,
+             P.CODEPTO CODDEPTO,
+             D.DESCRICAO DEPARTAMENTO,
+             P.CODSEC CODSECAO,
+             C.DESCRICAO SECAO,
+             P.CODCATEGORIA,
+             A.CATEGORIA,
+             DECODE(P.CODLINHAPROD, NULL, 0, P.CODLINHAPROD) CODLINHA,
+             DECODE(L.DESCRICAO, NULL, 'SEM LINHA', L.DESCRICAO) LINHA,
+             P.CODFORNEC,
+             P.CODMARCA,
+             P.CODFAB,
+             P.CODAUXILIAR CODBARRAS,
+             P.CODAUXILIAR2 CODBARRASMASTER,
+             NVL(P.PESOLIQ, 0) PESO,
+             NVL((P.LARGURAM3 * 100), 0) LARGURA,
+             NVL((P.ALTURAM3 * 100), 0) ALTURA,
+             NVL((P.COMPRIMENTOM3 * 100), 0) COMPRIMENTO,
+             NVL(P.VOLUME, 0) VOLUME,
+             P.QTUNITCX QTCXMASTER,
+             P.IMPORTADO,
+             P.REVENDA,
+             P.NBM NCM,
+             P.CODNCMEX NCMEX,
+             DECODE(P.TIPOMERC,
+                    'L',
+                    'NORMAL',
+                    'CB',
+                    'CESTA BASICA',
+                    'KT',
+                    'KIT',
+                    'DB',
+                    'BRINDE',
+                    'MC',
+                    'MATERIAL CONSUMO',
+                    NULL,
+                    'NORMAL',
+                    'NAO INFORMADO') TIPOMERCADORIA,
+             DECODE(P.OBS2, 'FL', 'S', 'N') FORALINHA,
+             NVL(P.SUBTITULOECOMMERCE, 'SEM CERTIFICACAO CADASTRADA') CERTIFICACAO
+        FROM PCPRODUT P
+        LEFT JOIN PCDEPTO D ON D.CODEPTO = P.CODEPTO
+        LEFT JOIN PCSECAO C ON C.CODSEC = P.CODSEC
+        LEFT JOIN PCCATEGORIA A ON A.CODCATEGORIA = P.CODCATEGORIA
+        LEFT JOIN PCLINHAPROD L ON L.CODLINHA = P.CODLINHAPROD)
+    SELECT P.*
+      FROM PRODUTOS P
       LEFT JOIN BI_SINC_PRODUTO S ON S.CODPROD = P.CODPROD
      WHERE S.DT_UPDATE IS NULL
-        OR S.PRODUTO <> P.DESCRICAO
-        OR S.CODDEPTO <> P.CODEPTO
-        OR S.DEPARTAMENTO <> D.DESCRICAO
-        OR S.CODSECAO <> P.CODSEC
-        OR S.SECAO <> C.DESCRICAO
+        OR S.PRODUTO <> P.PRODUTO
+        OR S.CODDEPTO <> P.CODDEPTO
+        OR S.DEPARTAMENTO <> P.DEPARTAMENTO
+        OR S.CODSECAO <> P.CODSECAO
+        OR S.SECAO <> P.SECAO
         OR S.CODCATEGORIA <> P.CODCATEGORIA
-        OR S.CATEGORIA <> A.CATEGORIA
-        OR S.CODLINHA <> P.CODLINHAPROD
-        OR S.LINHA <> L.DESCRICAO
+        OR S.CATEGORIA <> P.CATEGORIA
+        OR S.CODLINHA <> P.CODLINHA
+        OR S.LINHA <> P.LINHA
         OR S.CODFORNEC <> P.CODFORNEC
         OR S.CODMARCA <> P.CODMARCA
         OR S.CODFAB <> P.CODFAB
-        OR S.CODBARRAS <> P.CODAUXILIAR
-        OR S.CODBARRASMASTER <> P.CODAUXILIAR2
-        OR S.PESO <> P.PESOLIQ
-        OR S.LARGURA <> P.LARGURAM3
-        OR S.ALTURA <> P.ALTURAM3
-        OR S.COMPRIMENTO <> P.COMPRIMENTOM3
+        OR S.CODBARRAS <> P.CODBARRAS
+        OR S.CODBARRASMASTER <> P.CODBARRASMASTER
+        OR S.PESO <> P.PESO
+        OR S.LARGURA <> P.LARGURA
+        OR S.ALTURA <> P.ALTURA
+        OR S.COMPRIMENTO <> P.COMPRIMENTO
         OR S.VOLUME <> P.VOLUME
-        OR S.QTCXMASTER <> P.QTUNITCX
+        OR S.QTCXMASTER <> P.QTCXMASTER
         OR S.IMPORTADO <> P.IMPORTADO
         OR S.REVENDA <> P.REVENDA
-        OR S.NCM <> P.NBM
-        OR S.NCMEX <> P.CODNCMEX
-        OR S.TIPOMERCADORIA <> P.TIPOMERC
-        OR S.FORALINHA <> P.OBS2
-        OR S.CERTIFICACAO <> P.SUBTITULOECOMMERCE
-        OR S.DTEXCLUSAO <> P.DTEXCLUSAO;
+        OR S.NCM <> P.NCM
+        OR S.NCMEX <> P.NCMEX
+        OR S.TIPOMERCADORIA <> P.TIPOMERCADORIA
+        OR S.FORALINHA <> P.FORALINHA
+        OR S.CERTIFICACAO <> P.CERTIFICACAO;
 
   -- Atualiza ou insere os resultados na tabela BI_SINC conforme as condições mencionadas
   FOR temp_rec IN (SELECT * FROM TEMP_PCPRODUT)
@@ -129,7 +142,6 @@ BEGIN
              TIPOMERCADORIA  = temp_rec.TIPOMERCADORIA,
              FORALINHA       = temp_rec.FORALINHA,
              CERTIFICACAO    = temp_rec.CERTIFICACAO,
-             DTEXCLUSAO      = temp_rec.DTEXCLUSAO,
              DT_UPDATE       = SYSDATE
        WHERE CODPROD = temp_rec.CODPROD;
     
@@ -164,7 +176,6 @@ BEGIN
            TIPOMERCADORIA,
            FORALINHA,
            CERTIFICACAO,
-           DTEXCLUSAO,
            DT_UPDATE)
         VALUES
           (temp_rec.CODPROD,
@@ -195,14 +206,13 @@ BEGIN
            temp_rec.TIPOMERCADORIA,
            temp_rec.FORALINHA,
            temp_rec.CERTIFICACAO,
-           temp_rec.DTEXCLUSAO,
            SYSDATE);
       END IF;
     EXCEPTION
       WHEN OTHERS THEN
         DBMS_OUTPUT.PUT_LINE('Erro encontrado: ' || SQLERRM);
         RAISE_APPLICATION_ERROR(-20000,
-                                'Erro durante a criação da tabela: ' ||
+                                'Erro durante a insercao na tabela: ' ||
                                 SQLERRM);
     END;
   END LOOP;
