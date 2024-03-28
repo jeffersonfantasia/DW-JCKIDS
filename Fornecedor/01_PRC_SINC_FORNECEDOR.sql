@@ -43,16 +43,14 @@ BEGIN
            CODFORNECPRINC,
            CNPJ,
            TIPO,
-           DT_UPDATE,
-           DT_SINC)
+           DT_UPDATE)
         VALUES
           (temp_rec.CODFORNEC,
            temp_rec.FORNECEDOR,
            temp_rec.CODFORNECPRINC,
            temp_rec.CNPJ,
            temp_rec.TIPO,
-           SYSDATE,
-           NULL);
+           SYSDATE);
       END IF;
     EXCEPTION
       WHEN OTHERS THEN

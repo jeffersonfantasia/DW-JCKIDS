@@ -36,16 +36,14 @@ BEGIN
            REGIAO,
            PRECOVENDA,
            MARGEMIDEAL,
-           DT_UPDATE,
-           DT_SINC)
+           DT_UPDATE)
         VALUES
           (temp_rec.CODPROD,
            temp_rec.NUMREGIAO,
            temp_rec.REGIAO,
            temp_rec.PRECOVENDA,
            temp_rec.MARGEMIDEAL,
-           SYSDATE,
-           NULL);
+           SYSDATE);
       END IF;
     EXCEPTION
       WHEN OTHERS THEN

@@ -165,8 +165,7 @@ BEGIN
            FORALINHA,
            CERTIFICACAO,
            DTEXCLUSAO,
-           DT_UPDATE,
-           DT_SINC)
+           DT_UPDATE)
         VALUES
           (temp_rec.CODPROD,
            temp_rec.PRODUTO,
@@ -197,8 +196,7 @@ BEGIN
            temp_rec.FORALINHA,
            temp_rec.CERTIFICACAO,
            temp_rec.DTEXCLUSAO,
-           SYSDATE,
-           NULL);
+           SYSDATE);
       END IF;
     EXCEPTION
       WHEN OTHERS THEN

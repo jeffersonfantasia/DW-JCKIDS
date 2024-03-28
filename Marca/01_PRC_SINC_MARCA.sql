@@ -27,14 +27,12 @@ BEGIN
           (CODMARCA,
            MARCA,
            ATIVO,
-           DT_UPDATE,
-           DT_SINC)
+           DT_UPDATE)
         VALUES
           (temp_rec.CODMARCA,
            temp_rec.MARCA,
            temp_rec.ATIVO,
-           SYSDATE,
-           NULL);
+           SYSDATE);
       END IF;
     EXCEPTION
       WHEN OTHERS THEN

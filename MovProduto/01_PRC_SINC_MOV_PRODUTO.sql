@@ -317,8 +317,7 @@ BEGIN
            VLFRETE,
            VLOUTRASDESP,
            VLICMSDIFAL,
-           DT_UPDATE,
-           DT_SINC)
+           DT_UPDATE)
         VALUES
           (temp_rec.NUMTRANSITEM,
            temp_rec.MOVIMENTO,
@@ -356,8 +355,7 @@ BEGIN
            temp_rec.VLFRETE,
            temp_rec.VLOUTRASDESP,
            temp_rec.VLICMSDIFAL,
-           SYSDATE,
-           NULL);
+           SYSDATE);
       END IF;
     EXCEPTION
       WHEN OTHERS THEN

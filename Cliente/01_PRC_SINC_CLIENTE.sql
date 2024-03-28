@@ -98,8 +98,7 @@ BEGIN
            BLOQUEIODEFINITIVO,
            BLOQUEIOATUAL,
            LIMITECREDITO,
-           DT_UPDATE,
-           DT_SINC)
+           DT_UPDATE)
         VALUES
           (temp_rec.CODCLI,
            temp_rec.CLIENTE,
@@ -116,8 +115,7 @@ BEGIN
            temp_rec.BLOQUEIODEFINITIVO,
            temp_rec.BLOQUEIOATUAL,
            temp_rec.LIMITECREDITO,
-           SYSDATE,
-           NULL);
+           SYSDATE);
       END IF;
     EXCEPTION
       WHEN OTHERS THEN

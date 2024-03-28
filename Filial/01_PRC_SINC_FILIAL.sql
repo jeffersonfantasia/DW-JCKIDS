@@ -29,13 +29,12 @@ BEGIN
       IF SQL%NOTFOUND
       THEN
         INSERT INTO BI_SINC_FILIAL
-          (CODFILIAL, EMPRESA, FILIAL, DT_UPDATE, DT_SINC)
+          (CODFILIAL, EMPRESA, FILIAL, DT_UPDATE)
         VALUES
           (temp_rec.CODFILIAL,
            temp_rec.EMPRESA,
            temp_rec.FILIAL,
-           SYSDATE,
-           NULL);
+           SYSDATE);
       END IF;
     EXCEPTION
       WHEN OTHERS THEN

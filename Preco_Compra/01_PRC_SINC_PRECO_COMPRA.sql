@@ -287,8 +287,7 @@ BEGIN
            PERCALIQEXTGUIA,
            REDBASEALIQEXT,
            PERCALIQSTRED,
-           DT_UPDATE,
-           DT_SINC)
+           DT_UPDATE)
         VALUES
           (temp_rec.CODFILIAL,
            temp_rec.CODPROD,
@@ -316,8 +315,7 @@ BEGIN
            temp_rec.PERCALIQEXTGUIA,
            temp_rec.REDBASEALIQEXT,
            temp_rec.PERCALIQSTRED,
-           SYSDATE,
-           NULL);
+           SYSDATE);
       END IF;
     EXCEPTION
       WHEN OTHERS THEN

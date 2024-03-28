@@ -64,8 +64,7 @@ BEGIN
            GERENTE,
            CODAREA,
            AREACOMERCIAL,
-           DT_UPDATE,
-           DT_SINC)
+           DT_UPDATE)
         VALUES
           (temp_rec.CODUSUR,
            temp_rec.VENDEDOR,
@@ -76,8 +75,7 @@ BEGIN
            temp_rec.GERENTE,
            temp_rec.CODAREA,
            temp_rec.AREACOMERCIAL,
-           SYSDATE,
-           NULL);
+           SYSDATE);
       END IF;
     EXCEPTION
       WHEN OTHERS THEN

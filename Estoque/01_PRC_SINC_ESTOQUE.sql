@@ -92,8 +92,7 @@ BEGIN
            CUSTOCONTABIL,
            CODBLOQUEIO,
            MOTIVOBLOQUEIO,
-           DT_UPDATE,
-           DT_SINC)
+           DT_UPDATE)
         VALUES
           (temp_rec.CODFILIAL,
            temp_rec.CODPROD,
@@ -110,8 +109,7 @@ BEGIN
            temp_rec.CUSTOCONTABIL,
            temp_rec.CODBLOQUEIO,
            temp_rec.MOTIVOBLOQUEIO,
-           SYSDATE,
-           NULL);
+           SYSDATE);
       END IF;
     EXCEPTION
       WHEN OTHERS THEN

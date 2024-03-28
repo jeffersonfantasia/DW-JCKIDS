@@ -25,13 +25,11 @@ BEGIN
         INSERT INTO BI_SINC_COMPRADOR
           (MATRICULA,
            COMPRADOR,
-           DT_UPDATE,
-           DT_SINC)
+           DT_UPDATE)
         VALUES
           (temp_rec.MATRICULA,
            temp_rec.COMPRADOR,
-           SYSDATE,
-           NULL);
+           SYSDATE);
       END IF;
     EXCEPTION
       WHEN OTHERS THEN
