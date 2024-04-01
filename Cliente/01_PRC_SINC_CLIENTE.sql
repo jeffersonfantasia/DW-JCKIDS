@@ -4,8 +4,8 @@ BEGIN
   INSERT INTO TEMP_PCCLIENT
     (CODCLI,
      CLIENTE,
-     CODREDE,
-     REDE,
+     CODCLIREDE,
+     CLIENTEREDE,
      CNPJ,
      CEP,
      UF,
@@ -17,45 +17,56 @@ BEGIN
      BLOQUEIODEFINITIVO,
      BLOQUEIOATUAL,
      LIMITECREDITO)
-    SELECT C.CODCLI,
-           C.CLIENTE,
-           C.CODREDE,
-           R.DESCRICAO REDE,
-           REGEXP_REPLACE(C.CGCENT,
-                          '([0-9]{2})([0-9]{3})([0-9]{3})([0-9]{4})',
-                          '\1.\2.\3/\4-') CNPJ,
-           REPLACE(C.CEPENT, '-', '') AS CEP,
-           C.ESTENT UF,
-           C.CODUSUR1 CODUSUR,
-           C.CODPRACA,
-           P.PRACA,
-           C.CODATV1 CODATIVIDADE,
-           A.RAMO RAMOATIVIDADE,
-           C.BLOQUEIODEFINITIVO,
-           C.BLOQUEIO BLOQUEIOATUAL,
-           C.LIMCRED LIMITECREDITO
-      FROM PCCLIENT C
-      LEFT JOIN PCREDECLIENTE R ON R.CODREDE = C.CODREDE
-      LEFT JOIN PCPRACA P ON P.CODPRACA = C.CODPRACA
-      LEFT JOIN PCATIVI A ON A.CODATIV = C.CODATV1
+    WITH CLIENTES AS
+     (SELECT C.CODCLI,
+             C.CLIENTE,
+             (CASE
+               WHEN R.DESCRICAO IS NULL THEN
+                ('C' || C.CODCLI)
+               ELSE
+                ('R' || C.CODREDE)
+             END) AS CODCLIREDE,
+             (CASE
+               WHEN R.DESCRICAO IS NULL THEN
+                ('C' || C.CODCLI || ' - ' || UPPER(C.CLIENTE))
+               ELSE
+                ('R' || C.CODREDE || ' - ' || UPPER(R.DESCRICAO))
+             END) AS CLIENTEREDE,
+             REGEXP_REPLACE(C.CGCENT,
+                            '([0-9]{2})([0-9]{3})([0-9]{3})([0-9]{4})',
+                            '\1.\2.\3/\4-') CNPJ,
+             REPLACE(C.CEPENT, '-', '') AS CEP,
+             C.ESTENT UF,
+             C.CODUSUR1 CODUSUR,
+             C.CODPRACA,
+             P.PRACA,
+             C.CODATV1 CODATIVIDADE,
+             A.RAMO RAMOATIVIDADE,
+             C.BLOQUEIODEFINITIVO,
+             C.BLOQUEIO BLOQUEIOATUAL,
+             C.LIMCRED LIMITECREDITO
+        FROM PCCLIENT C
+        LEFT JOIN PCREDECLIENTE R ON R.CODREDE = C.CODREDE
+        LEFT JOIN PCPRACA P ON P.CODPRACA = C.CODPRACA
+        LEFT JOIN PCATIVI A ON A.CODATIV = C.CODATV1)
+    SELECT C.*
+      FROM CLIENTES C
       LEFT JOIN BI_SINC_CLIENTE S ON S.CODCLI = C.CODCLI
      WHERE S.DT_UPDATE IS NULL
         OR S.CLIENTE <> C.CLIENTE
-        OR S.CODREDE <> C.CODREDE
-        OR S.REDE <> R.DESCRICAO
-        OR S.CNPJ <> REGEXP_REPLACE(C.CGCENT,
-                                    '([0-9]{2})([0-9]{3})([0-9]{3})([0-9]{4})',
-                                    '\1.\2.\3/\4-')
-        OR S.CEP <> REPLACE(C.CEPENT, '-', '')
-        OR S.UF <> C.ESTENT
-        OR S.CODUSUR <> C.CODUSUR1
+        OR S.CODCLIREDE <> C.CODCLIREDE
+        OR S.CLIENTEREDE <> C.CLIENTEREDE
+        OR S.CNPJ <> C.CNPJ
+        OR S.CEP <> C.CEP
+        OR S.UF <> C.UF
+        OR S.CODUSUR <> C.CODUSUR
         OR S.CODPRACA <> C.CODPRACA
-        OR S.PRACA <> P.PRACA
-        OR S.CODATIVIDADE <> C.CODATV1
-        OR S.RAMOATIVIDADE <> A.RAMO
+        OR S.PRACA <> C.PRACA
+        OR S.CODATIVIDADE <> C.CODATIVIDADE
+        OR S.RAMOATIVIDADE <> C.RAMOATIVIDADE
         OR S.BLOQUEIODEFINITIVO <> C.BLOQUEIODEFINITIVO
-        OR S.BLOQUEIOATUAL <> C.BLOQUEIO
-        OR S.LIMITECREDITO <> C.LIMCRED;
+        OR S.BLOQUEIOATUAL <> C.BLOQUEIOATUAL
+        OR S.LIMITECREDITO <> C.LIMITECREDITO;
 
   -- Atualiza ou insere os resultados na tabela BI_SINC conforme as condições mencionadas
   FOR temp_rec IN (SELECT * FROM TEMP_PCCLIENT)
@@ -64,8 +75,8 @@ BEGIN
     BEGIN
       UPDATE BI_SINC_CLIENTE
          SET CLIENTE            = temp_rec.CLIENTE,
-             CODREDE            = temp_rec.CODREDE,
-             REDE               = temp_rec.REDE,
+             CODCLIREDE         = temp_rec.CODCLIREDE,
+             CLIENTEREDE        = temp_rec.CLIENTEREDE,
              CNPJ               = temp_rec.CNPJ,
              CEP                = temp_rec.CEP,
              UF                 = temp_rec.UF,
@@ -85,8 +96,8 @@ BEGIN
         INSERT INTO BI_SINC_CLIENTE
           (CODCLI,
            CLIENTE,
-           CODREDE,
-           REDE,
+           CODCLIREDE,
+           CLIENTEREDE,
            CNPJ,
            CEP,
            UF,
@@ -102,8 +113,8 @@ BEGIN
         VALUES
           (temp_rec.CODCLI,
            temp_rec.CLIENTE,
-           temp_rec.CODREDE,
-           temp_rec.REDE,
+           temp_rec.CODCLIREDE,
+           temp_rec.CLIENTEREDE,
            temp_rec.CNPJ,
            temp_rec.CEP,
            temp_rec.UF,
