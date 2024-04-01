@@ -505,8 +505,13 @@ BEGIN
      MOVIMENTO       VARCHAR2(1),
      TIPOMOV         VARCHAR2(60),
      CODFILIAL       VARCHAR2(2),
-     NUMTRANSENT     NUMBER(10),
-     NUMTRANSVENDA   NUMBER(10),
+     NUMTRANSACAO    NUMBER(10),
+     CODCOB          VARCHAR2(4),
+     PARCELAS        NUMBER(4),
+     PRAZO           NUMBER(6),
+     CODUSUR         NUMBER(4),
+     CODFORNEC       NUMBER(8),
+     CODCLI          NUMBER(8),
      DATA            DATE,
      CODPROD         NUMBER(6),
      QT              NUMBER(20, 6),
@@ -538,25 +543,30 @@ BEGIN
      VLOUTRASDESP    NUMBER(18, 6),
      VLICMSDIFAL     NUMBER(18, 6),
      DT_UPDATE       DATE,
-     CONSTRAINT pk_numtransitem PRIMARY KEY (NUMTRANSITEM)
+     CONSTRAINT PK_NUMTRANSITEM PRIMARY KEY (NUMTRANSITEM)
   ) ';
   END IF;
 
-  ----TEMP_PCMOV
+  ----TEMP_MOV_PRODUTO
   SELECT COUNT(*)
     INTO v_table_exists
     FROM user_tables
-   WHERE table_name = 'TEMP_PCMOV';
+   WHERE table_name = 'TEMP_MOV_PRODUTO';
   IF v_table_exists = 0
   THEN
-    EXECUTE IMMEDIATE 'CREATE GLOBAL TEMPORARY TABLE TEMP_PCMOV
+    EXECUTE IMMEDIATE 'CREATE GLOBAL TEMPORARY TABLE TEMP_MOV_PRODUTO
   (
      NUMTRANSITEM    NUMBER(18),
      MOVIMENTO       VARCHAR2(1),
      TIPOMOV         VARCHAR2(60),
      CODFILIAL       VARCHAR2(2),
-     NUMTRANSENT     NUMBER(10),
-     NUMTRANSVENDA   NUMBER(10),
+     NUMTRANSACAO    NUMBER(10),
+     CODCOB          VARCHAR2(4),
+     PARCELAS        NUMBER(4),
+     PRAZO           NUMBER(6),
+     CODUSUR         NUMBER(4),
+     CODFORNEC       NUMBER(8),
+     CODCLI          NUMBER(8),
      DATA            DATE,
      CODPROD         NUMBER(6),
      QT              NUMBER(20, 6),
