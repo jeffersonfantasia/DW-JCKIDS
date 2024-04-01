@@ -306,8 +306,8 @@ BEGIN
   (
      CODCLI             NUMBER(6),
      CLIENTE            VARCHAR2(60),
-     CODREDE            NUMBER(4),
-     REDE               VARCHAR2(60),
+     CODCLIREDE         VARCHAR2(8),
+     CLIENTEREDE        VARCHAR2(80),
      CNPJ               VARCHAR2(18),
      CEP                VARCHAR2(9),
      UF                 VARCHAR2(2),
@@ -335,8 +335,8 @@ BEGIN
   (
      CODCLI             NUMBER(6),
      CLIENTE            VARCHAR2(60),
-     CODREDE            NUMBER(4),
-     REDE               VARCHAR2(60),
+     CODCLIREDE         VARCHAR2(8),
+     CLIENTEREDE        VARCHAR2(80),
      CNPJ               VARCHAR2(18),
      CEP                VARCHAR2(9),
      UF                 VARCHAR2(2),
