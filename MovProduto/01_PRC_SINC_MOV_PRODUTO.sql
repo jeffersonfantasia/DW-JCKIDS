@@ -1,13 +1,18 @@
 CREATE OR REPLACE PROCEDURE PRC_SINC_MOV_PRODUTO AS
 BEGIN
   -- Insere os resultados novos ou alterados na tabela TEMP
-  INSERT INTO TEMP_PCMOV
+  INSERT INTO TEMP_MOV_PRODUTO
     (NUMTRANSITEM,
      MOVIMENTO,
      TIPOMOV,
      CODFILIAL,
-     NUMTRANSENT,
-     NUMTRANSVENDA,
+     NUMTRANSACAO,
+     CODCOB,
+     PARCELAS,
+     PRAZO,
+     CODUSUR,
+     CODFORNEC,
+     CODCLI,
      DATA,
      CODPROD,
      QT,
@@ -58,8 +63,13 @@ BEGIN
                ELSE 'ENTRADA NAO INFORMADA'
              END) TIPOMOV,
              NVL(E.CODFILIALNF, E.CODFILIAL) CODFILIAL,
-             M.NUMTRANSENT,
-             0 NUMTRANSVENDA,
+             M.NUMTRANSENT NUMTRANSACAO,
+             '' CODCOB,
+             0 PARCELAS,
+             NVL(E.PRAZO,0) PRAZO,
+             M.CODUSUR,
+             (CASE WHEN M.CODFISCAL IN (1202, 1411, 2202, 2411) THEN 0 ELSE E.CODFORNEC END) CODFORNEC,
+             (CASE WHEN M.CODFISCAL IN (1202, 1411, 2202, 2411) THEN E.CODFORNEC ELSE 0 END) CODCLI,
              M.DTMOV DATA,
              M.CODPROD,
              M.QTCONT QT,
@@ -134,6 +144,27 @@ BEGIN
         FROM PCNFBASESAID
        WHERE TIPOVENDA = 'DF'
        GROUP BY NUMTRANSVENDA),
+    PARCELAMENTO_PLPAG AS
+     (SELECT PL.CODPLPAG,
+             ROUND((NVL(PL.PRAZO1, 0) + NVL(PL.PRAZO2, 0) + NVL(PL.PRAZO3, 0) +
+                   NVL(PL.PRAZO4, 0) + NVL(PL.PRAZO5, 0) + NVL(PL.PRAZO6, 0) +
+                   NVL(PL.PRAZO7, 0) + NVL(PL.PRAZO8, 0) + NVL(PL.PRAZO9, 0) +
+                   NVL(PL.PRAZO10, 0) + NVL(PL.PRAZO11, 0) + NVL(PL.PRAZO12, 0)) /
+                   DECODE(PL.NUMDIAS, 0, 1, PL.NUMDIAS)) QTPARCELA
+        FROM PCPLPAG PL),
+    PARCELAMENTO_PRESTECF AS
+     (SELECT E.NUMPED,
+             COUNT(E.PRESTECF) QTPARCELA
+        FROM PCPRESTECF E
+       WHERE E.CODCOB NOT IN ('CRED')
+       GROUP BY E.NUMPED),
+    COBRANCA_CARTAO AS
+     (SELECT B.CODCOB,
+             B.CODCOBCC,
+             NVL(MAX(B.PRAZOCC), 0) PRAZOPARCELA
+        FROM PCCOB B
+       WHERE B.CODCOBCC IS NOT NULL
+       GROUP BY B.CODCOB,B.CODCOBCC),
     SAIDAS AS
      (SELECT M.NUMTRANSITEM,
              'S' MOVIMENTO,
@@ -155,8 +186,22 @@ BEGIN
                ELSE 'SAIDA NAO INFORMADA'
              END) TIPOMOV,
              NVL(M.CODFILIALNF, M.CODFILIAL) CODFILIAL,
-             0 NUMTRANSENT,
-             M.NUMTRANSVENDA,
+             M.NUMTRANSVENDA NUMTRANSACAO,
+             S.CODCOB,
+             (CASE
+               WHEN S.CODCOB = 'CRED' THEN 1
+               WHEN S.SERIE = 'SF' AND (S.CODCOB IN ('CONV', 'D', 'PIXL') OR CC.CODCOBCC = 'CADB') THEN 1
+               WHEN S.SERIE = 'SF' THEN PE.QTPARCELA
+               ELSE PL.QTPARCELA
+             END) PARCELAS,
+             (CASE
+               WHEN S.CODCOB = 'CRED' THEN 0
+               WHEN S.SERIE = 'SF' THEN (PE.QTPARCELA * CC.PRAZOPARCELA)
+               ELSE S.PRAZOMEDIO
+             END) PRAZO,
+             M.CODUSUR,
+             (CASE WHEN M.CODFISCAL IN (5202, 5209, 5411, 6202, 6411) THEN S.CODCLI ELSE 0 END) CODFORNEC,
+             (CASE WHEN M.CODFISCAL IN (5202, 5209, 5411, 6202, 6411) THEN 0 ELSE S.CODCLI END) CODCLI,
              M.DTMOV DATA,
              M.CODPROD,
              M.QTCONT QT,
@@ -205,20 +250,24 @@ BEGIN
              ROUND(M.QTCONT * NVL(M.VLFRETE, 0), 2) VLFRETE,
              ROUND(M.QTCONT * NVL(M.VLOUTRASDESP, 0), 2) VLOUTRASDESP,
              (ROUND(NVL(M.QTCONT, 0) * NVL(MC.VLICMSPARTREM, 0), 2) + ROUND(NVL(M.QTCONT, 0) * NVL(MC.VLICMSPARTDEST, 0), 2) + ROUND(NVL(M.QTCONT, 0) * NVL(MC.VLFCPPART, 0), 2)) VLICMSDIFAL
-        FROM PCNFSAID S
-        JOIN PCMOV M ON M.NUMTRANSVENDA = S.NUMTRANSVENDA
-        LEFT JOIN PCPRODUT P ON P.CODPROD = M.CODPROD
-        LEFT JOIN PCMOVCOMPLE MC ON MC.NUMTRANSITEM = M.NUMTRANSITEM
-        LEFT JOIN BASE_VLOUTRASDESP B ON B.NUMTRANSVENDA = S.NUMTRANSVENDA
-       WHERE M.STATUS IN ('A', 'AB')
-         AND M.DTCANCEL IS NULL),
+    FROM PCNFSAID S
+    JOIN PCMOV M ON M.NUMTRANSVENDA = S.NUMTRANSVENDA
+    LEFT JOIN PCPRODUT P ON P.CODPROD = M.CODPROD
+    LEFT JOIN PCMOVCOMPLE MC ON MC.NUMTRANSITEM = M.NUMTRANSITEM
+    LEFT JOIN BASE_VLOUTRASDESP B ON B.NUMTRANSVENDA = S.NUMTRANSVENDA
+    LEFT JOIN PARCELAMENTO_PLPAG PL ON PL.CODPLPAG = S.CODPLPAG
+    LEFT JOIN PARCELAMENTO_PRESTECF PE ON PE.NUMPED = S.NUMPED
+    LEFT JOIN COBRANCA_CARTAO CC ON CC.CODCOB = S.CODCOB
+   WHERE M.STATUS IN ('A', 'AB')
+     AND M.DTCANCEL IS NULL),
     MOVIMENTACAO AS
      (SELECT * FROM ENTRADAS UNION ALL SELECT * FROM SAIDAS)
     SELECT M.*
       FROM MOVIMENTACAO M
       LEFT JOIN BI_SINC_MOV_PRODUTO S ON S.NUMTRANSITEM = M.NUMTRANSITEM
-     WHERE M.DATA >= TO_DATE('01/01/2024', 'DD/MM/YYYY')
-		   AND (S.DT_UPDATE IS NULL
+     WHERE 1 = 1 
+       AND M.DATA >= TO_DATE('01/02/2024', 'DD/MM/YYYY')
+       AND (S.DT_UPDATE IS NULL
         OR S.CFOP <> M.CFOP
         OR S.CUSTOFINANCEIRO <> M.CUSTOFINANCEIRO
         OR S.CUSTOREPOSICAO <> M.CUSTOREPOSICAO
@@ -235,7 +284,7 @@ BEGIN
         OR S.VLICMSDIFAL <> M.VLICMSDIFAL);
 
   -- Atualiza ou insere os resultados na tabela BI_SINC conforme as condições mencionadas
-  FOR temp_rec IN (SELECT * FROM TEMP_PCMOV)
+  FOR temp_rec IN (SELECT * FROM TEMP_MOV_PRODUTO)
   
   LOOP
     BEGIN
@@ -243,8 +292,13 @@ BEGIN
          SET MOVIMENTO       = temp_rec.MOVIMENTO,
              TIPOMOV         = temp_rec.TIPOMOV,
              CODFILIAL       = temp_rec.CODFILIAL,
-             NUMTRANSENT     = temp_rec.NUMTRANSENT,
-             NUMTRANSVENDA   = temp_rec.NUMTRANSVENDA,
+             NUMTRANSACAO    = temp_rec.NUMTRANSACAO,
+             CODCOB          = temp_rec.CODCOB,
+             PARCELAS        = temp_rec.PARCELAS,
+             PRAZO           = temp_rec.PRAZO,
+             CODUSUR         = temp_rec.CODUSUR,
+             CODFORNEC       = temp_rec.CODFORNEC,
+             CODCLI          = temp_rec.CODCLI,
              DATA            = temp_rec.DATA,
              CODPROD         = temp_rec.CODPROD,
              QT              = temp_rec.QT,
@@ -277,7 +331,6 @@ BEGIN
              VLICMSDIFAL     = temp_rec.VLICMSDIFAL,
              DT_UPDATE       = SYSDATE
        WHERE NUMTRANSITEM = temp_rec.NUMTRANSITEM;
-    
       IF SQL%NOTFOUND
       THEN
         INSERT INTO BI_SINC_MOV_PRODUTO
@@ -285,8 +338,13 @@ BEGIN
            MOVIMENTO,
            TIPOMOV,
            CODFILIAL,
-           NUMTRANSENT,
-           NUMTRANSVENDA,
+           NUMTRANSACAO,
+           CODCOB,
+           PARCELAS,
+           PRAZO,
+           CODUSUR,
+           CODFORNEC,
+           CODCLI,
            DATA,
            CODPROD,
            QT,
@@ -323,8 +381,13 @@ BEGIN
            temp_rec.MOVIMENTO,
            temp_rec.TIPOMOV,
            temp_rec.CODFILIAL,
-           temp_rec.NUMTRANSENT,
-           temp_rec.NUMTRANSVENDA,
+           temp_rec.NUMTRANSACAO,
+           temp_rec.CODCOB,
+           temp_rec.PARCELAS,
+           temp_rec.PRAZO,
+           temp_rec.CODUSUR,
+           temp_rec.CODFORNEC,
+           temp_rec.CODCLI,
            temp_rec.DATA,
            temp_rec.CODPROD,
            temp_rec.QT,
@@ -361,7 +424,7 @@ BEGIN
       WHEN OTHERS THEN
         DBMS_OUTPUT.PUT_LINE('Erro encontrado: ' || SQLERRM);
         RAISE_APPLICATION_ERROR(-20000,
-                                'Erro durante a criação da tabela: ' ||
+                                'Erro durante a insercao na tabela: ' ||
                                 SQLERRM);
     END;
   END LOOP;
@@ -369,5 +432,5 @@ BEGIN
   COMMIT;
 
   -- Exclui os registros da tabela temporária TEMP criada;
-  EXECUTE IMMEDIATE 'DELETE TEMP_PCMOV';
+  EXECUTE IMMEDIATE 'DELETE TEMP_MOV_PRODUTO';
 END;
