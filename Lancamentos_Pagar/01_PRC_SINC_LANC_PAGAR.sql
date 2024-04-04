@@ -54,7 +54,7 @@ BEGIN
              END) AS VALOR,
              NVL(L.TXPERM, 0) VLJUROS,
              NVL(L.DESCONTOFIN, 0) VLDESCONTO,
-						 (L.VALOR + NVL(L.TXPERM, 0) - NVL(L.DESCONTOFIN, 0)) VALORAPAGAR,
+						 (L.VALOR + NVL(L.TXPERM, 0) - NVL(L.DESCONTOFIN, 0) - NVL(L.VALORDEV,0)) VALORAPAGAR,
              M.CODBANCO,
              L.CODCONTA,
              L.CODFORNEC,
