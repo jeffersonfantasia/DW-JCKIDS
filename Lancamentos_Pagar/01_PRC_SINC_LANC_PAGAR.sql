@@ -1,7 +1,7 @@
 CREATE OR REPLACE PROCEDURE PRC_SINC_LANC_PAGAR AS
 BEGIN
   -- Insere os resultados novos ou alterados na tabela TEMP
-  INSERT INTO TEMP_PCLANC
+  INSERT INTO TEMP_LANC_PAGAR
     (RECNUM,
      CODFILIAL,
      DTCOMPETENCIA,
@@ -12,6 +12,7 @@ BEGIN
      VALOR,
      VLJUROS,
      VLDESCONTO,
+		 VALORAPAGAR,
      CODBANCO,
      CODCONTA,
      CODFORNEC,
@@ -53,6 +54,7 @@ BEGIN
              END) AS VALOR,
              NVL(L.TXPERM, 0) VLJUROS,
              NVL(L.DESCONTOFIN, 0) VLDESCONTO,
+						 (L.VALOR + NVL(L.TXPERM, 0) - NVL(L.DESCONTOFIN, 0)) VALORAPAGAR,
              M.CODBANCO,
              L.CODCONTA,
              L.CODFORNEC,
@@ -76,14 +78,15 @@ BEGIN
       FROM LANCAMENTOS L
       LEFT JOIN BI_SINC_LANC_PAGAR S ON S.RECNUM = L.RECNUM
      WHERE S.DT_UPDATE IS NULL
-        OR S.DTCOMPETENCIA <> L.DTCOMPETENCIA
-        OR S.DTVENCIMENTO <> L.DTVENCIMENTO
-        OR S.DTPAGAMENTO <> L.DTPAGAMENTO
-        OR S.DTCONTABIL <> L.DTCONTABIL
+        OR NVL(S.DTCOMPETENCIA,'01/01/1899') <> L.DTCOMPETENCIA
+        OR NVL(S.DTVENCIMENTO,'01/01/1899') <> L.DTVENCIMENTO
+        OR NVL(S.DTPAGAMENTO,'01/01/1899') <> L.DTPAGAMENTO
+        OR NVL(S.DTCONTABIL,'01/01/1899') <> L.DTCONTABIL
         OR S.TIPO <> L.TIPO
         OR S.VALOR <> L.VALOR
         OR S.VLJUROS <> L.VLJUROS
         OR S.VLDESCONTO <> L.VLDESCONTO
+				OR S.VALORAPAGAR <> L.VALORAPAGAR
         OR S.CODBANCO <> L.CODBANCO
         OR S.CODCONTA <> L.CODCONTA
         OR S.TIPOPARCEIRO <> L.TIPOPARCEIRO
@@ -95,7 +98,7 @@ BEGIN
         OR S.CODROTINABAIXA <> L.CODROTINABAIXA;
 
   -- Atualiza ou insere os resultados na tabela BI_SINC conforme as condições mencionadas
-  FOR temp_rec IN (SELECT * FROM TEMP_PCLANC)
+  FOR temp_rec IN (SELECT * FROM TEMP_LANC_PAGAR)
   
   LOOP
     BEGIN
@@ -109,6 +112,7 @@ BEGIN
              VALOR          = temp_rec.VALOR,
              VLJUROS        = temp_rec.VLJUROS,
              VLDESCONTO     = temp_rec.VLDESCONTO,
+						 VALORAPAGAR    = temp_rec.VALORAPAGAR,
              CODBANCO       = temp_rec.CODBANCO,
              CODCONTA       = temp_rec.CODCONTA,
              CODFORNEC      = temp_rec.CODFORNEC,
@@ -136,6 +140,7 @@ BEGIN
            VALOR,
            VLJUROS,
            VLDESCONTO,
+					 VALORAPAGAR,
            CODBANCO,
            CODCONTA,
            CODFORNEC,
@@ -159,6 +164,7 @@ BEGIN
            temp_rec.VALOR,
            temp_rec.VLJUROS,
            temp_rec.VLDESCONTO,
+					 temp_rec.VALORAPAGAR,
            temp_rec.CODBANCO,
            temp_rec.CODCONTA,
            temp_rec.CODFORNEC,
@@ -176,7 +182,7 @@ BEGIN
       WHEN OTHERS THEN
         DBMS_OUTPUT.PUT_LINE('Erro encontrado: ' || SQLERRM);
         RAISE_APPLICATION_ERROR(-20000,
-                                'Erro durante a criação da tabela: ' ||
+                                'Erro durante a insercao na tabela: ' ||
                                 SQLERRM);
     END;
   END LOOP;
@@ -184,5 +190,5 @@ BEGIN
   COMMIT;
 
   -- Exclui os registros da tabela temporária TEMP criada;
-  EXECUTE IMMEDIATE 'DELETE TEMP_PCLANC';
+  EXECUTE IMMEDIATE 'DELETE TEMP_LANC_PAGAR';
 END;
