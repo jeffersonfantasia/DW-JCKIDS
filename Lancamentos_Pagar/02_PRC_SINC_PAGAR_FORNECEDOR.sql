@@ -31,6 +31,7 @@ BEGIN
         OR NVL(S.DTVENCIMENTO,'01/01/1899') <> L.DTVENCIMENTO
         OR NVL(S.DTPAGAMENTO,'01/01/1899') <> L.DTPAGAMENTO
         OR S.VALOR <> L.VALOR
+				OR S.VALORAPAGAR <> L.VALORAPAGAR
         OR S.NOTA <> L.NOTA;
 
   -- Atualiza ou insere os resultados na tabela BI_SINC conforme as condições mencionadas
