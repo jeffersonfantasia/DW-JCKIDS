@@ -8,6 +8,7 @@ BEGIN
      DTVENCIMENTO,
      DTPAGAMENTO,
      VALOR,
+		 VALORAPAGAR,
      CODFORNEC,
      NOTA)
     WITH LANCAMENTOS AS
@@ -16,9 +17,10 @@ BEGIN
              L.DTCOMPETENCIA,
              L.DTVENCIMENTO,
              L.DTPAGAMENTO,
-             VALOR,
-             CODFORNEC,
-             (NUMNOTA || '-' || DUPLICATA) NOTA
+             L.VALOR,
+						 L.VALORAPAGAR,
+             L.CODFORNEC,
+             (L.NUMNOTA || '-' || L.DUPLICATA) NOTA
         FROM BI_SINC_LANC_PAGAR L
        WHERE L.TIPOPARCEIRO = 'F'
          AND L.CODCONTA = 100001)
@@ -26,8 +28,8 @@ BEGIN
       FROM LANCAMENTOS L
       LEFT JOIN BI_SINC_PAGAR_FORNECEDOR S ON S.RECNUM = L.RECNUM
      WHERE S.DT_UPDATE IS NULL
-        OR S.DTVENCIMENTO <> L.DTVENCIMENTO
-        OR S.DTPAGAMENTO <> L.DTPAGAMENTO
+        OR NVL(S.DTVENCIMENTO,'01/01/1899') <> L.DTVENCIMENTO
+        OR NVL(S.DTPAGAMENTO,'01/01/1899') <> L.DTPAGAMENTO
         OR S.VALOR <> L.VALOR
         OR S.NOTA <> L.NOTA;
 
@@ -42,6 +44,7 @@ BEGIN
              DTVENCIMENTO  = temp_rec.DTVENCIMENTO,
              DTPAGAMENTO   = temp_rec.DTPAGAMENTO,
              VALOR         = temp_rec.VALOR,
+						 VALORAPAGAR   = temp_rec.VALORAPAGAR,
              CODFORNEC     = temp_rec.CODFORNEC,
              NOTA          = temp_rec.NOTA,
              DT_UPDATE     = SYSDATE
@@ -56,6 +59,7 @@ BEGIN
            DTVENCIMENTO,
            DTPAGAMENTO,
            VALOR,
+					 VALORAPAGAR,
            CODFORNEC,
            NOTA,
            DT_UPDATE)
@@ -66,6 +70,7 @@ BEGIN
            temp_rec.DTVENCIMENTO,
            temp_rec.DTPAGAMENTO,
            temp_rec.VALOR,
+					 temp_rec.VALORAPAGAR,
            temp_rec.CODFORNEC,
            temp_rec.NOTA,
            SYSDATE);
@@ -80,10 +85,10 @@ BEGIN
   END LOOP;
 
   COMMIT;
-
-  -- Exclui os registros da tabela BI_SINC_PAGAR_FORNECEDOR que possuem DTPAGAMENTO NOT NULL
-  EXECUTE IMMEDIATE 'DELETE FROM BI_SINC_PAGAR_FORNECEDOR WHERE DTPAGAMENTO IS NOT NULL';
-
+  BEGIN
+    -- Exclui os registros da tabela BI_SINC_PAGAR_FORNECEDOR que possuem DTPAGAMENTO NOT NULL
+    EXECUTE IMMEDIATE 'DELETE FROM BI_SINC_PAGAR_FORNECEDOR WHERE DTPAGAMENTO IS NOT NULL';
+  END;
   -- Exclui os registros da tabela temporária TEMP criada;
   EXECUTE IMMEDIATE 'DELETE TEMP_PAGAR_FORNECEDOR';
 END;
