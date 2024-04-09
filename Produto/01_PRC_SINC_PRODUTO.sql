@@ -1,7 +1,7 @@
 CREATE OR REPLACE PROCEDURE PRC_SINC_PRODUTO AS
 BEGIN
   -- Insere os resultados novos ou alterados na tabela TEMP
-  INSERT INTO TEMP_PCPRODUT
+  INSERT INTO TEMP_PRODUTO
     (CODPROD,
      PRODUTO,
      CODDEPTO,
@@ -12,6 +12,7 @@ BEGIN
      CATEGORIA,
      CODLINHA,
      LINHA,
+     PRODUTOFILHO,
      CODFORNEC,
      CODMARCA,
      CODFAB,
@@ -41,6 +42,7 @@ BEGIN
              A.CATEGORIA,
              DECODE(P.CODLINHAPROD, NULL, 0, P.CODLINHAPROD) CODLINHA,
              DECODE(L.DESCRICAO, NULL, 'SEM LINHA', L.DESCRICAO) LINHA,
+             (CASE WHEN P.CODPROD = P.CODPRODMASTER THEN 'N' ELSE 'S' END) PRODUTOFILHO,
              P.CODFORNEC,
              P.CODMARCA,
              P.CODFAB,
@@ -77,7 +79,7 @@ BEGIN
         LEFT JOIN PCSECAO C ON C.CODSEC = P.CODSEC
         LEFT JOIN PCCATEGORIA A ON A.CODCATEGORIA = P.CODCATEGORIA
         LEFT JOIN PCLINHAPROD L ON L.CODLINHA = P.CODLINHAPROD
-				WHERE P.CODAUXILIAR IS NOT NULL)
+        WHERE P.CODAUXILIAR IS NOT NULL)
     SELECT P.*
       FROM PRODUTOS P
       LEFT JOIN BI_SINC_PRODUTO S ON S.CODPROD = P.CODPROD
@@ -91,6 +93,7 @@ BEGIN
         OR S.CATEGORIA <> P.CATEGORIA
         OR S.CODLINHA <> P.CODLINHA
         OR S.LINHA <> P.LINHA
+        OR S.PRODUTOFILHO <> P.PRODUTOFILHO
         OR S.CODFORNEC <> P.CODFORNEC
         OR S.CODMARCA <> P.CODMARCA
         OR S.CODFAB <> P.CODFAB
@@ -111,7 +114,7 @@ BEGIN
         OR S.CERTIFICACAO <> P.CERTIFICACAO;
 
   -- Atualiza ou insere os resultados na tabela BI_SINC conforme as condições mencionadas
-  FOR temp_rec IN (SELECT * FROM TEMP_PCPRODUT)
+  FOR temp_rec IN (SELECT * FROM TEMP_PRODUTO)
   
   LOOP
     BEGIN
@@ -125,6 +128,7 @@ BEGIN
              CATEGORIA       = temp_rec.CATEGORIA,
              CODLINHA        = temp_rec.CODLINHA,
              LINHA           = temp_rec.LINHA,
+             PRODUTOFILHO    = temp_rec.PRODUTOFILHO,
              CODFORNEC       = temp_rec.CODFORNEC,
              CODMARCA        = temp_rec.CODMARCA,
              CODFAB          = temp_rec.CODFAB,
@@ -159,6 +163,7 @@ BEGIN
            CATEGORIA,
            CODLINHA,
            LINHA,
+           PRODUTOFILHO,
            CODFORNEC,
            CODMARCA,
            CODFAB,
@@ -189,6 +194,7 @@ BEGIN
            temp_rec.CATEGORIA,
            temp_rec.CODLINHA,
            temp_rec.LINHA,
+           temp_rec.PRODUTOFILHO,
            temp_rec.CODFORNEC,
            temp_rec.CODMARCA,
            temp_rec.CODFAB,
@@ -221,5 +227,5 @@ BEGIN
   COMMIT;
 
   -- Exclui os registros da tabela temporária TEMP criada;
-  EXECUTE IMMEDIATE 'DELETE TEMP_PCPRODUT';
+  EXECUTE IMMEDIATE 'DELETE TEMP_PRODUTO';
 END;
