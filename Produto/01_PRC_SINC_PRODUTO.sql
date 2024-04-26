@@ -4,6 +4,8 @@ BEGIN
   INSERT INTO TEMP_PRODUTO
     (CODPROD,
      PRODUTO,
+     CODPRODMASTER,
+     PRODUTOMASTER,
      CODDEPTO,
      DEPARTAMENTO,
      CODSECAO,
@@ -34,6 +36,8 @@ BEGIN
     WITH PRODUTOS AS
      (SELECT P.CODPROD,
              P.DESCRICAO PRODUTO,
+             P.CODPRODMASTER,
+             (SELECT P2.DESCRICAO FROM PCPRODUT P2 WHERE P2.CODPROD = P.CODPRODMASTER) PRODUTOMASTER,
              P.CODEPTO CODDEPTO,
              D.DESCRICAO DEPARTAMENTO,
              P.CODSEC CODSECAO,
@@ -85,6 +89,8 @@ BEGIN
       LEFT JOIN BI_SINC_PRODUTO S ON S.CODPROD = P.CODPROD
      WHERE S.DT_UPDATE IS NULL
         OR S.PRODUTO <> P.PRODUTO
+        OR S.CODPRODMASTER <> P.CODPRODMASTER
+        OR S.PRODUTOMASTER <> P.PRODUTOMASTER
         OR S.CODDEPTO <> P.CODDEPTO
         OR S.DEPARTAMENTO <> P.DEPARTAMENTO
         OR S.CODSECAO <> P.CODSECAO
@@ -120,6 +126,8 @@ BEGIN
     BEGIN
       UPDATE BI_SINC_PRODUTO
          SET PRODUTO         = temp_rec.PRODUTO,
+             CODPRODMASTER   = CODPRODMASTER,
+             PRODUTOMASTER   = temp_rec.PRODUTOMASTER,
              CODDEPTO        = temp_rec.CODDEPTO,
              DEPARTAMENTO    = temp_rec.DEPARTAMENTO,
              CODSECAO        = temp_rec.CODSECAO,
@@ -155,6 +163,8 @@ BEGIN
         INSERT INTO BI_SINC_PRODUTO
           (CODPROD,
            PRODUTO,
+           CODPRODMASTER,
+           PRODUTOMASTER,
            CODDEPTO,
            DEPARTAMENTO,
            CODSECAO,
@@ -186,6 +196,8 @@ BEGIN
         VALUES
           (temp_rec.CODPROD,
            temp_rec.PRODUTO,
+           temp_rec.CODPRODMASTER,
+           temp_rec.PRODUTOMASTER,
            temp_rec.CODDEPTO,
            temp_rec.DEPARTAMENTO,
            temp_rec.CODSECAO,
