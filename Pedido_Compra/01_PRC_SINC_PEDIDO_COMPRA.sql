@@ -96,8 +96,7 @@ BEGIN
          AND CODPROD = temp_rec.CODPROD
          AND NUMSEQ = temp_rec.NUMSEQ;
     
-      IF SQL%NOTFOUND
-      THEN
+      IF SQL%NOTFOUND THEN
         INSERT INTO BI_SINC_PEDIDO_COMPRA
           (CODFILIAL,
            DATA,
@@ -143,6 +142,19 @@ BEGIN
   END LOOP;
 
   COMMIT;
+  --EXCLUIR GERISTROS QUE NAO PERTENCEM MAIS A PCITEM
+  BEGIN
+    EXECUTE IMMEDIATE 'DELETE FROM BI_SINC_PEDIDO_COMPRA
+ WHERE (NUMPED, NUMSEQ, CODPROD) IN
+       (SELECT S.NUMPED,
+               S.NUMSEQ,
+               S.CODPROD
+          FROM BI_SINC_PEDIDO_COMPRA S
+          LEFT JOIN PCITEM I ON S.NUMPED = I.NUMPED
+                            AND S.NUMSEQ = I.NUMSEQ
+                            AND S.CODPROD = I.CODPROD
+         WHERE I.CODPROD IS NULL)';
+  END;
 
   -- Exclui os registros da tabela temporária TEMP criada;
   EXECUTE IMMEDIATE 'DELETE TEMP_PCITEM';
