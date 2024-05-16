@@ -7,8 +7,7 @@ BEGIN
     INTO v_table_exists
     FROM user_tables
    WHERE table_name = 'BI_SINC_MARCA';
-  IF v_table_exists = 0
-  THEN
+  IF v_table_exists = 0 THEN
     EXECUTE IMMEDIATE 'CREATE TABLE BI_SINC_MARCA
   (
      CODMARCA  NUMBER(8),
@@ -24,8 +23,7 @@ BEGIN
     INTO v_table_exists
     FROM user_tables
    WHERE table_name = 'TEMP_PCMARCA';
-  IF v_table_exists = 0
-  THEN
+  IF v_table_exists = 0 THEN
     EXECUTE IMMEDIATE 'CREATE GLOBAL TEMPORARY TABLE TEMP_PCMARCA
   (
      CODMARCA NUMBER(8),
@@ -40,8 +38,7 @@ BEGIN
     INTO v_table_exists
     FROM user_tables
    WHERE table_name = 'BI_SINC_FILIAL';
-  IF v_table_exists = 0
-  THEN
+  IF v_table_exists = 0 THEN
     EXECUTE IMMEDIATE 'CREATE TABLE BI_SINC_FILIAL
   (
      CODFILIAL VARCHAR2(2),
@@ -58,8 +55,7 @@ BEGIN
     INTO v_table_exists
     FROM user_tables
    WHERE table_name = 'TEMP_FILIAL';
-  IF v_table_exists = 0
-  THEN
+  IF v_table_exists = 0 THEN
     EXECUTE IMMEDIATE 'CREATE GLOBAL TEMPORARY TABLE TEMP_FILIAL
   (
      CODFILIAL VARCHAR2(2),
@@ -75,8 +71,7 @@ BEGIN
     INTO v_table_exists
     FROM user_tables
    WHERE table_name = 'BI_SINC_PRODUTO';
-  IF v_table_exists = 0
-  THEN
+  IF v_table_exists = 0 THEN
     EXECUTE IMMEDIATE 'CREATE TABLE BI_SINC_PRODUTO
   (
      CODPROD         NUMBER(6),
@@ -120,8 +115,7 @@ BEGIN
     INTO v_table_exists
     FROM user_tables
    WHERE table_name = 'TEMP_PRODUTO';
-  IF v_table_exists = 0
-  THEN
+  IF v_table_exists = 0 THEN
     EXECUTE IMMEDIATE 'CREATE GLOBAL TEMPORARY TABLE TEMP_PRODUTO
   (
      CODPROD         NUMBER(6),
@@ -164,8 +158,7 @@ BEGIN
     INTO v_table_exists
     FROM user_tables
    WHERE table_name = 'BI_SINC_FORNECEDOR';
-  IF v_table_exists = 0
-  THEN
+  IF v_table_exists = 0 THEN
     EXECUTE IMMEDIATE 'CREATE TABLE BI_SINC_FORNECEDOR
   (
      CODFORNEC      NUMBER(6),
@@ -184,8 +177,7 @@ BEGIN
     INTO v_table_exists
     FROM user_tables
    WHERE table_name = 'TEMP_FORNECEDOR';
-  IF v_table_exists = 0
-  THEN
+  IF v_table_exists = 0 THEN
     EXECUTE IMMEDIATE 'CREATE GLOBAL TEMPORARY TABLE TEMP_FORNECEDOR
   (
      CODFORNEC      NUMBER(6),
@@ -203,8 +195,7 @@ BEGIN
     INTO v_table_exists
     FROM user_tables
    WHERE table_name = 'JFAREACOMERCIAL';
-  IF v_table_exists = 0
-  THEN
+  IF v_table_exists = 0 THEN
     EXECUTE IMMEDIATE 'CREATE TABLE JFAREACOMERCIAL
   (
      CODAREA       NUMBER(2),
@@ -218,8 +209,7 @@ BEGIN
     INTO v_table_exists
     FROM user_tables
    WHERE table_name = 'TEMP_JFAREACOMERCIAL';
-  IF v_table_exists = 0
-  THEN
+  IF v_table_exists = 0 THEN
     EXECUTE IMMEDIATE 'CREATE GLOBAL TEMPORARY TABLE TEMP_JFAREACOMERCIAL
   (
      CODAREA       NUMBER(2),
@@ -233,8 +223,7 @@ BEGIN
     INTO v_table_exists
     FROM user_tables
    WHERE table_name = 'BI_SINC_VENDEDOR';
-  IF v_table_exists = 0
-  THEN
+  IF v_table_exists = 0 THEN
     EXECUTE IMMEDIATE 'CREATE TABLE BI_SINC_VENDEDOR
   (
      CODUSUR       NUMBER(6),
@@ -257,8 +246,7 @@ BEGIN
     INTO v_table_exists
     FROM user_tables
    WHERE table_name = 'TEMP_PCUSUARI';
-  IF v_table_exists = 0
-  THEN
+  IF v_table_exists = 0 THEN
     EXECUTE IMMEDIATE 'CREATE GLOBAL TEMPORARY TABLE TEMP_PCUSUARI
   (
      CODUSUR       NUMBER(6),
@@ -280,8 +268,7 @@ BEGIN
     INTO v_table_exists
     FROM user_tables
    WHERE table_name = 'BI_SINC_COMPRADOR';
-  IF v_table_exists = 0
-  THEN
+  IF v_table_exists = 0 THEN
     EXECUTE IMMEDIATE 'CREATE TABLE BI_SINC_COMPRADOR
   (
      MATRICULA NUMBER(6),
@@ -296,8 +283,7 @@ BEGIN
     INTO v_table_exists
     FROM user_tables
    WHERE table_name = 'TEMP_PCEMPR';
-  IF v_table_exists = 0
-  THEN
+  IF v_table_exists = 0 THEN
     EXECUTE IMMEDIATE 'CREATE GLOBAL TEMPORARY TABLE TEMP_PCEMPR
   (
      MATRICULA NUMBER(6),
@@ -311,8 +297,7 @@ BEGIN
     INTO v_table_exists
     FROM user_tables
    WHERE table_name = 'BI_SINC_CLIENTE';
-  IF v_table_exists = 0
-  THEN
+  IF v_table_exists = 0 THEN
     EXECUTE IMMEDIATE 'CREATE TABLE BI_SINC_CLIENTE
   (
      CODCLI             NUMBER(6),
@@ -340,8 +325,7 @@ BEGIN
     INTO v_table_exists
     FROM user_tables
    WHERE table_name = 'TEMP_PCCLIENT';
-  IF v_table_exists = 0
-  THEN
+  IF v_table_exists = 0 THEN
     EXECUTE IMMEDIATE 'CREATE GLOBAL TEMPORARY TABLE TEMP_PCCLIENT
   (
      CODCLI             NUMBER(6),
@@ -368,8 +352,7 @@ BEGIN
     INTO v_table_exists
     FROM user_tables
    WHERE table_name = 'BI_SINC_ESTOQUE';
-  IF v_table_exists = 0
-  THEN
+  IF v_table_exists = 0 THEN
     EXECUTE IMMEDIATE 'CREATE TABLE BI_SINC_ESTOQUE
   (
      CODFILIAL       VARCHAR2(2),
@@ -399,8 +382,7 @@ BEGIN
     INTO v_table_exists
     FROM user_tables
    WHERE table_name = 'TEMP_PCEST';
-  IF v_table_exists = 0
-  THEN
+  IF v_table_exists = 0 THEN
     EXECUTE IMMEDIATE 'CREATE GLOBAL TEMPORARY TABLE TEMP_PCEST
   (
      CODFILIAL       VARCHAR2(2),
@@ -429,8 +411,7 @@ BEGIN
     INTO v_table_exists
     FROM user_tables
    WHERE table_name = 'BI_SINC_PRECO_COMPRA';
-  IF v_table_exists = 0
-  THEN
+  IF v_table_exists = 0 THEN
     EXECUTE IMMEDIATE 'CREATE TABLE BI_SINC_PRECO_COMPRA
   (
      CODFILIAL       VARCHAR2(2),
@@ -469,8 +450,7 @@ BEGIN
     INTO v_table_exists
     FROM user_tables
    WHERE table_name = 'TEMP_PRECO_COMPRA';
-  IF v_table_exists = 0
-  THEN
+  IF v_table_exists = 0 THEN
     EXECUTE IMMEDIATE 'CREATE GLOBAL TEMPORARY TABLE TEMP_PRECO_COMPRA
   (
      CODFILIAL       VARCHAR2(2),
@@ -508,8 +488,7 @@ BEGIN
     INTO v_table_exists
     FROM user_tables
    WHERE table_name = 'BI_SINC_MOV_PRODUTO';
-  IF v_table_exists = 0
-  THEN
+  IF v_table_exists = 0 THEN
     EXECUTE IMMEDIATE 'CREATE TABLE BI_SINC_MOV_PRODUTO
   (
      NUMTRANSITEM    NUMBER(18),
@@ -563,8 +542,7 @@ BEGIN
     INTO v_table_exists
     FROM user_tables
    WHERE table_name = 'TEMP_MOV_PRODUTO';
-  IF v_table_exists = 0
-  THEN
+  IF v_table_exists = 0 THEN
     EXECUTE IMMEDIATE 'CREATE GLOBAL TEMPORARY TABLE TEMP_MOV_PRODUTO
   (
      NUMTRANSITEM    NUMBER(18),
@@ -617,8 +595,7 @@ BEGIN
     INTO v_table_exists
     FROM user_tables
    WHERE table_name = 'BI_SINC_PRECO_VENDA';
-  IF v_table_exists = 0
-  THEN
+  IF v_table_exists = 0 THEN
     EXECUTE IMMEDIATE 'CREATE TABLE BI_SINC_PRECO_VENDA
   (
      CODPROD     NUMBER(6),
@@ -635,8 +612,7 @@ BEGIN
     INTO v_table_exists
     FROM user_tables
    WHERE table_name = 'TEMP_PRECO_VENDA';
-  IF v_table_exists = 0
-  THEN
+  IF v_table_exists = 0 THEN
     EXECUTE IMMEDIATE 'CREATE GLOBAL TEMPORARY TABLE TEMP_PRECO_VENDA
   (
      CODPROD     NUMBER(6),
@@ -652,8 +628,7 @@ BEGIN
     INTO v_table_exists
     FROM user_tables
    WHERE table_name = 'BI_SINC_PRECO_VENDA_PROMOCIONAL';
-  IF v_table_exists = 0
-  THEN
+  IF v_table_exists = 0 THEN
     EXECUTE IMMEDIATE 'CREATE TABLE BI_SINC_PRECO_VENDA_PROMOCIONAL
   (
      CODPRECOPROM     NUMBER(10),
@@ -673,8 +648,7 @@ BEGIN
     INTO v_table_exists
     FROM user_tables
    WHERE table_name = 'TEMP_PRECO_VENDA_PROMOCIONAL';
-  IF v_table_exists = 0
-  THEN
+  IF v_table_exists = 0 THEN
     EXECUTE IMMEDIATE 'CREATE GLOBAL TEMPORARY TABLE TEMP_PRECO_VENDA_PROMOCIONAL
   (
      CODPRECOPROM     NUMBER(10),
@@ -693,8 +667,7 @@ BEGIN
     INTO v_table_exists
     FROM user_tables
    WHERE table_name = 'BI_SINC_PEDIDO_COMPRA';
-  IF v_table_exists = 0
-  THEN
+  IF v_table_exists = 0 THEN
     EXECUTE IMMEDIATE 'CREATE TABLE BI_SINC_PEDIDO_COMPRA
   (
      CODFILIAL    VARCHAR2(2),
@@ -722,8 +695,7 @@ BEGIN
     INTO v_table_exists
     FROM user_tables
    WHERE table_name = 'TEMP_PCITEM';
-  IF v_table_exists = 0
-  THEN
+  IF v_table_exists = 0 THEN
     EXECUTE IMMEDIATE 'CREATE GLOBAL TEMPORARY TABLE TEMP_PCITEM
   (
      CODFILIAL    VARCHAR2(2),
@@ -750,8 +722,7 @@ BEGIN
     INTO v_table_exists
     FROM user_tables
    WHERE table_name = 'BI_SINC_LANC_PAGAR';
-  IF v_table_exists = 0
-  THEN
+  IF v_table_exists = 0 THEN
     EXECUTE IMMEDIATE 'CREATE TABLE BI_SINC_LANC_PAGAR
   (
      RECNUM         NUMBER(8),
@@ -786,8 +757,7 @@ BEGIN
     INTO v_table_exists
     FROM user_tables
    WHERE table_name = 'TEMP_LANC_PAGAR';
-  IF v_table_exists = 0
-  THEN
+  IF v_table_exists = 0 THEN
     EXECUTE IMMEDIATE 'CREATE GLOBAL TEMPORARY TABLE TEMP_LANC_PAGAR
   (
      RECNUM         NUMBER(8),
@@ -821,8 +791,7 @@ BEGIN
     INTO v_table_exists
     FROM user_tables
    WHERE table_name = 'BI_SINC_PAGAR_FORNECEDOR';
-  IF v_table_exists = 0
-  THEN
+  IF v_table_exists = 0 THEN
     EXECUTE IMMEDIATE 'CREATE TABLE BI_SINC_PAGAR_FORNECEDOR
   (
      RECNUM         NUMBER(8),
@@ -844,8 +813,7 @@ BEGIN
     INTO v_table_exists
     FROM user_tables
    WHERE table_name = 'TEMP_PAGAR_FORNECEDOR';
-  IF v_table_exists = 0
-  THEN
+  IF v_table_exists = 0 THEN
     EXECUTE IMMEDIATE 'CREATE GLOBAL TEMPORARY TABLE TEMP_PAGAR_FORNECEDOR
   (
      RECNUM         NUMBER(8),
@@ -866,8 +834,7 @@ BEGIN
     INTO v_table_exists
     FROM user_tables
    WHERE table_name = 'BI_SINC_REGIAO';
-  IF v_table_exists = 0
-  THEN
+  IF v_table_exists = 0 THEN
     EXECUTE IMMEDIATE 'CREATE TABLE BI_SINC_REGIAO
   (
      NUMREGIAO NUMBER(4),
@@ -882,12 +849,94 @@ BEGIN
     INTO v_table_exists
     FROM user_tables
    WHERE table_name = 'TEMP_REGIAO';
-  IF v_table_exists = 0
-  THEN
+  IF v_table_exists = 0 THEN
     EXECUTE IMMEDIATE 'CREATE GLOBAL TEMPORARY TABLE TEMP_REGIAO
   (
      NUMREGIAO NUMBER(4),
      REGIAO    VARCHAR2(40)
+  )
+  ON COMMIT PRESERVE ROWS ';
+  END IF;
+
+  ----BI_SINC_CALENDARIO
+  SELECT COUNT(*)
+    INTO v_table_exists
+    FROM user_tables
+   WHERE table_name = 'BI_SINC_CALENDARIO';
+  IF v_table_exists = 0 THEN
+    EXECUTE IMMEDIATE 'CREATE TABLE BI_SINC_CALENDARIO
+  (
+    DATA                    DATE,
+    DIA                     NUMBER(2),
+    ANO                     NUMBER(4),
+    NUM_MES                 NUMBER(2),
+    NOME_MES                VARCHAR2(12),
+    NOME_MES_ABREV          VARCHAR2(3),
+    NUM_MES_ANO             NUMBER(6),
+    NUM_MES_ANO_SEQ         NUMBER(6),
+    MES_ANO                 VARCHAR2(8),
+    NUM_TRIMESTRE           NUMBER(1),
+    NOME_TRIMESTRE          VARCHAR2(12),
+    NOME_TRIMESTRE_ABREV    VARCHAR2(6),
+    NUM_TRIMESTRE_ANO       NUMBER(6),
+    NOME_TRIMESTRE_ANO      VARCHAR2(12),
+    NUM_TRIMESTRE_JC        NUMBER(1),
+    NOME_TRIMESTRE_JC       VARCHAR2(12),
+    NOME_TRIMESTRE_ABREV_JC VARCHAR2(6),
+    NUM_TRIMESTRE_ANO_JC    NUMBER(6),
+    NOME_TRIMESTRE_ANO_JC   VARCHAR2(12),
+    NUM_SEMANA_MES          NUMBER(1),
+    NOME_SEMANA_MES         VARCHAR2(10),
+    NUM_SEMANA_ANO          NUMBER(2),
+    NOME_SEMANA_ANO         VARCHAR2(12),
+    NUM_DIA_SEMANA          NUMBER(1),
+    NOME_DIA_SEMANA         VARCHAR2(14),
+    NOME_DIA_SEMANA_ABREV   VARCHAR2(3),
+    CALCULO_MES_ATUAL       NUMBER(4),
+    CALCULO_TRIMESTRE_ATUAL NUMBER(4),
+    CALCULO_ANO_ATUAL       NUMBER(4),
+    DT_UPDATE               DATE,
+    CONSTRAINT PK_BI_SINC_CALENDARIO PRIMARY KEY (DATA)
+  )';
+  END IF;
+
+  ----TEMP_CALENDARIO
+  SELECT COUNT(*)
+    INTO v_table_exists
+    FROM user_tables
+   WHERE table_name = 'TEMP_CALENDARIO';
+  IF v_table_exists = 0 THEN
+    EXECUTE IMMEDIATE 'CREATE GLOBAL TEMPORARY TABLE TEMP_CALENDARIO
+  (
+    DATA                    DATE,
+    DIA                     NUMBER(2),
+    ANO                     NUMBER(4),
+    NUM_MES                 NUMBER(2),
+    NOME_MES                VARCHAR2(12),
+    NOME_MES_ABREV          VARCHAR2(3),
+    NUM_MES_ANO             NUMBER(6),
+    NUM_MES_ANO_SEQ         NUMBER(6),
+    MES_ANO                 VARCHAR2(8),
+    NUM_TRIMESTRE           NUMBER(1),
+    NOME_TRIMESTRE          VARCHAR2(12),
+    NOME_TRIMESTRE_ABREV    VARCHAR2(6),
+    NUM_TRIMESTRE_ANO       NUMBER(6),
+    NOME_TRIMESTRE_ANO      VARCHAR2(12),
+    NUM_TRIMESTRE_JC        NUMBER(1),
+    NOME_TRIMESTRE_JC       VARCHAR2(12),
+    NOME_TRIMESTRE_ABREV_JC VARCHAR2(6),
+    NUM_TRIMESTRE_ANO_JC    NUMBER(6),
+    NOME_TRIMESTRE_ANO_JC   VARCHAR2(12),
+    NUM_SEMANA_MES          NUMBER(1),
+    NOME_SEMANA_MES         VARCHAR2(10),
+    NUM_SEMANA_ANO          NUMBER(2),
+    NOME_SEMANA_ANO         VARCHAR2(12),
+    NUM_DIA_SEMANA          NUMBER(1),
+    NOME_DIA_SEMANA         VARCHAR2(14),
+    NOME_DIA_SEMANA_ABREV   VARCHAR2(3),
+    CALCULO_MES_ATUAL       NUMBER(4),
+    CALCULO_TRIMESTRE_ATUAL NUMBER(4),
+    CALCULO_ANO_ATUAL       NUMBER(4)
   )
   ON COMMIT PRESERVE ROWS ';
   END IF;
