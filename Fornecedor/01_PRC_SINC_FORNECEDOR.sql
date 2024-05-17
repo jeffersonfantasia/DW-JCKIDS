@@ -2,15 +2,23 @@ CREATE OR REPLACE PROCEDURE PRC_SINC_FORNECEDOR AS
 BEGIN
   -- Insere os resultados novos ou alterados na tabela TEMP
   INSERT INTO TEMP_FORNECEDOR
-    (CODFORNEC, FORNECEDOR, CODFORNECPRINC, FORNECPRINC, CNPJ, TIPO)
+    (CODFORNEC,
+     FORNECEDOR,
+     CODFORNECPRINC,
+     FORNECPRINC,
+     CNPJ,
+     TIPO)
     WITH FORNECEDORES AS
      (SELECT F.CODFORNEC,
              F.FORNECEDOR,
              COALESCE(F.CODFORNECPRINC, F.CODFORNEC) CODFORNECPRINC,
-						 (COALESCE(F.CODFORNECPRINC, F.CODFORNEC) || ' - ' ||(SELECT FF.FORNECEDOR FROM PCFORNEC FF WHERE FF.CODFORNEC = COALESCE(F.CODFORNECPRINC, F.CODFORNEC))) FORNECPRINC,
+             (COALESCE(F.CODFORNECPRINC, F.CODFORNEC) || ' - ' ||
+             (SELECT FF.FORNECEDOR
+                 FROM PCFORNEC FF
+                WHERE FF.CODFORNEC = COALESCE(F.CODFORNECPRINC, F.CODFORNEC))) FORNECPRINC,
              REGEXP_REPLACE(F.CGC,
                             '([0-9]{2})([0-9]{3})([0-9]{3})([0-9]{4})',
-                            '\1.\2.\3/\4-') CGC,
+                            '\1.\2.\3/\4-') CNPJ,
              NVL(F.OBS2, 'N') TIPO
         FROM PCFORNEC F)
     
@@ -20,8 +28,8 @@ BEGIN
      WHERE S.DT_UPDATE IS NULL
         OR S.FORNECEDOR <> F.FORNECEDOR
         OR S.CODFORNECPRINC <> F.CODFORNECPRINC
-				OR S.FORNECPRINC <> F.CODFORNECPRINC
-        OR S.CNPJ <> F.CGC
+        OR S.FORNECPRINC <> F.FORNECPRINC
+        OR S.CNPJ <> F.CNPJ
         OR NVL(S.TIPO, 'S') <> F.TIPO;
 
   -- Atualiza ou insere os resultados na tabela BI_SINC conforme as condições mencionadas
@@ -32,19 +40,18 @@ BEGIN
       UPDATE BI_SINC_FORNECEDOR
          SET FORNECEDOR     = temp_rec.FORNECEDOR,
              CODFORNECPRINC = temp_rec.CODFORNECPRINC,
-						 FORNECPRINC    = temp_rec.FORNECPRINC,
+             FORNECPRINC    = temp_rec.FORNECPRINC,
              CNPJ           = temp_rec.CNPJ,
              TIPO           = temp_rec.TIPO,
              DT_UPDATE      = SYSDATE
        WHERE CODFORNEC = temp_rec.CODFORNEC;
     
-      IF SQL%NOTFOUND
-      THEN
+      IF SQL%NOTFOUND THEN
         INSERT INTO BI_SINC_FORNECEDOR
           (CODFORNEC,
            FORNECEDOR,
            CODFORNECPRINC,
-					 FORNECPRINC,
+           FORNECPRINC,
            CNPJ,
            TIPO,
            DT_UPDATE)
@@ -52,7 +59,7 @@ BEGIN
           (temp_rec.CODFORNEC,
            temp_rec.FORNECEDOR,
            temp_rec.CODFORNECPRINC,
-					 temp_rec.FORNECPRINC,
+           temp_rec.FORNECPRINC,
            temp_rec.CNPJ,
            temp_rec.TIPO,
            SYSDATE);
