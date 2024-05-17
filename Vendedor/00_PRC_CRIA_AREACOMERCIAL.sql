@@ -3,16 +3,24 @@ BEGIN
   -- Insere os resultados novos ou alterados na tabela TEMP
   INSERT INTO TEMP_JFAREACOMERCIAL
     (CODAREA, AREACOMERCIAL)
-    SELECT 1, 'DISTRIBUICAO'
+        SELECT 1,
+           'DISTRIBUICAO'
       FROM DUAL
     UNION ALL
-    SELECT 2, 'CORPORATIVO'
+    SELECT 2,
+           'CORPORATIVO'
       FROM DUAL
     UNION ALL
-    SELECT 3, 'VAREJO'
+    SELECT 3,
+           'VAREJO'
       FROM DUAL
     UNION ALL
-    SELECT 4, 'OUTROS'
+    SELECT 4,
+           'OUTROS'
+      FROM DUAL
+    UNION ALL
+    SELECT 5,
+           'COMPRAS'
       FROM DUAL;
 
   FOR temp_rec IN (SELECT * FROM TEMP_JFAREACOMERCIAL)
@@ -41,5 +49,5 @@ BEGIN
 
   COMMIT;
   -- Exclui os registros da tabela temporária TEMP criada;
-  EXECUTE IMMEDIATE 'DELETE TEMP_PCFORNEC';
+  EXECUTE IMMEDIATE 'DELETE TEMP_JFAREACOMERCIAL';
 END;
