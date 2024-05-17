@@ -27,9 +27,10 @@ BEGIN
   LOOP
     BEGIN
       UPDATE BI_SINC_TABELAS
-         SET QTREGISTROS  = temp_rec.QTREGISTROS,
+         SET QTREGISTROS    = temp_rec.QTREGISTROS,
              MAIOR_DTUPDATE = temp_rec.MAIOR_DTUPDATE,
-             LAST_REFRESH = temp_rec.LAST_REFRESH
+             LAST_REFRESH   = temp_rec.LAST_REFRESH,
+             DT_UPDATE      = SYSDATE
        WHERE TABELA = temp_rec.TABELA;
     
       IF SQL%NOTFOUND THEN
