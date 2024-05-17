@@ -17,10 +17,6 @@ BEGIN
     UNION ALL
     SELECT 4,
            'OUTROS'
-      FROM DUAL
-    UNION ALL
-    SELECT 5,
-           'COMPRAS'
       FROM DUAL;
 
   FOR temp_rec IN (SELECT * FROM TEMP_JFAREACOMERCIAL)
