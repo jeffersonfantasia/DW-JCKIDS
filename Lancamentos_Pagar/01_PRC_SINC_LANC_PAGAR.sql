@@ -54,7 +54,7 @@ BEGIN
              END) AS VALOR,
              NVL(L.TXPERM, 0) VLJUROS,
              NVL(L.DESCONTOFIN, 0) VLDESCONTO,
-						 (L.VALOR + NVL(L.TXPERM, 0) - NVL(L.DESCONTOFIN, 0) - NVL(L.VALORDEV,0)) VALORAPAGAR,
+             (L.VALOR + NVL(L.TXPERM, 0) - NVL(L.DESCONTOFIN, 0) - NVL(L.VALORDEV,0)) VALORAPAGAR,
              M.CODBANCO,
              L.CODCONTA,
              L.CODFORNEC,
@@ -70,10 +70,8 @@ BEGIN
         LEFT JOIN PCMOVCR M ON L.NUMTRANS = M.NUMTRANS
        WHERE NVL(L.INDICE, 0) NOT IN ('B')
          AND NVL(L.CODROTINABAIXA, 0) NOT IN (1207, 1502, 1503, 9806, 9876)
-         AND NVL(M.CODBANCO, 0) NOT IN (17, 20, 35, 50, 52, 53, 54)
          AND M.DTESTORNO IS NULL
-         AND NVL(L.CODCONTA, 0) NOT IN
-             (37, 105, 100022, 100023, 100024, 100027, 101002))
+         AND NVL(L.CODCONTA, 0) NOT IN (37, 105, 100022, 100023, 100024, 100027, 101002))
     SELECT L.*
       FROM LANCAMENTOS L
       LEFT JOIN BI_SINC_LANC_PAGAR S ON S.RECNUM = L.RECNUM
@@ -86,7 +84,7 @@ BEGIN
         OR S.VALOR <> L.VALOR
         OR S.VLJUROS <> L.VLJUROS
         OR S.VLDESCONTO <> L.VLDESCONTO
-				OR S.VALORAPAGAR <> L.VALORAPAGAR
+        OR S.VALORAPAGAR <> L.VALORAPAGAR
         OR S.CODBANCO <> L.CODBANCO
         OR S.CODCONTA <> L.CODCONTA
         OR S.TIPOPARCEIRO <> L.TIPOPARCEIRO
@@ -112,7 +110,7 @@ BEGIN
              VALOR          = temp_rec.VALOR,
              VLJUROS        = temp_rec.VLJUROS,
              VLDESCONTO     = temp_rec.VLDESCONTO,
-						 VALORAPAGAR    = temp_rec.VALORAPAGAR,
+             VALORAPAGAR    = temp_rec.VALORAPAGAR,
              CODBANCO       = temp_rec.CODBANCO,
              CODCONTA       = temp_rec.CODCONTA,
              CODFORNEC      = temp_rec.CODFORNEC,
@@ -140,7 +138,7 @@ BEGIN
            VALOR,
            VLJUROS,
            VLDESCONTO,
-					 VALORAPAGAR,
+           VALORAPAGAR,
            CODBANCO,
            CODCONTA,
            CODFORNEC,
@@ -164,7 +162,7 @@ BEGIN
            temp_rec.VALOR,
            temp_rec.VLJUROS,
            temp_rec.VLDESCONTO,
-					 temp_rec.VALORAPAGAR,
+           temp_rec.VALORAPAGAR,
            temp_rec.CODBANCO,
            temp_rec.CODCONTA,
            temp_rec.CODFORNEC,
