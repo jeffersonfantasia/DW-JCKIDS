@@ -58,8 +58,7 @@ BEGIN
            (P.QTPEDIDA - P.QTENTREGUE) QTSALDO,
            ROUND((P.PRECOCOMPRA * P.QTPEDIDA), 4) VLPEDIDO,
            ROUND((P.PRECOCOMPRA * P.QTENTREGUE), 4) VLENTREGUE,
-           (ROUND((P.PRECOCOMPRA * P.QTPEDIDA), 4) -
-           ROUND((P.PRECOCOMPRA * P.QTPEDIDA), 4)) VLSALDO
+           ROUND((P.PRECOCOMPRA * (P.QTPEDIDA - P.QTENTREGUE)), 4) VLSALDO
       FROM PEDIDO_COMPRA P
       LEFT JOIN BI_SINC_PEDIDO_COMPRA S ON S.NUMPED = P.NUMPED
                                        AND S.CODPROD = P.CODPROD
@@ -72,7 +71,8 @@ BEGIN
         OR S.TIPO <> P.TIPO
         OR S.PRECOCOMPRA <> P.PRECOCOMPRA
         OR S.QTPEDIDA <> P.QTPEDIDA
-        OR S.QTENTREGUE <> P.QTENTREGUE;
+        OR S.QTENTREGUE <> P.QTENTREGUE
+        OR S.VLSALDO <> P.VLSALDO;
 
   -- Atualiza ou insere os resultados na tabela BI_SINC conforme as condições mencionadas
   FOR temp_rec IN (SELECT * FROM TEMP_PCITEM)
