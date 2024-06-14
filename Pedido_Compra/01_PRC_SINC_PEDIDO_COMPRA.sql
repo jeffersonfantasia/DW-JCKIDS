@@ -43,23 +43,28 @@ BEGIN
              END) AS QTENTREGUE
         FROM PCITEM I
         JOIN PCPEDIDO P ON I.NUMPED = P.NUMPED
-        JOIN BI_SINC_PRODUTO P ON P.CODPROD = I.CODPROD)
-    SELECT P.CODFILIAL,
-           P.DATA,
-           P.CODFORNEC,
-           P.CODCOMPRADOR,
-           P.TIPO,
-           P.NUMPED,
-           P.NUMSEQ,
-           P.CODPROD,
-           P.PRECOCOMPRA,
-           P.QTPEDIDA,
-           P.QTENTREGUE,
-           (P.QTPEDIDA - P.QTENTREGUE) QTSALDO,
-           ROUND((P.PRECOCOMPRA * P.QTPEDIDA), 4) VLPEDIDO,
-           ROUND((P.PRECOCOMPRA * P.QTENTREGUE), 4) VLENTREGUE,
-           ROUND((P.PRECOCOMPRA * (P.QTPEDIDA - P.QTENTREGUE)), 4) VLSALDO
-      FROM PEDIDO_COMPRA P
+        JOIN BI_SINC_PRODUTO P ON P.CODPROD = I.CODPROD),
+    
+    RESULTADO AS
+     (SELECT P.CODFILIAL,
+             P.DATA,
+             P.CODFORNEC,
+             P.CODCOMPRADOR,
+             P.TIPO,
+             P.NUMPED,
+             P.NUMSEQ,
+             P.CODPROD,
+             P.PRECOCOMPRA,
+             P.QTPEDIDA,
+             P.QTENTREGUE,
+             (P.QTPEDIDA - P.QTENTREGUE) QTSALDO,
+             ROUND((P.PRECOCOMPRA * P.QTPEDIDA), 4) VLPEDIDO,
+             ROUND((P.PRECOCOMPRA * P.QTENTREGUE), 4) VLENTREGUE,
+             ROUND((P.PRECOCOMPRA * (P.QTPEDIDA - P.QTENTREGUE)), 4) VLSALDO
+        FROM PEDIDO_COMPRA P)
+    
+    SELECT P.*
+      FROM RESULTADO P
       LEFT JOIN BI_SINC_PEDIDO_COMPRA S ON S.NUMPED = P.NUMPED
                                        AND S.CODPROD = P.CODPROD
                                        AND S.NUMSEQ = P.NUMSEQ
