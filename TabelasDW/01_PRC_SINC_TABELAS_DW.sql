@@ -1023,28 +1023,59 @@ BEGIN
     FROM user_tables
    WHERE table_name = 'BI_SINC_PEDIDO_VENDA';
   IF v_table_exists = 0 THEN
-    EXECUTE IMMEDIATE 'CREATE TABLE BI_SINC_PEDIDO_VENDA
+	EXECUTE IMMEDIATE 'CREATE TABLE BI_SINC_PEDIDO_VENDA
   (
-    CODFILIAL,
-		CODFILIALRETIRA,
-		DATA,
-		DATALIMITE,
-		NUMPED, 
-		TIPOVENDA,
-		CODCLI,
-		CODPROD,
-		QT,
-		PVENDA,
-		VLPRODUTO,
-		VLPEDIDO,
-		CODUSUR,
-		POSICAO,
-		TIPOBLOQUEIO,
-		OBSPEDIDO,
-		CODMOTIVOPENDENTE,
-     DT_UPDATE DATE,
+     CODFILIAL         VARCHAR2(2),
+     CODFILIALRETIRA   VARCHAR2(2),
+     DATA              DATE,
+     DATALIMITE        DATE,
+     NUMPED            NUMBER(10),
+     TIPOVENDA         NUMBER(5),
+     CODCLI            NUMBER(6),
+     CODPROD           NUMBER(6),
+     QT                NUMBER(20, 6),
+     PVENDA            NUMBER(18, 6),
+     VLPRODUTO         NUMBER(18, 6),
+     VLPEDIDO          NUMBER(18, 6),
+     CODUSUR           NUMBER(4),
+     POSICAO           VARCHAR2(2),
+     TIPOBLOQUEIO      VARCHAR2(1),
+     MOTIVOBLOQUEIO    VARCHAR2(200),
+     OBSPEDIDO         VARCHAR2(25),
+     CODMOTIVOPENDENTE NUMBER(2),
+     DT_UPDATE         DATE,
      CONSTRAINT PK_PEDIDO_VENDA PRIMARY KEY (NUMPED, CODPROD)
-  ) ';
+  )  ';
+  END IF;
+
+  ----TEMP_PEDIDO_VENDA
+  SELECT COUNT(*)
+    INTO v_table_exists
+    FROM user_tables
+   WHERE table_name = 'TEMP_PEDIDO_VENDA';
+  IF v_table_exists = 0 THEN
+    EXECUTE IMMEDIATE 'CREATE GLOBAL TEMPORARY TABLE TEMP_PEDIDO_VENDA
+  (
+     CODFILIAL         VARCHAR2(2),
+     CODFILIALRETIRA   VARCHAR2(2),
+     DATA              DATE,
+     DATALIMITE        DATE,
+     NUMPED            NUMBER(10),
+     TIPOVENDA         NUMBER(5),
+     CODCLI            NUMBER(6),
+     CODPROD           NUMBER(6),
+     QT                NUMBER(20, 6),
+     PVENDA            NUMBER(18, 6),
+     VLPRODUTO         NUMBER(18, 6),
+     VLPEDIDO          NUMBER(18, 6),
+     CODUSUR           NUMBER(4),
+     POSICAO           VARCHAR2(2),
+     TIPOBLOQUEIO      VARCHAR2(1),
+     MOTIVOBLOQUEIO    VARCHAR2(200),
+     OBSPEDIDO         VARCHAR2(25),
+     CODMOTIVOPENDENTE NUMBER(2)
+  )
+  ON COMMIT PRESERVE ROWS ';
   END IF;
 
 END;
