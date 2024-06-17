@@ -1,7 +1,26 @@
 CREATE OR REPLACE PROCEDURE PRC_SINC_PEDIDO_VENDA AS
 BEGIN
   -- Insere os resultados novos ou alterados na tabela TEMP
-  CREATE TABLE TEMP_PEDIDO_VENDA AS
+  INSERT INTO TEMP_PEDIDO_VENDA
+    (CODFILIAL,
+     CODFILIALRETIRA,
+     DATA,
+     DATALIMITE,
+     NUMPED,
+     TIPOVENDA,
+     CODCLI,
+     CODPROD,
+     QT,
+     PVENDA,
+     VLPRODUTO,
+     VLPEDIDO,
+     CODUSUR,
+     POSICAO,
+     TIPOBLOQUEIO,
+     MOTIVOBLOQUEIO,
+     OBSPEDIDO,
+     CODMOTIVOPENDENTE)
+  
     WITH MAXCODIGOBLOQUEIO AS
      (SELECT MAX(CODIGO) CODIGO_MAX,
              NUMPED
@@ -20,7 +39,7 @@ BEGIN
      (SELECT C.CODFILIAL,
              NVL(I.CODFILIALRETIRA, C.CODFILIAL) CODFILIALRETIRA,
              I.DATA,
-             P.DT_LIMITE DTLIMITE,
+             P.DT_LIMITE DATALIMITE,
              I.NUMPED,
              C.CONDVENDA TIPOVENDA,
              I.CODCLI,
@@ -65,7 +84,7 @@ BEGIN
         OR S.CODFILIAL <> P.CODFILIAL
         OR S.CODFILIALRETIRA <> P.CODFILIALRETIRA
         OR S.DATA <> P.DATA
-        OR S.DTLIMITE <> P.DTLIMITE
+        OR S.DATALIMITE <> P.DATALIMITE
         OR S.TIPOVENDA <> P.TIPOVENDA
         OR S.CODCLI <> P.CODCLI
         OR S.CODPROD <> P.CODPROD
@@ -97,9 +116,9 @@ BEGIN
              CODUSUR           = temp_rec.CODUSUR,
              POSICAO           = temp_rec.POSICAO,
              TIPOBLOQUEIO      = temp_rec.TIPOBLOQUEIO,
+             MOTIVOBLOQUEIO    = temp_rec.MOTIVOBLOQUEIO,
              OBSPEDIDO         = temp_rec.OBSPEDIDO,
-             CODMOTIVOPENDENTE = temp_rec.CODMOTIVOPENDENTE,
-      
+             CODMOTIVOPENDENTE = temp_rec.CODMOTIVOPENDENTE
        WHERE NUMPED = temp_rec.NUMPED
          AND CODPROD = temp_rec.CODPROD;
     
@@ -120,6 +139,7 @@ BEGIN
            CODUSUR,
            POSICAO,
            TIPOBLOQUEIO,
+           MOTIVOBLOQUEIO,
            OBSPEDIDO,
            CODMOTIVOPENDENTE,
            DT_UPDATE)
@@ -139,6 +159,7 @@ BEGIN
            temp_rec.CODUSUR,
            temp_rec.POSICAO,
            temp_rec.TIPOBLOQUEIO,
+           temp_rec.MOTIVOBLOQUEIO,
            temp_rec.OBSPEDIDO,
            temp_rec.CODMOTIVOPENDENTE,
            SYSDATE);
@@ -155,5 +176,5 @@ BEGIN
   COMMIT;
 
   -- Exclui os registros da tabela temporária TEMP criada;
-  EXECUTE IMMEDIATE 'DROP TABLE TEMP_PEDIDO_VENDA';
+  EXECUTE IMMEDIATE 'DELETE TEMP_PEDIDO_VENDA';
 END;
