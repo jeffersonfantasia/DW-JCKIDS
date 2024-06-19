@@ -1078,38 +1078,5 @@ BEGIN
   ON COMMIT PRESERVE ROWS ';
   END IF;
 
-  ----BI_SINC_RLS_GERENTE
-  SELECT COUNT(*)
-    INTO v_table_exists
-    FROM user_tables
-   WHERE table_name = 'BI_SINC_RLS_GERENTE';
-  IF v_table_exists = 0 THEN
-    EXECUTE IMMEDIATE 'CREATE TABLE BI_SINC_RLS_GERENTE
-  (
-     CODUSUARIO     NUMBER(3),
-     EMAIL          VARCHAR2(80),
-     AREA           VARCHAR2(25),
-     CODSUPERVISOR  NUMBER(4),
-     DT_UPDATE      DATE,
-     CONSTRAINT PK_RLS_GERENTE PRIMARY KEY (CODUSUARIO)
-  )';
-  END IF;
-
-  ----TEMP_RLS_GERENTE
-  SELECT COUNT(*)
-    INTO v_table_exists
-    FROM user_tables
-   WHERE table_name = 'TEMP_RLS_GERENTE';
-  IF v_table_exists = 0 THEN
-    EXECUTE IMMEDIATE 'CREATE GLOBAL TEMPORARY TABLE TEMP_RLS_GERENTE
-  (
-     CODUSUARIO     NUMBER(3),
-     EMAIL          VARCHAR2(80),
-     AREA           VARCHAR2(25),
-     CODSUPERVISOR  NUMBER(4)
-  )
-  ON COMMIT PRESERVE ROWS ';
-  END IF;
-
 
 END;
