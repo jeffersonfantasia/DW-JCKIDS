@@ -17,6 +17,7 @@ BEGIN
      PRODUTOFILHO,
      CODFORNEC,
      CODMARCA,
+     MARCA,
      CODFAB,
      CODBARRAS,
      CODBARRASMASTER,
@@ -56,6 +57,7 @@ BEGIN
              END) PRODUTOFILHO,
              P.CODFORNEC,
              P.CODMARCA,
+             UPPER(M.MARCA) MARCA,
              P.CODFAB,
              P.CODAUXILIAR CODBARRAS,
              P.CODAUXILIAR2 CODBARRASMASTER,
@@ -90,6 +92,7 @@ BEGIN
         LEFT JOIN PCSECAO C ON C.CODSEC = P.CODSEC
         LEFT JOIN PCCATEGORIA A ON A.CODCATEGORIA = P.CODCATEGORIA
         LEFT JOIN PCLINHAPROD L ON L.CODLINHA = P.CODLINHAPROD
+        LEFT JOIN PCMARCA M ON M.CODMARCA = P.CODMARCA
        WHERE P.CODAUXILIAR IS NOT NULL
          AND P.CODEPTO IS NOT NULL
          AND P.CODSEC IS NOT NULL
@@ -115,6 +118,7 @@ BEGIN
         OR S.PRODUTOFILHO <> P.PRODUTOFILHO
         OR S.CODFORNEC <> P.CODFORNEC
         OR S.CODMARCA <> P.CODMARCA
+        OR S.MARCA <> P.MARCA
         OR S.CODFAB <> P.CODFAB
         OR S.CODBARRAS <> P.CODBARRAS
         OR S.CODBARRASMASTER <> P.CODBARRASMASTER
@@ -152,6 +156,7 @@ BEGIN
              PRODUTOFILHO    = temp_rec.PRODUTOFILHO,
              CODFORNEC       = temp_rec.CODFORNEC,
              CODMARCA        = temp_rec.CODMARCA,
+             MARCA           = temp_rec.MARCA,
              CODFAB          = temp_rec.CODFAB,
              CODBARRAS       = temp_rec.CODBARRAS,
              CODBARRASMASTER = temp_rec.CODBARRASMASTER,
@@ -188,6 +193,7 @@ BEGIN
            PRODUTOFILHO,
            CODFORNEC,
            CODMARCA,
+           MARCA,
            CODFAB,
            CODBARRAS,
            CODBARRASMASTER,
@@ -221,6 +227,7 @@ BEGIN
            temp_rec.PRODUTOFILHO,
            temp_rec.CODFORNEC,
            temp_rec.CODMARCA,
+           temp_rec.MARCA,
            temp_rec.CODFAB,
            temp_rec.CODBARRAS,
            temp_rec.CODBARRASMASTER,
