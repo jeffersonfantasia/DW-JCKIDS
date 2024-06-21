@@ -1,4 +1,8 @@
 CREATE OR REPLACE PROCEDURE PRC_SINC_PEDIDO_COMPRA AS
+
+   vDATA_MOV_INCREMENTAL DATE := TRUNC(SYSDATE) - 90;
+   --vDATA_MOV_INCREMENTAL DATE := TO_DATE('01/01/2014', 'DD/MM/YYYY'); 
+
 BEGIN
   -- Insere os resultados novos ou alterados na tabela TEMP
   INSERT INTO TEMP_PCITEM
@@ -68,7 +72,9 @@ BEGIN
       LEFT JOIN BI_SINC_PEDIDO_COMPRA S ON S.NUMPED = P.NUMPED
                                        AND S.CODPROD = P.CODPROD
                                        AND S.NUMSEQ = P.NUMSEQ
-     WHERE S.DT_UPDATE IS NULL
+     WHERE 1 = 1 
+       AND P.DATA >= vDATA_MOV_INCREMENTAL
+       AND (S.DT_UPDATE IS NULL
         OR S.CODFILIAL <> P.CODFILIAL
         OR S.DATA <> P.DATA
         OR S.CODFORNEC <> P.CODFORNEC
@@ -77,7 +83,7 @@ BEGIN
         OR S.PRECOCOMPRA <> P.PRECOCOMPRA
         OR S.QTPEDIDA <> P.QTPEDIDA
         OR S.QTENTREGUE <> P.QTENTREGUE
-        OR S.VLSALDO <> P.VLSALDO;
+        OR S.VLSALDO <> P.VLSALDO);
 
   -- Atualiza ou insere os resultados na tabela BI_SINC conforme as condições mencionadas
   FOR temp_rec IN (SELECT * FROM TEMP_PCITEM)
