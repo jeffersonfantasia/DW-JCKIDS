@@ -1,7 +1,7 @@
 CREATE OR REPLACE PROCEDURE PRC_SINC_PEDIDO_VENDA AS
 
-   --vDATA_MOV_INCREMENTAL DATE := TRUNC(SYSDATE) - 90;
-   vDATA_MOV_INCREMENTAL DATE := TO_DATE('01/01/2014', 'DD/MM/YYYY'); 
+   vDATA_MOV_INCREMENTAL DATE := TRUNC(SYSDATE) - 90;
+   --vDATA_MOV_INCREMENTAL DATE := TO_DATE('01/01/2014', 'DD/MM/YYYY'); 
 
 BEGIN
   -- Insere os resultados novos ou alterados na tabela TEMP
@@ -13,6 +13,7 @@ BEGIN
      NUMPED,
      TIPOVENDA,
      CODCLI,
+     NUMSEQ,
      CODPROD,
      QT,
      PVENDA,
@@ -47,6 +48,7 @@ BEGIN
              I.NUMPED,
              C.CONDVENDA TIPOVENDA,
              I.CODCLI,
+             I.NUMSEQ,
              I.CODPROD,
              I.QT,
              I.PVENDA,
@@ -84,6 +86,7 @@ BEGIN
       FROM PEDIDOS P
       LEFT JOIN BI_SINC_PEDIDO_VENDA S ON S.NUMPED = P.NUMPED
                                       AND S.CODPROD = P.CODPROD
+                                      AND S.NUMSEQ = P.NUMSEQ
      WHERE 1 = 1 
        AND P.DATA >= vDATA_MOV_INCREMENTAL
        AND (S.DT_UPDATE IS NULL
@@ -95,8 +98,8 @@ BEGIN
         OR S.CODCLI <> P.CODCLI
         OR S.CODPROD <> P.CODPROD
         OR S.QT <> P.QT
-        OR S.PVENDA <> P.PVENDA
-        OR S.VLPEDIDO <> P.VLPEDIDO
+        OR ROUND(S.PVENDA,6) <> ROUND(P.PVENDA,6)
+        OR ROUND(S.VLPEDIDO,6) <> ROUND(P.VLPEDIDO,6)
         OR S.CODUSUR <> P.CODUSUR
         OR S.POSICAO <> P.POSICAO
         OR NVL(S.TIPOBLOQUEIO,'-') <> P.TIPOBLOQUEIO
@@ -126,7 +129,8 @@ BEGIN
              OBSPEDIDO         = temp_rec.OBSPEDIDO,
              CODMOTIVOPENDENTE = temp_rec.CODMOTIVOPENDENTE
        WHERE NUMPED = temp_rec.NUMPED
-         AND CODPROD = temp_rec.CODPROD;
+         AND CODPROD = temp_rec.CODPROD
+         AND NUMSEQ = temp_rec.NUMSEQ;
     
       IF SQL%NOTFOUND THEN
         INSERT INTO BI_SINC_PEDIDO_VENDA
@@ -137,6 +141,7 @@ BEGIN
            NUMPED,
            TIPOVENDA,
            CODCLI,
+           NUMSEQ,
            CODPROD,
            QT,
            PVENDA,
@@ -157,6 +162,7 @@ BEGIN
            temp_rec.NUMPED,
            temp_rec.TIPOVENDA,
            temp_rec.CODCLI,
+           temp_rec.NUMSEQ,
            temp_rec.CODPROD,
            temp_rec.QT,
            temp_rec.PVENDA,
