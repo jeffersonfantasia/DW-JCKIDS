@@ -970,6 +970,7 @@ BEGIN
      DATALIMITE        DATE,
      NUMPED            NUMBER(10),
      TIPOVENDA         NUMBER(5),
+     NUMSEQ            NUMBER(6),
      CODCLI            NUMBER(6),
      CODPROD           NUMBER(6),
      QT                NUMBER(20, 6),
@@ -983,7 +984,7 @@ BEGIN
      OBSPEDIDO         VARCHAR2(25),
      CODMOTIVOPENDENTE NUMBER(2),
      DT_UPDATE         DATE,
-     CONSTRAINT PK_PEDIDO_VENDA PRIMARY KEY (NUMPED, CODPROD)
+     CONSTRAINT PK_PEDIDO_VENDA PRIMARY KEY (NUMPED, CODPROD, NUMSEQ)
   )  ';
   END IF;
 
@@ -1002,6 +1003,7 @@ BEGIN
      NUMPED            NUMBER(10),
      TIPOVENDA         NUMBER(5),
      CODCLI            NUMBER(6),
+     NUMSEQ            NUMBER(6),
      CODPROD           NUMBER(6),
      QT                NUMBER(20, 6),
      PVENDA            NUMBER(18, 6),
