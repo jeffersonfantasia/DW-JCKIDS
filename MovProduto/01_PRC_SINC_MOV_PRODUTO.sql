@@ -1,7 +1,7 @@
 CREATE OR REPLACE PROCEDURE PRC_SINC_MOV_PRODUTO AS
    vALIQ_ICMS_ES_BENEFICIO NUMBER := 0.011385;
    vDATA_MOV_INCREMENTAL DATE := TRUNC(SYSDATE) - 90;
-	 --vDATA_MOV_INCREMENTAL DATE := TO_DATE('01/01/2014', 'DD/MM/YYYY'); 
+   --vDATA_MOV_INCREMENTAL DATE := TO_DATE('01/01/2014', 'DD/MM/YYYY'); 
 
 BEGIN
   -- Insere os resultados novos ou alterados na tabela TEMP
@@ -405,7 +405,8 @@ BEGIN
         OR S.PERCCOFINS <> M.PERCCOFINS
         OR S.VLICMSDIFAL <> M.VLICMSDIFAL
         OR S.VLCMVGERENCIAL <> M.VLCMVGERENCIAL
-        OR S.VLCMVCONTABIL <> M.VLCMVCONTABIL);
+        OR S.VLCMVCONTABIL <> M.VLCMVCONTABIL
+        OR NVL(S.DTCANCEL,TO_DATE('01/01/1889','DD/MM/YYYY')) <> M.DTCANCEL);
 
   -- Atualiza ou insere os resultados na tabela BI_SINC conforme as condições mencionadas
   FOR temp_rec IN (SELECT * FROM TEMP_MOV_PRODUTO)
@@ -455,6 +456,7 @@ BEGIN
              VLICMSDIFAL     = temp_rec.VLICMSDIFAL,
              VLCMVGERENCIAL  = temp_rec.VLCMVGERENCIAL,
              VLCMVCONTABIL   = temp_rec.VLCMVCONTABIL,
+             DTCANCEL        = temp_rec.DTCANCEL,
              DT_UPDATE       = SYSDATE
        WHERE NUMTRANSITEM = temp_rec.NUMTRANSITEM;
       IF SQL%NOTFOUND
