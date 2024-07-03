@@ -18,6 +18,7 @@ BEGIN
      CODFORNEC,
      CODMARCA,
      MARCA,
+     TIPOCOMISSAO,
      CODFAB,
      CODBARRAS,
      CODBARRASMASTER,
@@ -34,6 +35,7 @@ BEGIN
      TIPOMERCADORIA,
      FORALINHA,
      CERTIFICACAO)
+
     WITH PRODUTOS AS
      (SELECT P.CODPROD,
              P.DESCRICAO PRODUTO,
@@ -57,7 +59,8 @@ BEGIN
              END) PRODUTOFILHO,
              P.CODFORNEC,
              P.CODMARCA,
-             UPPER(M.MARCA) MARCA,
+             TRIM(UPPER(M.MARCA)) MARCA,
+             TRIM(UPPER(M.TITULO)) TIPOCOMISSAO,
              P.CODFAB,
              P.CODAUXILIAR CODBARRAS,
              P.CODAUXILIAR2 CODBARRASMASTER,
@@ -100,7 +103,8 @@ BEGIN
          AND P.CODFORNEC IS NOT NULL
          AND P.CODMARCA IS NOT NULL
          AND P.CODFAB IS NOT NULL)
-    SELECT P.*
+    
+		SELECT P.*
       FROM PRODUTOS P
       LEFT JOIN BI_SINC_PRODUTO S ON S.CODPROD = P.CODPROD
      WHERE S.DT_UPDATE IS NULL
@@ -119,6 +123,7 @@ BEGIN
         OR S.CODFORNEC <> P.CODFORNEC
         OR S.CODMARCA <> P.CODMARCA
         OR S.MARCA <> P.MARCA
+        OR S.TIPOCOMISSAO <> P.TIPOCOMISSAO
         OR S.CODFAB <> P.CODFAB
         OR S.CODBARRAS <> P.CODBARRAS
         OR S.CODBARRASMASTER <> P.CODBARRASMASTER
@@ -157,6 +162,7 @@ BEGIN
              CODFORNEC       = temp_rec.CODFORNEC,
              CODMARCA        = temp_rec.CODMARCA,
              MARCA           = temp_rec.MARCA,
+             TIPOCOMISSAO    = temp_rec.TIPOCOMISSAO,
              CODFAB          = temp_rec.CODFAB,
              CODBARRAS       = temp_rec.CODBARRAS,
              CODBARRASMASTER = temp_rec.CODBARRASMASTER,
@@ -194,6 +200,7 @@ BEGIN
            CODFORNEC,
            CODMARCA,
            MARCA,
+           TIPOCOMISSAO,
            CODFAB,
            CODBARRAS,
            CODBARRASMASTER,
@@ -228,6 +235,7 @@ BEGIN
            temp_rec.CODFORNEC,
            temp_rec.CODMARCA,
            temp_rec.MARCA,
+           temp_rec.TIPOCOMISSAO,
            temp_rec.CODFAB,
            temp_rec.CODBARRAS,
            temp_rec.CODBARRASMASTER,
