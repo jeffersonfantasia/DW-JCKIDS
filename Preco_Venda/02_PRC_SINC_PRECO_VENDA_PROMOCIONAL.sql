@@ -6,33 +6,42 @@ BEGIN
      CODFILIAL,
      CODPROD,
      NUMREGIAO,
+     CODATIVIDADE,
      PRECOPROMOCIONAL,
      DTINICIOPROMOCAO,
-     DTFIMPROMOCAO)
+     DTFIMPROMOCAO,
+     ATIVO)
+  
     WITH PRECO AS
      (SELECT M.CODPRECOPROM,
              M.CODFILIAL,
              M.CODPROD,
              M.NUMREGIAO,
+             NVL(M.CODATIV, 0) CODATIVIDADE,
              M.PRECOFIXO PRECOPROMOCIONAL,
              M.DTINICIOVIGENCIA DTINICIOPROMOCAO,
-             M.DTFIMVIGENCIA DTFIMPROMOCAO
+             M.DTFIMVIGENCIA DTFIMPROMOCAO,
+             (CASE
+               WHEN M.DTINICIOVIGENCIA <= TRUNC(SYSDATE) AND
+                    M.DTFIMVIGENCIA >= TRUNC(SYSDATE) THEN
+                'S'
+               ELSE
+                'N'
+             END) ATIVO
         FROM PCPRECOPROM M
-        JOIN BI_SINC_PRODUTO P ON P.CODPROD = M.CODPROD
-      WHERE DTINICIOVIGENCIA <= TRUNC(SYSDATE)
-      AND DTFIMVIGENCIA >= TRUNC(SYSDATE)
-      )
+        JOIN BI_SINC_PRODUTO P ON P.CODPROD = M.CODPROD)
     SELECT P.*
       FROM PRECO P
-      LEFT JOIN BI_SINC_PRECO_VENDA_PROMOCIONAL S ON S.CODPRECOPROM =
-                                                     P.CODPRECOPROM
+      LEFT JOIN BI_SINC_PRECO_VENDA_PROMOCIONAL S ON S.CODPRECOPROM = P.CODPRECOPROM
      WHERE S.DT_UPDATE IS NULL
         OR S.CODFILIAL <> P.CODFILIAL
         OR S.CODPROD <> P.CODPROD
         OR S.NUMREGIAO <> P.NUMREGIAO
+        OR S.CODATIVIDADE <> P.CODATIVIDADE
         OR S.PRECOPROMOCIONAL <> P.PRECOPROMOCIONAL
         OR S.DTINICIOPROMOCAO <> P.DTINICIOPROMOCAO
-        OR S.DTFIMPROMOCAO <> P.DTFIMPROMOCAO;
+        OR S.DTFIMPROMOCAO <> P.DTFIMPROMOCAO
+        OR S.ATIVO <> P.ATIVO;
 
   -- Atualiza ou insere os resultados na tabela BI_SINC conforme as condições mencionadas
   FOR temp_rec IN (SELECT * FROM TEMP_PRECO_VENDA_PROMOCIONAL)
@@ -43,30 +52,35 @@ BEGIN
          SET CODFILIAL        = temp_rec.CODFILIAL,
              CODPROD          = temp_rec.CODPROD,
              NUMREGIAO        = temp_rec.NUMREGIAO,
+             CODATIVIDADE     = temp_rec.CODATIVIDADE,
              PRECOPROMOCIONAL = temp_rec.PRECOPROMOCIONAL,
              DTINICIOPROMOCAO = temp_rec.DTINICIOPROMOCAO,
-             DTFIMPROMOCAO    = temp_rec.DTFIMPROMOCAO
+             DTFIMPROMOCAO    = temp_rec.DTFIMPROMOCAO,
+             ATIVO            = temp_rec.ATIVO
        WHERE CODPRECOPROM = temp_rec.CODPRECOPROM;
     
-      IF SQL%NOTFOUND
-      THEN
+      IF SQL%NOTFOUND THEN
         INSERT INTO BI_SINC_PRECO_VENDA_PROMOCIONAL
           (CODPRECOPROM,
            CODFILIAL,
            CODPROD,
            NUMREGIAO,
+           CODATIVIDADE,
            PRECOPROMOCIONAL,
            DTINICIOPROMOCAO,
            DTFIMPROMOCAO,
+           ATIVO,
            DT_UPDATE)
         VALUES
           (temp_rec.CODPRECOPROM,
            temp_rec.CODFILIAL,
            temp_rec.CODPROD,
            temp_rec.NUMREGIAO,
+           temp_rec.CODATIVIDADE,
            temp_rec.PRECOPROMOCIONAL,
            temp_rec.DTINICIOPROMOCAO,
            temp_rec.DTFIMPROMOCAO,
+           temp_rec.ATIVO,
            SYSDATE);
       END IF;
     EXCEPTION
@@ -79,9 +93,6 @@ BEGIN
   END LOOP;
 
   COMMIT;
-
-  -- Exclui os registros vencidos que naão fazem mais parte da promocao ativa
-  EXECUTE IMMEDIATE 'DELETE FROM BI_SINC_PRECO_VENDA_PROMOCIONAL WHERE DTFIMPROMOCAO < TRUNC(SYSDATE)';
 
   -- Exclui os registros da tabela temporária TEMP criada;
   EXECUTE IMMEDIATE 'DELETE TEMP_PRECO_VENDA_PROMOCIONAL';
