@@ -1,7 +1,7 @@
 CREATE OR REPLACE PROCEDURE PRC_SINC_CLIENTE AS
 BEGIN
   -- Insere os resultados novos ou alterados na tabela TEMP
-  INSERT INTO TEMP_PCCLIENT
+  INSERT INTO TEMP_CLIENTE
     (CODCLI,
      CLIENTE,
      CODCLIREDE,
@@ -16,7 +16,9 @@ BEGIN
      RAMOATIVIDADE,
      BLOQUEIODEFINITIVO,
      BLOQUEIOATUAL,
-     LIMITECREDITO)
+     LIMITECREDITO,
+     DTCADASTRO)
+
     WITH CLIENTES AS
      (SELECT C.CODCLI,
              C.CLIENTE,
@@ -44,7 +46,8 @@ BEGIN
              A.RAMO RAMOATIVIDADE,
              C.BLOQUEIODEFINITIVO,
              C.BLOQUEIO BLOQUEIOATUAL,
-             C.LIMCRED LIMITECREDITO
+             C.LIMCRED LIMITECREDITO,
+             C.DTCADASTRO
         FROM PCCLIENT C
         LEFT JOIN PCREDECLIENTE R ON R.CODREDE = C.CODREDE
         LEFT JOIN PCPRACA P ON P.CODPRACA = C.CODPRACA
@@ -66,10 +69,11 @@ BEGIN
         OR S.RAMOATIVIDADE <> C.RAMOATIVIDADE
         OR S.BLOQUEIODEFINITIVO <> C.BLOQUEIODEFINITIVO
         OR S.BLOQUEIOATUAL <> C.BLOQUEIOATUAL
-        OR S.LIMITECREDITO <> C.LIMITECREDITO;
+        OR S.LIMITECREDITO <> C.LIMITECREDITO
+        OR S.DTCADASTRO <> C.DTCADASTRO;
 
   -- Atualiza ou insere os resultados na tabela BI_SINC conforme as condições mencionadas
-  FOR temp_rec IN (SELECT * FROM TEMP_PCCLIENT)
+  FOR temp_rec IN (SELECT * FROM TEMP_CLIENTE)
   
   LOOP
     BEGIN
@@ -88,6 +92,7 @@ BEGIN
              BLOQUEIODEFINITIVO = temp_rec.BLOQUEIODEFINITIVO,
              BLOQUEIOATUAL      = temp_rec.BLOQUEIOATUAL,
              LIMITECREDITO      = temp_rec.LIMITECREDITO,
+             DTCADASTRO         = temp_rec.DTCADASTRO,
              DT_UPDATE          = SYSDATE
        WHERE CODCLI = temp_rec.CODCLI;
     
@@ -109,6 +114,7 @@ BEGIN
            BLOQUEIODEFINITIVO,
            BLOQUEIOATUAL,
            LIMITECREDITO,
+           DTCADASTRO,
            DT_UPDATE)
         VALUES
           (temp_rec.CODCLI,
@@ -126,6 +132,7 @@ BEGIN
            temp_rec.BLOQUEIODEFINITIVO,
            temp_rec.BLOQUEIOATUAL,
            temp_rec.LIMITECREDITO,
+           temp_rec.DTCADASTRO,
            SYSDATE);
       END IF;
     EXCEPTION
@@ -140,5 +147,5 @@ BEGIN
   COMMIT;
 
   -- Exclui os registros da tabela temporária TEMP criada;
-  EXECUTE IMMEDIATE 'DELETE TEMP_PCCLIENT';
+  EXECUTE IMMEDIATE 'DELETE TEMP_CLIENTE';
 END;
