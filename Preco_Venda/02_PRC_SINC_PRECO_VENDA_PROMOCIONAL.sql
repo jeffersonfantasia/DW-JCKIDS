@@ -1,16 +1,6 @@
 CREATE OR REPLACE PROCEDURE PRC_SINC_PRECO_VENDA_PROMOCIONAL AS
 BEGIN
-  -- Insere os resultados novos ou alterados na tabela TEMP
-  INSERT INTO TEMP_PRECO_VENDA_PROMOCIONAL
-    (CODPRECOPROM,
-     CODFILIAL,
-     CODPROD,
-     NUMREGIAO,
-     CODATIVIDADE,
-     PRECOPROMOCIONAL,
-     DTINICIOPROMOCAO,
-     DTFIMPROMOCAO,
-     ATIVO)
+FOR temp_rec IN (
   
     WITH PRECO AS
      (SELECT M.CODPRECOPROM,
@@ -41,10 +31,10 @@ BEGIN
         OR S.PRECOPROMOCIONAL <> P.PRECOPROMOCIONAL
         OR S.DTINICIOPROMOCAO <> P.DTINICIOPROMOCAO
         OR S.DTFIMPROMOCAO <> P.DTFIMPROMOCAO
-        OR S.ATIVO <> P.ATIVO;
+        OR S.ATIVO <> P.ATIVO
+)
 
   -- Atualiza ou insere os resultados na tabela BI_SINC conforme as condições mencionadas
-  FOR temp_rec IN (SELECT * FROM TEMP_PRECO_VENDA_PROMOCIONAL)
   
   LOOP
     BEGIN
@@ -93,7 +83,4 @@ BEGIN
   END LOOP;
 
   COMMIT;
-
-  -- Exclui os registros da tabela temporária TEMP criada;
-  EXECUTE IMMEDIATE 'DELETE TEMP_PRECO_VENDA_PROMOCIONAL';
 END;
