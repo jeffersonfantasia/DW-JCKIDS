@@ -1,13 +1,8 @@
 CREATE OR REPLACE PROCEDURE PRC_SINC_FORNECEDOR AS
 BEGIN
-  -- Insere os resultados novos ou alterados na tabela TEMP
-  INSERT INTO TEMP_FORNECEDOR
-    (CODFORNEC,
-     FORNECEDOR,
-     CODFORNECPRINC,
-     FORNECPRINC,
-     CNPJ,
-     TIPO)
+
+FOR temp_rec IN (
+
     WITH FORNECEDORES AS
      (SELECT F.CODFORNEC,
              F.FORNECEDOR,
@@ -40,10 +35,10 @@ BEGIN
         OR S.CODFORNECPRINC <> F.CODFORNECPRINC
         OR S.FORNECPRINC <> F.FORNECPRINC
         OR S.CNPJ <> F.CNPJ
-        OR NVL(S.TIPO, 'S') <> F.TIPO;
+        OR NVL(S.TIPO, 'S') <> F.TIPO
+)
 
   -- Atualiza ou insere os resultados na tabela BI_SINC conforme as condições mencionadas
-  FOR temp_rec IN (SELECT * FROM TEMP_FORNECEDOR)
   
   LOOP
     BEGIN
@@ -85,6 +80,4 @@ BEGIN
 
   COMMIT;
 
-  -- Exclui os registros da tabela temporária TEMP criada;
-  EXECUTE IMMEDIATE 'DELETE TEMP_FORNECEDOR';
 END;
