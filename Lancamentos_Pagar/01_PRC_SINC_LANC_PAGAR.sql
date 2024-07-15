@@ -1,29 +1,8 @@
 CREATE OR REPLACE PROCEDURE PRC_SINC_LANC_PAGAR AS
 BEGIN
   -- Insere os resultados novos ou alterados na tabela TEMP
-  INSERT INTO TEMP_LANC_PAGAR
-    (RECNUM,
-     CODFILIAL,
-     DTCOMPETENCIA,
-     DTVENCIMENTO,
-     DTPAGAMENTO,
-     DTCONTABIL,
-     TIPO,
-     VALOR,
-     VLJUROS,
-     VLDESCONTO,
-		 VALORAPAGAR,
-     CODBANCO,
-     CODCONTA,
-     CODFORNEC,
-     TIPOPARCEIRO,
-     NUMTRANS,
-     NUMNOTA,
-     DUPLICATA,
-     HISTORICO,
-     OBSERVACAO,
-     RECNUMPRINC,
-     CODROTINABAIXA)
+FOR temp_rec IN (
+
     WITH LANCAMENTOS AS
      (SELECT L.RECNUM,
              L.CODFILIAL,
@@ -93,11 +72,11 @@ BEGIN
         OR S.HISTORICO <> L.HISTORICO
         OR S.OBSERVACAO <> L.OBSERVACAO
         OR S.RECNUMPRINC <> L.RECNUMPRINC
-        OR S.CODROTINABAIXA <> L.CODROTINABAIXA;
+        OR S.CODROTINABAIXA <> L.CODROTINABAIXA
+)
 
   -- Atualiza ou insere os resultados na tabela BI_SINC conforme as condições mencionadas
-  FOR temp_rec IN (SELECT * FROM TEMP_LANC_PAGAR)
-  
+
   LOOP
     BEGIN
       UPDATE BI_SINC_LANC_PAGAR
@@ -187,6 +166,4 @@ BEGIN
 
   COMMIT;
 
-  -- Exclui os registros da tabela temporária TEMP criada;
-  EXECUTE IMMEDIATE 'DELETE TEMP_LANC_PAGAR';
 END;
