@@ -4,23 +4,7 @@ CREATE OR REPLACE PROCEDURE PRC_SINC_PEDIDO_COMPRA AS
    --vDATA_MOV_INCREMENTAL DATE := TO_DATE('01/01/2014', 'DD/MM/YYYY'); 
 
 BEGIN
-  -- Insere os resultados novos ou alterados na tabela TEMP
-  INSERT INTO TEMP_PCITEM
-    (CODFILIAL,
-     DATA,
-     CODFORNEC,
-     CODCOMPRADOR,
-     TIPO,
-     NUMPED,
-     NUMSEQ,
-     CODPROD,
-     PRECOCOMPRA,
-     QTPEDIDA,
-     QTENTREGUE,
-     QTSALDO,
-     VLPEDIDO,
-     VLENTREGUE,
-     VLSALDO)
+FOR temp_rec IN (
     WITH PEDIDO_COMPRA AS
      (SELECT P.CODFILIAL,
              P.DTEMISSAO DATA,
@@ -83,10 +67,10 @@ BEGIN
         OR S.PRECOCOMPRA <> P.PRECOCOMPRA
         OR S.QTPEDIDA <> P.QTPEDIDA
         OR S.QTENTREGUE <> P.QTENTREGUE
-        OR S.VLSALDO <> P.VLSALDO);
+        OR S.VLSALDO <> P.VLSALDO)
+)
 
   -- Atualiza ou insere os resultados na tabela BI_SINC conforme as condições mencionadas
-  FOR temp_rec IN (SELECT * FROM TEMP_PCITEM)
   
   LOOP
     BEGIN
@@ -153,7 +137,7 @@ BEGIN
     END;
   END LOOP;
 
-  COMMIT;
+
   --EXCLUIR GERISTROS QUE NAO PERTENCEM MAIS A PCITEM
   BEGIN
     EXECUTE IMMEDIATE 'DELETE FROM BI_SINC_PEDIDO_COMPRA
@@ -168,6 +152,6 @@ BEGIN
          WHERE I.CODPROD IS NULL)';
   END;
 
-  -- Exclui os registros da tabela temporária TEMP criada;
-  EXECUTE IMMEDIATE 'DELETE TEMP_PCITEM';
+COMMIT;
+
 END;
