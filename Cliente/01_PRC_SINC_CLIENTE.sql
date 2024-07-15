@@ -1,23 +1,7 @@
 CREATE OR REPLACE PROCEDURE PRC_SINC_CLIENTE AS
 BEGIN
-  -- Insere os resultados novos ou alterados na tabela TEMP
-  INSERT INTO TEMP_CLIENTE
-    (CODCLI,
-     CLIENTE,
-     CODCLIREDE,
-     CLIENTEREDE,
-     CNPJ,
-     CEP,
-     UF,
-     CODUSUR,
-     CODPRACA,
-     PRACA,
-     CODATIVIDADE,
-     RAMOATIVIDADE,
-     BLOQUEIODEFINITIVO,
-     BLOQUEIOATUAL,
-     LIMITECREDITO,
-     DTCADASTRO)
+
+FOR temp_rec IN (
 
     WITH CLIENTES AS
      (SELECT C.CODCLI,
@@ -70,11 +54,11 @@ BEGIN
         OR S.BLOQUEIODEFINITIVO <> C.BLOQUEIODEFINITIVO
         OR S.BLOQUEIOATUAL <> C.BLOQUEIOATUAL
         OR S.LIMITECREDITO <> C.LIMITECREDITO
-        OR S.DTCADASTRO <> C.DTCADASTRO;
+        OR S.DTCADASTRO <> C.DTCADASTRO
+)
 
   -- Atualiza ou insere os resultados na tabela BI_SINC conforme as condições mencionadas
-  FOR temp_rec IN (SELECT * FROM TEMP_CLIENTE)
-  
+
   LOOP
     BEGIN
       UPDATE BI_SINC_CLIENTE
@@ -146,6 +130,4 @@ BEGIN
 
   COMMIT;
 
-  -- Exclui os registros da tabela temporária TEMP criada;
-  EXECUTE IMMEDIATE 'DELETE TEMP_CLIENTE';
 END;
