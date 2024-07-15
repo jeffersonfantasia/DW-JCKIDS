@@ -1,17 +1,16 @@
 CREATE OR REPLACE PROCEDURE PRC_SINC_COMPRADOR AS
 BEGIN
-  -- Insere os resultados novos ou alterados na tabela TEMP
-  INSERT INTO TEMP_PCEMPR
-    (MATRICULA, COMPRADOR)
-    SELECT E.MATRICULA, E.NOME_GUERRA
+
+FOR temp_rec IN (
+    SELECT E.MATRICULA, E.NOME_GUERRA COMPRADOR
       FROM PCEMPR E
       LEFT JOIN BI_SINC_COMPRADOR S ON S.MATRICULA = E.MATRICULA
      WHERE E.CODSETOR = 2
        AND S.DT_UPDATE IS NULL
-        OR S.COMPRADOR <> E.NOME_GUERRA;
+        OR S.COMPRADOR <> E.NOME_GUERRA
+)
 
   -- Atualiza ou insere os resultados na tabela BI_SINC conforme as condições mencionadas
-  FOR temp_rec IN (SELECT * FROM TEMP_PCEMPR)
   
   LOOP
     BEGIN
@@ -42,6 +41,4 @@ BEGIN
 
   COMMIT;
 
-  -- Exclui os registros da tabela temporária TEMP criada;
-  EXECUTE IMMEDIATE 'DELETE TEMP_PCEMPR';
 END;
