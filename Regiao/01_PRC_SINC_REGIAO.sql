@@ -1,18 +1,16 @@
 CREATE OR REPLACE PROCEDURE PRC_SINC_REGIAO AS
 BEGIN
-  -- Insere os resultados novos ou alterados na tabela TEMP
-  INSERT INTO TEMP_REGIAO
-    (NUMREGIAO,
-     REGIAO)
+
+FOR temp_rec IN (
     SELECT R.NUMREGIAO,
            R.REGIAO
       FROM PCREGIAO R
       LEFT JOIN BI_SINC_REGIAO S ON S.NUMREGIAO = R.NUMREGIAO
      WHERE S.DT_UPDATE IS NULL
-        OR S.REGIAO <> R.REGIAO;
+        OR S.REGIAO <> R.REGIAO
+)
 
   -- Atualiza ou insere os resultados na tabela BI_SINC conforme as condições mencionadas
-  FOR temp_rec IN (SELECT * FROM TEMP_REGIAO)
   
   LOOP
     BEGIN
@@ -42,6 +40,4 @@ BEGIN
 
   COMMIT;
 
-  -- Exclui os registros da tabela temporária TEMP criada;
-  EXECUTE IMMEDIATE 'DELETE TEMP_REGIAO';
 END;
