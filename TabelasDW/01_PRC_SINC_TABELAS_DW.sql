@@ -18,22 +18,6 @@ BEGIN
   )';
   END IF;
 
-  ----TEMP_FILIAL
-  SELECT COUNT(*)
-    INTO v_table_exists
-    FROM user_tables
-   WHERE table_name = 'TEMP_FILIAL';
-  IF v_table_exists = 0 THEN
-    EXECUTE IMMEDIATE 'CREATE GLOBAL TEMPORARY TABLE TEMP_FILIAL
-  (
-     CODFILIAL VARCHAR2(2),
-     EMPRESA   VARCHAR2(150),
-     FILIAL    VARCHAR2(25),
-     ORDEM     NUMBER(2)
-  )
-  ON COMMIT PRESERVE ROWS';
-  END IF;
-
   ----BI_SINC_PRODUTO
   SELECT COUNT(*)
     INTO v_table_exists
@@ -80,51 +64,6 @@ BEGIN
   )';
   END IF;
 
-  ----TEMP_PRODUT
-  SELECT COUNT(*)
-    INTO v_table_exists
-    FROM user_tables
-   WHERE table_name = 'TEMP_PRODUTO';
-  IF v_table_exists = 0 THEN
-    EXECUTE IMMEDIATE 'CREATE GLOBAL TEMPORARY TABLE TEMP_PRODUTO
-  (
-     CODPROD         NUMBER(6),
-     PRODUTO         VARCHAR2(40),
-     CODPRODMASTER   NUMBER(6),
-     PRODUTOMASTER   VARCHAR2(40),
-     CODDEPTO        NUMBER(6),
-     DEPARTAMENTO    VARCHAR2(25),
-     CODSECAO        NUMBER(6),
-     SECAO           VARCHAR2(40),
-     CODCATEGORIA    NUMBER(6),
-     CATEGORIA       VARCHAR2(40),
-     CODLINHA        NUMBER(6),
-     LINHA           VARCHAR2(40),
-     PRODUTOFILHO    VARCHAR2(1),
-     CODFORNEC       NUMBER(6),
-     CODMARCA        NUMBER(8),
-     MARCA           VARCHAR2(40),
-     TIPOCOMISSAO    VARCHAR2(40),
-     CODFAB          VARCHAR2(30),
-     CODBARRAS       NUMBER(20),
-     CODBARRASMASTER NUMBER(14),
-     PESO            NUMBER(12, 6),
-     LARGURA         NUMBER(20, 6),
-     ALTURA          NUMBER(20, 6),
-     COMPRIMENTO     NUMBER(20, 6),
-     VOLUME          NUMBER(20, 8),
-     QTCXMASTER      NUMBER(8, 2),
-     IMPORTADO       VARCHAR2(1),
-     REVENDA         VARCHAR2(1),
-     NCM             VARCHAR2(15),
-     NCMEX           VARCHAR2(20),
-     TIPOMERCADORIA  VARCHAR2(20),
-     FORALINHA       VARCHAR2(1),
-     CERTIFICACAO    VARCHAR2(200)
-  )
-  ON COMMIT PRESERVE ROWS ';
-  END IF;
-
   ----BI_SINC_FORNECEDOR
   SELECT COUNT(*)
     INTO v_table_exists
@@ -144,24 +83,6 @@ BEGIN
   )';
   END IF;
 
-  ----TEMP_FORNECEDOR
-  SELECT COUNT(*)
-    INTO v_table_exists
-    FROM user_tables
-   WHERE table_name = 'TEMP_FORNECEDOR';
-  IF v_table_exists = 0 THEN
-    EXECUTE IMMEDIATE 'CREATE GLOBAL TEMPORARY TABLE TEMP_FORNECEDOR
-  (
-     CODFORNEC      NUMBER(6),
-     FORNECEDOR     VARCHAR2(60),
-     CODFORNECPRINC NUMBER(6),
-     FORNECPRINC    VARCHAR2(70),
-     CNPJ           VARCHAR2(18),
-     TIPO           VARCHAR2(35)
-  )
-  ON COMMIT PRESERVE ROWS';
-  END IF;
-
   ----JFAREACOMERCIAL
   SELECT COUNT(*)
     INTO v_table_exists
@@ -174,20 +95,6 @@ BEGIN
      AREACOMERCIAL VARCHAR2(40),
      CONSTRAINT PK_CODAREA PRIMARY KEY (CODAREA)
   )';
-  END IF;
-
-  ----TEMP_JFAREACOMERCIAL
-  SELECT COUNT(*)
-    INTO v_table_exists
-    FROM user_tables
-   WHERE table_name = 'TEMP_JFAREACOMERCIAL';
-  IF v_table_exists = 0 THEN
-    EXECUTE IMMEDIATE 'CREATE GLOBAL TEMPORARY TABLE TEMP_JFAREACOMERCIAL
-  (
-     CODAREA       NUMBER(2),
-     AREACOMERCIAL VARCHAR2(40)
-  )
-  ON COMMIT PRESERVE ROWS ';
   END IF;
 
   ----BI_SINC_VENDEDOR
@@ -213,28 +120,6 @@ BEGIN
   )';
   END IF;
 
-  ----TEMP_PCUSUARI
-  SELECT COUNT(*)
-    INTO v_table_exists
-    FROM user_tables
-   WHERE table_name = 'TEMP_PCUSUARI';
-  IF v_table_exists = 0 THEN
-    EXECUTE IMMEDIATE 'CREATE GLOBAL TEMPORARY TABLE TEMP_PCUSUARI
-  (
-     CODUSUR       NUMBER(6),
-     NOMEORIGINAL  VARCHAR2(40),
-     VENDEDOR      VARCHAR2(40),
-     BLOQUEIO      VARCHAR2(1),
-     CODSUPERVISOR NUMBER(4),
-     SUPERVISOR    VARCHAR2(40),
-     CODGERENTE    NUMBER(4),
-     GERENTE       VARCHAR2(40),
-     CODAREA       NUMBER(2),
-     AREACOMERCIAL VARCHAR2(40)
-  )
-  ON COMMIT PRESERVE ROWS';
-  END IF;
-
   ----BI_SINC_COMPRADOR
   SELECT COUNT(*)
     INTO v_table_exists
@@ -248,20 +133,6 @@ BEGIN
      DT_UPDATE DATE,
      CONSTRAINT PK_MATRICULA PRIMARY KEY (MATRICULA)
   )';
-  END IF;
-
-  ----TEMP_PCEMPR
-  SELECT COUNT(*)
-    INTO v_table_exists
-    FROM user_tables
-   WHERE table_name = 'TEMP_PCEMPR';
-  IF v_table_exists = 0 THEN
-    EXECUTE IMMEDIATE 'CREATE GLOBAL TEMPORARY TABLE TEMP_PCEMPR
-  (
-     MATRICULA NUMBER(6),
-     COMPRADOR VARCHAR2(15)
-  )
-  ON COMMIT PRESERVE ROWS';
   END IF;
 
   ----BI_SINC_CLIENTE
@@ -291,34 +162,6 @@ BEGIN
      DT_UPDATE          DATE,
      CONSTRAINT PK_CODCLI PRIMARY KEY (CODCLI)
   )';
-  END IF;
-
-  ----TEMP_CLIENTE
-  SELECT COUNT(*)
-    INTO v_table_exists
-    FROM user_tables
-   WHERE table_name = 'TEMP_CLIENTE';
-  IF v_table_exists = 0 THEN
-    EXECUTE IMMEDIATE 'CREATE GLOBAL TEMPORARY TABLE TEMP_CLIENTE
-  (
-     CODCLI             NUMBER(6),
-     CLIENTE            VARCHAR2(60),
-     CODCLIREDE         VARCHAR2(8),
-     CLIENTEREDE        VARCHAR2(80),
-     CNPJ               VARCHAR2(18),
-     CEP                VARCHAR2(9),
-     UF                 VARCHAR2(2),
-     CODUSUR            NUMBER(4),
-     CODPRACA           NUMBER(4),
-     PRACA              VARCHAR2(25),
-     CODATIVIDADE       NUMBER(6),
-     RAMOATIVIDADE      VARCHAR2(40),
-     BLOQUEIODEFINITIVO VARCHAR2(1),
-     BLOQUEIOATUAL      VARCHAR2(1),
-     LIMITECREDITO      NUMBER(12, 2),
-     DTCADASTRO         DATE
-  )
-  ON COMMIT PRESERVE ROWS';
   END IF;
 
   ----BI_SINC_ESTOQUE
@@ -414,7 +257,6 @@ BEGIN
      VLCOFINS        NUMBER(18, 6),
      CUSTOLIQ        NUMBER(18, 6),
      BASEICMS        NUMBER(18, 6),
-     BASEST          NUMBER(18, 6),
      BASEPISCOFINS   NUMBER(18, 6),
      PERCPIS         NUMBER(18, 6),
      PERCCOFINS      NUMBER(18, 6),
@@ -431,44 +273,6 @@ BEGIN
      DT_UPDATE       DATE,
      CONSTRAINT PK_PRECO_COMPRA PRIMARY KEY (CODFILIAL, CODPROD)
   )';
-  END IF;
-
-  ----TEMP_PCPRODFILIAL
-  SELECT COUNT(*)
-    INTO v_table_exists
-    FROM user_tables
-   WHERE table_name = 'TEMP_PRECO_COMPRA';
-  IF v_table_exists = 0 THEN
-    EXECUTE IMMEDIATE 'CREATE GLOBAL TEMPORARY TABLE TEMP_PRECO_COMPRA
-  (
-     CODFILIAL       VARCHAR2(2),
-     CODPROD         NUMBER(6),
-     PTABELA         NUMBER(18, 6),
-     PCOMPRA         NUMBER(18, 6),
-     VLIPI           NUMBER(18, 6),
-     VLST            NUMBER(18, 6),
-     PBRUTO          NUMBER(18, 6),
-     VLCREDICMS      NUMBER(18, 6),
-     VLPIS           NUMBER(18, 6),
-     VLCOFINS        NUMBER(18, 6),
-     CUSTOLIQ        NUMBER(18, 6),
-     BASEICMS        NUMBER(18, 6),
-     BASEST          NUMBER(18, 6),
-     BASEPISCOFINS   NUMBER(18, 6),
-     PERCPIS         NUMBER(18, 6),
-     PERCCOFINS      NUMBER(18, 6),
-     PERCIPI         NUMBER(18, 6),
-     PERCICMS        NUMBER(18, 6),
-     PERCICMSRED     NUMBER(18, 6),
-     PERCCREDICMS    NUMBER(18, 6),
-     PERCIVA         NUMBER(18, 6),
-     PERCALIQEXT     NUMBER(18, 6),
-     PERCALIQINT     NUMBER(18, 6),
-     PERCALIQEXTGUIA NUMBER(18, 6),
-     REDBASEALIQEXT  NUMBER(18, 6),
-     PERCALIQSTRED   NUMBER(18, 6)
-  )
-  ON COMMIT PRESERVE ROWS';
   END IF;
 
   ----BI_SINC_MOV_PRODUTO
@@ -855,49 +659,6 @@ BEGIN
     DT_UPDATE               DATE,
     CONSTRAINT PK_BI_SINC_CALENDARIO PRIMARY KEY (DATA)
   )';
-  END IF;
-
-  ----TEMP_CALENDARIO
-  SELECT COUNT(*)
-    INTO v_table_exists
-    FROM user_tables
-   WHERE table_name = 'TEMP_CALENDARIO';
-  IF v_table_exists = 0 THEN
-    EXECUTE IMMEDIATE 'CREATE GLOBAL TEMPORARY TABLE TEMP_CALENDARIO
-  (
-    DATA                    DATE,
-    DIA                     NUMBER(2),
-    ANO                     NUMBER(4),
-    NUM_MES                 NUMBER(2),
-    NOME_MES                VARCHAR2(12),
-    NOME_MES_ABREV          VARCHAR2(3),
-    NUM_MES_ANO             NUMBER(6),
-    NUM_MES_ANO_SEQ         NUMBER(6),
-    MES_ANO                 VARCHAR2(8),
-    NUM_DIA_ANO             NUMBER(3),
-    NUM_TRIMESTRE           NUMBER(1),
-    NOME_TRIMESTRE          VARCHAR2(12),
-    NOME_TRIMESTRE_ABREV    VARCHAR2(6),
-    NUM_TRIMESTRE_ANO       NUMBER(6),
-    NOME_TRIMESTRE_ANO      VARCHAR2(12),
-    NUM_TRIMESTRE_JC        NUMBER(1),
-    NOME_TRIMESTRE_JC       VARCHAR2(12),
-    NOME_TRIMESTRE_ABREV_JC VARCHAR2(6),
-    NUM_TRIMESTRE_ANO_JC    NUMBER(6),
-    NOME_TRIMESTRE_ANO_JC   VARCHAR2(12),
-    NUM_SEMANA_MES          NUMBER(1),
-    NOME_SEMANA_MES         VARCHAR2(10),
-    NUM_SEMANA_ANO          NUMBER(2),
-    NOME_SEMANA_ANO         VARCHAR2(12),
-    NUM_DIA_SEMANA          NUMBER(1),
-    NOME_DIA_SEMANA         VARCHAR2(14),
-    NOME_DIA_SEMANA_ABREV   VARCHAR2(3),
-    CALCULO_MES_ATUAL       NUMBER(4),
-    CALCULO_TRIMESTRE_ATUAL NUMBER(4),
-    CALCULO_ANO_ATUAL       NUMBER(4),
-    DIA_UTIL_FINANCEIRO     DATE
-  )
-  ON COMMIT PRESERVE ROWS ';
   END IF;
 
   ----BI_SINC_TABELAS
