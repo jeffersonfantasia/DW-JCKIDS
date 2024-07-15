@@ -1,11 +1,7 @@
 CREATE OR REPLACE PROCEDURE PRC_SINC_TABELAS_UPDATE AS
 BEGIN
-  -- Insere os resultados novos ou alterados na tabela TEMP
-  INSERT INTO TEMP_TABELAS
-    (TABELA,
-     QTREGISTROS,
-     MAIOR_DTUPDATE,
-     LAST_REFRESH)
+
+FOR temp_rec IN (
     WITH TABELAS AS
      (SELECT TABLE_NAME TABELA,
              FN_BI_QTREGISTROS_TABELAS(TABLE_NAME) QTREGISTROS,
@@ -14,15 +10,16 @@ BEGIN
         FROM USER_TABLES T
        WHERE TABLE_NAME LIKE 'BI_SINC%'
        ORDER BY MAIOR_DTUPDATE DESC)
+
     SELECT T.*
       FROM TABELAS T
       LEFT JOIN BI_SINC_TABELAS S ON S.TABELA = T.TABELA
      WHERE S.DT_UPDATE IS NULL
         OR S.QTREGISTROS <> T.QTREGISTROS
-        OR S.MAIOR_DTUPDATE <> T.MAIOR_DTUPDATE;
+        OR S.MAIOR_DTUPDATE <> T.MAIOR_DTUPDATE
+)
 
   -- Atualiza ou insere os resultados na tabela BI_SINC conforme as condições mencionadas
-  FOR temp_rec IN (SELECT * FROM TEMP_TABELAS)
   
   LOOP
     BEGIN
@@ -58,6 +55,4 @@ BEGIN
 
   COMMIT;
 
-  -- Exclui os registros da tabela temporária TEMP criada;
-  EXECUTE IMMEDIATE 'DELETE TEMP_TABELAS';
 END;
