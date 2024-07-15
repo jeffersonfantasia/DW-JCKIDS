@@ -1,10 +1,9 @@
 CREATE OR REPLACE PROCEDURE PRC_CRIA_AREACOMERCIAL AS
 BEGIN
   -- Insere os resultados novos ou alterados na tabela TEMP
-  INSERT INTO TEMP_JFAREACOMERCIAL
-    (CODAREA, AREACOMERCIAL)
-        SELECT 1,
-           'DISTRIBUICAO'
+FOR temp_rec IN (
+        SELECT 1 CODAREA,
+           'DISTRIBUICAO' AREACOMERCIAL
       FROM DUAL
     UNION ALL
     SELECT 2,
@@ -17,9 +16,9 @@ BEGIN
     UNION ALL
     SELECT 4,
            'OUTROS'
-      FROM DUAL;
+      FROM DUAL
+)
 
-  FOR temp_rec IN (SELECT * FROM TEMP_JFAREACOMERCIAL)
   
   LOOP
     BEGIN
@@ -44,6 +43,5 @@ BEGIN
   END LOOP;
 
   COMMIT;
-  -- Exclui os registros da tabela temporária TEMP criada;
-  EXECUTE IMMEDIATE 'DELETE TEMP_JFAREACOMERCIAL';
+
 END;
