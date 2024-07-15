@@ -1,17 +1,8 @@
 CREATE OR REPLACE PROCEDURE PRC_SINC_VENDEDOR AS
 BEGIN
-  -- Insere os resultados novos ou alterados na tabela TEMP
-  INSERT INTO TEMP_PCUSUARI
-    (CODUSUR,
-     NOMEORIGINAL,
-     VENDEDOR,
-     BLOQUEIO,
-     CODSUPERVISOR,
-     SUPERVISOR,
-     CODGERENTE,
-     GERENTE,
-     CODAREA,
-     AREACOMERCIAL)
+
+FOR temp_rec IN (
+
     WITH VENDEDORES AS
      (SELECT U.CODUSUR,
              U.NOME NOMEORIGINAL,
@@ -63,10 +54,10 @@ BEGIN
         OR S.CODGERENTE <> V.CODGERENTE
         OR S.GERENTE <> V.GERENTE
         OR S.CODAREA <> V.CODAREA
-        OR S.AREACOMERCIAL <> V.AREACOMERCIAL;
+        OR S.AREACOMERCIAL <> V.AREACOMERCIAL
+)
 
   -- Atualiza ou insere os resultados na tabela BI_SINC conforme as condições mencionadas
-  FOR temp_rec IN (SELECT * FROM TEMP_PCUSUARI)
   
   LOOP
     BEGIN
@@ -120,6 +111,4 @@ BEGIN
 
   COMMIT;
 
-  -- Exclui os registros da tabela temporária TEMP criada;
-  EXECUTE IMMEDIATE 'DELETE TEMP_PCUSUARI';
 END;
