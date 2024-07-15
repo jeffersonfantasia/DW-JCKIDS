@@ -1,40 +1,6 @@
 CREATE OR REPLACE PROCEDURE PRC_SINC_PRODUTO AS
 BEGIN
-  -- Insere os resultados novos ou alterados na tabela TEMP
-  INSERT INTO TEMP_PRODUTO
-    (CODPROD,
-     PRODUTO,
-     CODPRODMASTER,
-     PRODUTOMASTER,
-     CODDEPTO,
-     DEPARTAMENTO,
-     CODSECAO,
-     SECAO,
-     CODCATEGORIA,
-     CATEGORIA,
-     CODLINHA,
-     LINHA,
-     PRODUTOFILHO,
-     CODFORNEC,
-     CODMARCA,
-     MARCA,
-     TIPOCOMISSAO,
-     CODFAB,
-     CODBARRAS,
-     CODBARRASMASTER,
-     PESO,
-     LARGURA,
-     ALTURA,
-     COMPRIMENTO,
-     VOLUME,
-     QTCXMASTER,
-     IMPORTADO,
-     REVENDA,
-     NCM,
-     NCMEX,
-     TIPOMERCADORIA,
-     FORALINHA,
-     CERTIFICACAO)
+FOR temp_rec IN (
 
     WITH PRODUTOS AS
      (SELECT P.CODPROD,
@@ -104,7 +70,7 @@ BEGIN
          AND P.CODMARCA IS NOT NULL
          AND P.CODFAB IS NOT NULL)
     
-		SELECT P.*
+    SELECT P.*
       FROM PRODUTOS P
       LEFT JOIN BI_SINC_PRODUTO S ON S.CODPROD = P.CODPROD
      WHERE S.DT_UPDATE IS NULL
@@ -139,10 +105,10 @@ BEGIN
         OR S.NCMEX <> P.NCMEX
         OR S.TIPOMERCADORIA <> P.TIPOMERCADORIA
         OR S.FORALINHA <> P.FORALINHA
-        OR S.CERTIFICACAO <> P.CERTIFICACAO;
+        OR S.CERTIFICACAO <> P.CERTIFICACAO
+)
 
   -- Atualiza ou insere os resultados na tabela BI_SINC conforme as condições mencionadas
-  FOR temp_rec IN (SELECT * FROM TEMP_PRODUTO)
   
   LOOP
     BEGIN
@@ -265,6 +231,4 @@ BEGIN
 
   COMMIT;
 
-  -- Exclui os registros da tabela temporária TEMP criada;
-  EXECUTE IMMEDIATE 'DELETE TEMP_PRODUTO';
 END;
