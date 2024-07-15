@@ -1,10 +1,7 @@
 CREATE OR REPLACE PROCEDURE PRC_SINC_META_VENDEDOR AS
 BEGIN
-  -- Insere os resultados novos ou alterados na tabela TEMP
-  INSERT INTO TEMP_META_VENDEDOR
-    (DATA,
-     CODUSUR,
-     VLMETA)
+FOR temp_rec IN (
+
     WITH META AS
      (SELECT M.DATA,
              M.CODUSUR,
@@ -19,10 +16,10 @@ BEGIN
       LEFT JOIN BI_SINC_META_VENDEDOR S ON S.DATA = M.DATA
                                        AND S.CODUSUR = M.CODUSUR
      WHERE S.DT_UPDATE IS NULL
-        OR S.VLMETA <> M.VLMETA;
+        OR S.VLMETA <> M.VLMETA
+)
 
   -- Atualiza ou insere os resultados na tabela BI_SINC conforme as condições mencionadas
-  FOR temp_rec IN (SELECT * FROM TEMP_META_VENDEDOR)
   
   LOOP
     BEGIN
@@ -55,6 +52,4 @@ BEGIN
 
   COMMIT;
 
-  -- Exclui os registros da tabela temporária TEMP criada;
-  EXECUTE IMMEDIATE 'DELETE TEMP_META_VENDEDOR';
 END;
