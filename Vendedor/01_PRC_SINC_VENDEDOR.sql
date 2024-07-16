@@ -18,6 +18,7 @@ FOR temp_rec IN (
                ELSE
                 COALESCE(U.USURDIRFV, U.NOME)
              END) VENDEDOR,
+             NVL(U.CODFILIAL,'99') CODFILIAL,
              U.BLOQUEIO,
              U.CODSUPERVISOR,
              S.NOME SUPERVISOR,
@@ -33,6 +34,7 @@ FOR temp_rec IN (
      (SELECT 0 CODUSUR,
              'VENDEDOR COMPRADOR' NOMEORIGINAL,
              'VENDEDOR COMPRADOR' VENDEDOR,
+             '99' CODFILIAL,
              'N' BLOQUEIO,
              0 CODSUPERVISOR,
              'COMPRAS' SUPERVISOR,
@@ -43,11 +45,13 @@ FOR temp_rec IN (
         FROM DUAL),
     TABELA_VENDEDOR AS
      (SELECT * FROM VENDEDORES UNION ALL SELECT * FROM VENDEDOR_COMPRADOR)
+
     SELECT V.*
       FROM TABELA_VENDEDOR V
       LEFT JOIN BI_SINC_VENDEDOR S ON S.CODUSUR = V.CODUSUR
      WHERE S.DT_UPDATE IS NULL
         OR S.VENDEDOR <> V.VENDEDOR
+        OR S.CODFILIAL <> V.CODFILIAL
         OR S.BLOQUEIO <> V.BLOQUEIO
         OR S.CODSUPERVISOR <> V.CODSUPERVISOR
         OR S.SUPERVISOR <> V.SUPERVISOR
@@ -64,6 +68,7 @@ FOR temp_rec IN (
       UPDATE BI_SINC_VENDEDOR
          SET NOMEORIGINAL  = temp_rec.NOMEORIGINAL,
              VENDEDOR      = temp_rec.VENDEDOR,
+             CODFILIAL     = temp_rec.CODFILIAL,
              BLOQUEIO      = temp_rec.BLOQUEIO,
              CODSUPERVISOR = temp_rec.CODSUPERVISOR,
              SUPERVISOR    = temp_rec.SUPERVISOR,
@@ -79,6 +84,7 @@ FOR temp_rec IN (
           (CODUSUR,
            NOMEORIGINAL,
            VENDEDOR,
+           CODFILIAL,
            BLOQUEIO,
            CODSUPERVISOR,
            SUPERVISOR,
@@ -91,6 +97,7 @@ FOR temp_rec IN (
           (temp_rec.CODUSUR,
            temp_rec.NOMEORIGINAL,
            temp_rec.VENDEDOR,
+           temp_rec.CODFILIAL,
            temp_rec.BLOQUEIO,
            temp_rec.CODSUPERVISOR,
            temp_rec.SUPERVISOR,
