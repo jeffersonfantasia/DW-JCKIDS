@@ -18,6 +18,10 @@ FOR temp_rec IN (
                ELSE
                 COALESCE(U.USURDIRFV, U.NOME)
              END) VENDEDOR,
+             (CASE
+               WHEN U.CODUSUR = S.COD_CADRCA THEN 'GERENTE'
+               ELSE 'VENDEDOR'
+             END) CARGO,
              NVL(U.CODFILIAL,'99') CODFILIAL,
              U.BLOQUEIO,
              U.CODSUPERVISOR,
@@ -34,6 +38,7 @@ FOR temp_rec IN (
      (SELECT 0 CODUSUR,
              'VENDEDOR COMPRADOR' NOMEORIGINAL,
              'VENDEDOR COMPRADOR' VENDEDOR,
+             'COMPRADOR' CARGO,
              '99' CODFILIAL,
              'N' BLOQUEIO,
              0 CODSUPERVISOR,
@@ -52,6 +57,7 @@ FOR temp_rec IN (
      WHERE S.DT_UPDATE IS NULL
         OR S.VENDEDOR <> V.VENDEDOR
         OR S.CODFILIAL <> V.CODFILIAL
+        OR NVL(S.CARGO,'-') <> V.CARGO
         OR S.BLOQUEIO <> V.BLOQUEIO
         OR S.CODSUPERVISOR <> V.CODSUPERVISOR
         OR S.SUPERVISOR <> V.SUPERVISOR
@@ -68,6 +74,7 @@ FOR temp_rec IN (
       UPDATE BI_SINC_VENDEDOR
          SET NOMEORIGINAL  = temp_rec.NOMEORIGINAL,
              VENDEDOR      = temp_rec.VENDEDOR,
+             CARGO         = temp_rec.CARGO,
              CODFILIAL     = temp_rec.CODFILIAL,
              BLOQUEIO      = temp_rec.BLOQUEIO,
              CODSUPERVISOR = temp_rec.CODSUPERVISOR,
@@ -84,6 +91,7 @@ FOR temp_rec IN (
           (CODUSUR,
            NOMEORIGINAL,
            VENDEDOR,
+           CARGO,
            CODFILIAL,
            BLOQUEIO,
            CODSUPERVISOR,
@@ -97,6 +105,7 @@ FOR temp_rec IN (
           (temp_rec.CODUSUR,
            temp_rec.NOMEORIGINAL,
            temp_rec.VENDEDOR,
+           temp_rec.CARGO,
            temp_rec.CODFILIAL,
            temp_rec.BLOQUEIO,
            temp_rec.CODSUPERVISOR,
