@@ -509,21 +509,6 @@ BEGIN
   ) ';
   END IF;
 
-  ----TEMP_META_CLIENTE
-  SELECT COUNT(*)
-    INTO v_table_exists
-    FROM user_tables
-   WHERE table_name = 'TEMP_META_CLIENTE';
-  IF v_table_exists = 0 THEN
-    EXECUTE IMMEDIATE 'CREATE GLOBAL TEMPORARY TABLE TEMP_META_CLIENTE
-  (
-     CODCLIREDE  VARCHAR2(10),
-     DATAINICIAL DATE,
-     DATAFINAL   DATE,
-     VLMETA      NUMBER(18, 6)
-  ) ON COMMIT PRESERVE ROWS';
-  END IF;
-
   ----BI_SINC_PEDIDO_VENDA
   SELECT COUNT(*)
     INTO v_table_exists
