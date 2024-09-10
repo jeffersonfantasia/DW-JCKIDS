@@ -18,10 +18,10 @@ BEGIN
                        FROM DRE F
                        LEFT JOIN BI_SINC_DRE_JC S ON S.CODDRE = F.CODDRE
                       WHERE S.DT_UPDATE IS NULL
-                         OR S.SUBCONTADRE <> F.SUBCONTADRE
-                         OR S.SUBTOTAL <> F.SUBTOTAL
-                         OR S.CONTADRE <> F.CONTADRE
-                         OR S.GRUPODRE <> F.GRUPODRE)
+                         OR NVL(S.SUBCONTADRE,'') <> F.SUBCONTADRE
+                         OR NVL(S.SUBTOTAL,0) <> F.SUBTOTAL
+                         OR NVL(S.CONTADRE,'') <> F.CONTADRE
+                         OR NVL(S.GRUPODRE,'') <> F.GRUPODRE)
   
   -- Atualiza ou insere os resultados na tabela BI_SINC conforme as condições mencionadas
   LOOP
