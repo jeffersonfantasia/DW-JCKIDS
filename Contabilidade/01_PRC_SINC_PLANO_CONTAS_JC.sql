@@ -29,13 +29,13 @@ BEGIN
                                                               F.CODCLASSIFICA
                       WHERE S.DT_UPDATE IS NULL
                          OR S.CONTA <> F.CONTA
-                         OR S.NIVEL <> F.NIVEL
-                         OR S.TIPOCONTA <> F.TIPOCONTA
-                         OR S.CODGERENCIAL <> F.CODGERENCIAL
-                         OR S.CODCONTABIL <> F.CODCONTABIL
-                         OR S.CODBALANCO <> F.CODBALANCO
-                         OR S.CODDRE <> F.CODDRE
-                         OR S.CODEBTIDA <> F.CODEBTIDA
+                         OR NVL(S.NIVEL,0) <> F.NIVEL
+                         OR NVL(S.TIPOCONTA,0) <> F.TIPOCONTA
+                         OR NVL(S.CODGERENCIAL,0) <> F.CODGERENCIAL
+                         OR NVL(S.CODCONTABIL,0) <> F.CODCONTABIL
+                         OR NVL(S.CODBALANCO,0) <> F.CODBALANCO
+                         OR NVL(S.CODDRE,0) <> F.CODDRE
+                         OR NVL(S.CODEBTIDA,0) <> F.CODEBTIDA
                          OR NVL(S.CONTAN1, 'S') <> F.CONTAN1
                          OR NVL(S.CONTAN2, 'S') <> F.CONTAN2
                          OR NVL(S.CONTAN3, 'S') <> F.CONTAN3
