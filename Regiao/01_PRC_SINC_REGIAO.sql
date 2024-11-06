@@ -1,25 +1,23 @@
 CREATE OR REPLACE PROCEDURE PRC_SINC_REGIAO AS
 BEGIN
 
-FOR temp_rec IN (
-    SELECT R.NUMREGIAO,
-           R.REGIAO
-      FROM PCREGIAO R
-      LEFT JOIN BI_SINC_REGIAO S ON S.NUMREGIAO = R.NUMREGIAO
-     WHERE S.DT_UPDATE IS NULL
-        OR S.REGIAO <> R.REGIAO
-)
-
+  FOR temp_rec IN (SELECT R.NUMREGIAO,
+                          R.REGIAO
+                     FROM PCREGIAO R
+                     LEFT JOIN BI_SINC_REGIAO S ON S.NUMREGIAO = R.NUMREGIAO
+                    WHERE S.DT_UPDATE IS NULL
+                       OR S.REGIAO <> R.REGIAO)
+  
   -- Atualiza ou insere os resultados na tabela BI_SINC conforme as condições mencionadas
   
   LOOP
     BEGIN
       UPDATE BI_SINC_REGIAO
-         SET REGIAO = temp_rec.REGIAO
+         SET REGIAO    = temp_rec.REGIAO,
+             DT_UPDATE = SYSDATE
        WHERE NUMREGIAO = temp_rec.NUMREGIAO;
     
-      IF SQL%NOTFOUND
-      THEN
+      IF SQL%NOTFOUND THEN
         INSERT INTO BI_SINC_REGIAO
           (NUMREGIAO,
            REGIAO,
