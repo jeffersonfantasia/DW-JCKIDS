@@ -2,18 +2,21 @@ CREATE OR REPLACE PROCEDURE PRC_SINC_FILIAL AS
 BEGIN
 
 FOR temp_rec IN (
-    WITH FILIAIS AS
-     (SELECT F.CODIGO CODFILIAL,
-             NVL(F.NOMEREMETENTE, 'JC BROTHERS') EMPRESA,
-             NVL(F.FANTASIA, 'JC BROTHERS') FILIAL,
-             TO_NUMBER(F.CODIGO) ORDEM
-        FROM PCFILIAL F)
+    WITH FILIAIS AS (
+		SELECT F.CODIGO CODFILIAL,
+               G.NOME_GRUPOFILIAL EMPRESA,
+               NVL(F.FANTASIA, 'JC BROTHERS') FILIAL,
+               TO_NUMBER(F.CODIGO) ORDEM,
+               F.CODGRUPOFILIAL CODEMPRESA
+          FROM PCFILIAL F
+          LEFT JOIN PCGRUPOFILIAL G ON G.CODGRUPOFILIAL = F.CODGRUPOFILIAL)
     SELECT F.*
       FROM FILIAIS F
       LEFT JOIN BI_SINC_FILIAL S ON S.CODFILIAL = F.CODFILIAL
      WHERE S.DT_UPDATE IS NULL
         OR NVL(S.EMPRESA, '0') <> F.EMPRESA
         OR NVL(S.FILIAL, '0') <> F.FILIAL
+        OR NVL(S.CODEMPRESA, '0') <> F.CODEMPRESA
 )
 
   -- Atualiza ou insere os resultados na tabela BI_SINC conforme as condições mencionada
@@ -21,11 +24,12 @@ FOR temp_rec IN (
   LOOP
     BEGIN
       UPDATE BI_SINC_FILIAL
-         SET EMPRESA   = temp_rec.EMPRESA,
-             FILIAL    = temp_rec.FILIAL,
-             ORDEM     = temp_rec.ORDEM,
-             DT_UPDATE = SYSDATE
-       WHERE CODFILIAL = temp_rec.CODFILIAL;
+         SET EMPRESA    = temp_rec.EMPRESA,
+             FILIAL     = temp_rec.FILIAL,
+             ORDEM      = temp_rec.ORDEM,
+             CODEMPRESA = temp_rec.CODEMPRESA,
+             DT_UPDATE  = SYSDATE
+       WHERE CODFILIAL  = temp_rec.CODFILIAL;
     
       IF SQL%NOTFOUND THEN
         INSERT INTO BI_SINC_FILIAL
@@ -33,11 +37,13 @@ FOR temp_rec IN (
            EMPRESA,
            FILIAL,
            ORDEM,
+           CODEMPRESA,
            DT_UPDATE)
         VALUES
           (temp_rec.CODFILIAL,
            temp_rec.EMPRESA,
            temp_rec.FILIAL,
+           temp_rec.CODEMPRESA,
            temp_rec.ORDEM,
            SYSDATE);
       END IF;
