@@ -9,11 +9,12 @@ BEGIN
   IF v_table_exists = 0 THEN
     EXECUTE IMMEDIATE 'CREATE TABLE BI_SINC_FILIAL
   (
-     CODFILIAL VARCHAR2(2),
-     EMPRESA   VARCHAR2(150),
-     FILIAL    VARCHAR2(25),
-     ORDEM     NUMBER(2),
-     DT_UPDATE DATE,
+     CODFILIAL  VARCHAR2(2),
+     EMPRESA    VARCHAR2(150),
+     FILIAL     VARCHAR2(25),
+     ORDEM      NUMBER(2),
+     CODEMPRESA VARCHAR2(2), 
+     DT_UPDATE  DATE,
      CONSTRAINT PK_CODFILIAL PRIMARY KEY (CODFILIAL)
   )';
   END IF;
@@ -296,8 +297,9 @@ BEGIN
      DTCANCEL        DATE,
      DT_UPDATE       DATE,
      CONSTRAINT PK_NUMTRANSITEM PRIMARY KEY (NUMTRANSITEM)
-  ) ';
-  END IF;
+  ) 
+  INDEX IDX_TIPOMOV (TIPOMOV) )' ;
+END IF;
 
   ----BI_SINC_PRECO_VENDA
   SELECT COUNT(*)
@@ -540,8 +542,8 @@ BEGIN
      CONSTRAINT PK_PEDIDO_VENDA PRIMARY KEY (NUMPED, CODPROD, NUMSEQ)
   )  ';
   END IF;
-	
-	  ----BI_SINC_PLANO_CONTAS_JC
+  
+    ----BI_SINC_PLANO_CONTAS_JC
   SELECT COUNT(*)
     INTO v_table_exists
     FROM user_tables
@@ -568,7 +570,7 @@ BEGIN
   ) ';
   END IF;
 
-	  ----BI_SINC_DRE_JC
+    ----BI_SINC_DRE_JC
   SELECT COUNT(*)
     INTO v_table_exists
     FROM user_tables
@@ -585,8 +587,8 @@ BEGIN
      CONSTRAINT PK_DRE_JC PRIMARY KEY (CODDRE)
   ) ';
   END IF;
-	
-	  ----BI_SINC_PARAMETROS_GLOBAL
+  
+    ----BI_SINC_PARAMETROS_GLOBAL
   SELECT COUNT(*)
     INTO v_table_exists
     FROM user_tables
@@ -602,7 +604,7 @@ BEGIN
   ) ';
   END IF;
 
-	  ----BI_SINC_CENTRO_CUSTO
+    ----BI_SINC_CENTRO_CUSTO
   SELECT COUNT(*)
     INTO v_table_exists
     FROM user_tables
