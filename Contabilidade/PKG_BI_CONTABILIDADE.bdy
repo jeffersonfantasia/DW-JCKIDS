@@ -8,10 +8,13 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      M.DATA,
                      M.TIPOMOV,
                      M.NUMTRANSACAO,
+                     M.TEMVENDAORIG,
                      M.NUMNOTA,
                      V.CODSUPERVISOR,
                      V.CODGERENTE,
                      M.DTCANCEL,
+                     (M.CODFORNEC || ' - ' || F.FORNECEDOR) FORNECEDOR,
+                     (M.CODCLI || ' - ' || C.CLIENTE) CLIENTE,
                      ROUND(SUM(M.CUSTOCONTABIL * M.QT), 2) CUSTOCONTABIL,
                      ROUND(SUM(M.VLCONTABIL), 2) VALORCONTABIL,
                      ROUND(SUM(M.VLST), 2) VALORST,
@@ -24,25 +27,35 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                 FROM BI_SINC_MOV_PRODUTO M
                 JOIN BI_SINC_FILIAL L ON L.CODFILIAL = M.CODFILIAL
                 LEFT JOIN BI_SINC_VENDEDOR V ON V.CODUSUR = M.CODUSUR
+                LEFT JOIN BI_SINC_FORNECEDOR F ON F.CODFORNEC = M.CODFORNEC
+                LEFT JOIN BI_SINC_CLIENTE C ON C.CODCLI = M.CODCLI
                GROUP BY L.CODEMPRESA,
                         M.CODFILIAL,
                         M.DATA,
                         M.TIPOMOV,
                         M.NUMTRANSACAO,
+                        M.TEMVENDAORIG,
                         M.NUMNOTA,
                         V.CODSUPERVISOR,
                         V.CODGERENTE,
-                        M.DTCANCEL)
+                        M.DTCANCEL,
+                        M.CODFORNEC,
+                        F.FORNECEDOR,
+                        M.CODCLI,
+                        C.CLIENTE)
     LOOP
       PIPE ROW(T_MOV_PROD_BASE_RECORD(r.CODEMPRESA,
                                       r.CODFILIAL,
                                       r.DATA,
                                       r.TIPOMOV,
                                       r.NUMTRANSACAO,
+                                      r.TEMVENDAORIG,
                                       r.NUMNOTA,
                                       r.CODSUPERVISOR,
                                       r.CODGERENTE,
                                       r.DTCANCEL,
+                                      r.FORNECEDOR,
+                                      r.CLIENTE,
                                       r.CUSTOCONTABIL,
                                       r.VALORCONTABIL,
                                       r.VALORST,
