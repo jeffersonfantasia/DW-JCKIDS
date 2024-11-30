@@ -1,5 +1,6 @@
 CREATE OR REPLACE PROCEDURE PRC_SINC_TABELAS_DW AS
   v_table_exists NUMBER;
+	v_index_exists NUMBER;
 BEGIN
   ----BI_SINC_FILIAL
   SELECT COUNT(*)
@@ -262,6 +263,7 @@ BEGIN
      CODUSUR         NUMBER(4),
      CODFORNEC       NUMBER(8),
      CODCLI          NUMBER(8),
+     NUMNOTA         NUMBER(10),
      DATA            DATE,
      CODPROD         NUMBER(6),
      QT              NUMBER(20, 6),
@@ -297,9 +299,18 @@ BEGIN
      DTCANCEL        DATE,
      DT_UPDATE       DATE,
      CONSTRAINT PK_NUMTRANSITEM PRIMARY KEY (NUMTRANSITEM)
-  ) 
-  INDEX IDX_TIPOMOV (TIPOMOV) )' ;
-END IF;
+  )';
+  END IF;
+	
+	----INDICES BI_SINC_MOV_PRODUTO
+	SELECT COUNT(*)
+    INTO v_index_exists
+    FROM user_indexes
+   WHERE table_name = 'BI_SINC_MOV_PRODUTO'
+   AND index_name = 'IDX_TIPOMOV';
+  IF v_table_exists = 1 THEN
+    EXECUTE IMMEDIATE 'CREATE INDEX IDX_TIPOMOV ON BI_SINC_MOV_PRODUTO (TIPOMOV)';
+  END IF;
 
   ----BI_SINC_PRECO_VENDA
   SELECT COUNT(*)
