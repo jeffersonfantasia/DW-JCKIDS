@@ -42,20 +42,6 @@ CREATE OR REPLACE PROCEDURE PRC_SINC_MOV_PRODUTO AS
    -----------------------TIPOS DE DESCARGAS
   vTIPO_DESCARGA_DEVOLUCAO  T_TEXT_LIST := T_TEXT_LIST('6', '8', 'C', 'T');
   vTIPO_DESCARGA_IMPORTACAO T_TEXT_LIST := T_TEXT_LIST('N', 'F', 'I');
-  
-   -----------------------CENTROS DE CUSTO
-	 vCC_SPMARKET         VARCHAR(3) := '1.1'
-	 vCC_PARQUE           VARCHAR(3) := '1.2'
-	 vCC_JUNDIAI          VARCHAR(3) := '1.3'
-	 vCC_TRIMAIS          VARCHAR(3) := '1.4'
-	 vCC_CAMPINAS         VARCHAR(3) := '1.5'
-	 vCC_DISTRIBUICAO_SP  VARCHAR(3) := '2.1'
-	 vCC_DISTRIBUICAO_ES  VARCHAR(3) := '2.2'
-	 vCC_ECOMMERCE_SP     VARCHAR(3) := '3.1'
-	 vCC_CORPORATIVO_SP   VARCHAR(3) := '4.1'
-
-   -----------------------CODIGO DAS CONTAS
-	 vCONTA_FATURAMENTO  NUMBER := 3101
 
 BEGIN
 FOR temp_rec IN (
@@ -105,6 +91,7 @@ FOR temp_rec IN (
              NVL(M.CODUSUR,0) CODUSUR,
              (CASE WHEN M.CODFISCAL IN (SELECT COLUMN_VALUE FROM TABLE(vENT_DEVOLUCAO)) THEN 0 ELSE E.CODFORNEC END) CODFORNEC,
              (CASE WHEN M.CODFISCAL IN (SELECT COLUMN_VALUE FROM TABLE(vENT_DEVOLUCAO)) THEN E.CODFORNEC ELSE 0 END) CODCLI,
+             M.NUMNOTA,
              M.DTMOV DATA,
              M.CODPROD,
              M.QTCONT QT,
@@ -264,6 +251,7 @@ FOR temp_rec IN (
              NVL(M.CODUSUR,0) CODUSUR,
              (CASE WHEN M.CODFISCAL IN (SELECT COLUMN_VALUE FROM TABLE(vSAID_DEVOLUCAO)) THEN S.CODCLI ELSE 0 END) CODFORNEC,
              (CASE WHEN M.CODFISCAL IN (SELECT COLUMN_VALUE FROM TABLE(vSAID_DEVOLUCAO)) THEN 0 ELSE S.CODCLI END) CODCLI,
+             M.NUMNOTA,
              M.DTMOV DATA,
              M.CODPROD,
              M.QTCONT QT,
@@ -361,6 +349,7 @@ FOR temp_rec IN (
             M.CODUSUR,
             M.CODFORNEC,
             M.CODCLI,
+            M.NUMNOTA,
             M.DATA,
             M.CODPROD,
             M.QT,
@@ -400,6 +389,7 @@ FOR temp_rec IN (
        AND M.DATA >= vDATA_MOV_INCREMENTAL
        AND (S.DT_UPDATE IS NULL
         OR S.CFOP <> M.CFOP
+        OR NVL(S.NUMNOTA,0) <> M.NUMNOTA
         OR NVL(S.DATA,TO_DATE('01/01/1889','DD/MM/YYYY')) <> M.DATA
         OR NVL(S.CODUSUR,999) <> M.CODUSUR
         OR S.CUSTOFINANCEIRO <> M.CUSTOFINANCEIRO
@@ -436,6 +426,7 @@ FOR temp_rec IN (
              CODUSUR         = temp_rec.CODUSUR,
              CODFORNEC       = temp_rec.CODFORNEC,
              CODCLI          = temp_rec.CODCLI,
+             NUMNOTA         = temp_rec.NUMNOTA,
              DATA            = temp_rec.DATA,
              CODPROD         = temp_rec.CODPROD,
              QT              = temp_rec.QT,
@@ -485,6 +476,7 @@ FOR temp_rec IN (
            CODUSUR,
            CODFORNEC,
            CODCLI,
+           NUMNOTA,
            DATA,
            CODPROD,
            QT,
@@ -531,6 +523,7 @@ FOR temp_rec IN (
            temp_rec.CODUSUR,
            temp_rec.CODFORNEC,
            temp_rec.CODCLI,
+           temp_rec.NUMNOTA,
            temp_rec.DATA,
            temp_rec.CODPROD,
            temp_rec.QT,
