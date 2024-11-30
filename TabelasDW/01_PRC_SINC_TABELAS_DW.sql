@@ -252,54 +252,55 @@ BEGIN
   IF v_table_exists = 0 THEN
     EXECUTE IMMEDIATE 'CREATE TABLE BI_SINC_MOV_PRODUTO
   (
-     NUMTRANSITEM    NUMBER(18),
-     MOVIMENTO       VARCHAR2(1),
-     TIPOMOV         VARCHAR2(60),
-     CODFILIAL       VARCHAR2(2),
-     NUMTRANSACAO    NUMBER(10),
-     CODCOB          VARCHAR2(4),
-     PARCELAS        NUMBER(4),
-     PRAZO           NUMBER(6),
-     CODUSUR         NUMBER(4),
-     CODFORNEC       NUMBER(8),
-     CODCLI          NUMBER(8),
-     NUMNOTA         NUMBER(10),
-     DATA            DATE,
-     CODPROD         NUMBER(6),
-     QT              NUMBER(20, 6),
-     CUSTOFINANCEIRO NUMBER(18, 6),
-     CUSTOREPOSICAO  NUMBER(18, 6),
-     CUSTOCONTABIL   NUMBER(18, 6),
-     VLCONTABIL      NUMBER(18, 6),
-     PUNIT           NUMBER(18, 6),
-     PTABELA         NUMBER(18, 6),
-     VLPRODUTO       NUMBER(18, 6),
-     VLDESCONTO      NUMBER(18, 6),
-     CST_ICMS        VARCHAR2(3),
-     CFOP            NUMBER(8),
-     VLBASEICMS      NUMBER(18, 6),
-     PERCICMS        NUMBER(12, 4),
-     VLICMS          NUMBER(18, 6),
-     VLICMSBENEFICIO NUMBER(18, 6),
-     VLST            NUMBER(18, 6),
-     VLSTGUIA        NUMBER(18, 6),
-     PERCIPI         NUMBER(12, 4),
-     VLIPI           NUMBER(18, 6),
-     CST_PISCOFINS   VARCHAR2(3),
-     VLBASEPISCOFINS NUMBER(18, 6),
-     PERCPIS         NUMBER(12, 4),
-     PERCCOFINS      NUMBER(12, 4),
-     VLPIS           NUMBER(18, 6),
-     VLCOFINS        NUMBER(18, 6),
-     VLFRETE         NUMBER(18, 6),
-     VLOUTRASDESP    NUMBER(18, 6),
-     VLICMSDIFAL     NUMBER(18, 6),
-     VLCMVGERENCIAL  NUMBER(18, 6),
-     VLCMVCONTABIL   NUMBER(18, 6),
-     DTCANCEL        DATE,
-     DT_UPDATE       DATE,
+     NUMTRANSITEM      NUMBER(18),
+     MOVIMENTO         VARCHAR2(1),
+     TIPOMOV           VARCHAR2(60),
+     CODFILIAL         VARCHAR2(2),
+     NUMTRANSACAO      NUMBER(10),
+     TEMVENDAORIG      VARCHAR2(1),
+     CODCOB            VARCHAR2(4),
+     PARCELAS          NUMBER(4),
+     PRAZO             NUMBER(6),
+     CODUSUR           NUMBER(4),
+     CODFORNEC         NUMBER(8),
+     CODCLI            NUMBER(8),
+     NUMNOTA           NUMBER(10),
+     DATA              DATE,
+     CODPROD           NUMBER(6),
+     QT                NUMBER(20, 6),
+     CUSTOFINANCEIRO   NUMBER(18, 6),
+     CUSTOREPOSICAO    NUMBER(18, 6),
+     CUSTOCONTABIL     NUMBER(18, 6),
+     VLCONTABIL        NUMBER(18, 6),
+     PUNIT             NUMBER(18, 6),
+     PTABELA           NUMBER(18, 6),
+     VLPRODUTO         NUMBER(18, 6),
+     VLDESCONTO        NUMBER(18, 6),
+     CST_ICMS          VARCHAR2(3),
+     CFOP              NUMBER(8),
+     VLBASEICMS        NUMBER(18, 6),
+     PERCICMS          NUMBER(12, 4),
+     VLICMS            NUMBER(18, 6),
+     VLICMSBENEFICIO   NUMBER(18, 6),
+     VLST              NUMBER(18, 6),
+     VLSTGUIA          NUMBER(18, 6),
+     PERCIPI           NUMBER(12, 4),
+     VLIPI             NUMBER(18, 6),
+     CST_PISCOFINS     VARCHAR2(3),
+     VLBASEPISCOFINS   NUMBER(18, 6),
+     PERCPIS           NUMBER(12, 4),
+     PERCCOFINS        NUMBER(12, 4),
+     VLPIS             NUMBER(18, 6),
+     VLCOFINS          NUMBER(18, 6),
+     VLFRETE           NUMBER(18, 6),
+     VLOUTRASDESP      NUMBER(18, 6),
+     VLICMSDIFAL       NUMBER(18, 6),
+     VLCMVGERENCIAL    NUMBER(18, 6),
+     VLCMVCONTABIL     NUMBER(18, 6),
+     DTCANCEL          DATE,
+     DT_UPDATE         DATE,
      CONSTRAINT PK_NUMTRANSITEM PRIMARY KEY (NUMTRANSITEM)
-  )';
+  ) ';
   END IF;
 	
 	----INDICES BI_SINC_MOV_PRODUTO
@@ -308,8 +309,17 @@ BEGIN
     FROM user_indexes
    WHERE table_name = 'BI_SINC_MOV_PRODUTO'
    AND index_name = 'IDX_TIPOMOV';
-  IF v_table_exists = 1 THEN
+  IF v_index_exists = 0 THEN
     EXECUTE IMMEDIATE 'CREATE INDEX IDX_TIPOMOV ON BI_SINC_MOV_PRODUTO (TIPOMOV)';
+  END IF;
+	
+	SELECT COUNT(*)
+    INTO v_index_exists
+    FROM user_indexes
+   WHERE table_name = 'BI_SINC_MOV_PRODUTO'
+   AND index_name = 'IDX_01';
+  IF v_index_exists = 0 THEN
+    EXECUTE IMMEDIATE 'CREATE INDEX IDX_01 ON BI_SINC_MOV_PRODUTO (CODFILIAL, CODUSUR)';
   END IF;
 
   ----BI_SINC_PRECO_VENDA
