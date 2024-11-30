@@ -14,7 +14,7 @@ FOR temp_rec IN (
              REGEXP_REPLACE(F.CGC,
                             '([0-9]{2})([0-9]{3})([0-9]{3})([0-9]{4})',
                             '\1.\2.\3/\4-') CNPJ,
-             NVL(F.OBS2, 'N') TIPO
+             NVL(F.REVENDA, 'N') TIPO
         FROM PCFORNEC F),
     FORNECEDOR_VENDA AS
      (SELECT 0 CODFORNEC,
@@ -35,7 +35,7 @@ FOR temp_rec IN (
         OR S.CODFORNECPRINC <> F.CODFORNECPRINC
         OR S.FORNECPRINC <> F.FORNECPRINC
         OR S.CNPJ <> F.CNPJ
-        OR NVL(S.TIPO, 'S') <> F.TIPO
+        OR NVL(S.TIPO, 'A') <> F.TIPO
 )
 
   -- Atualiza ou insere os resultados na tabela BI_SINC conforme as condições mencionadas
