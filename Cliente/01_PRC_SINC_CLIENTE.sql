@@ -24,9 +24,7 @@ BEGIN
                                  ('R' || C.CODREDE || ' - ' ||
                                  UPPER(R.DESCRICAO))
                               END) AS CLIENTEREDE,
-                              REGEXP_REPLACE(C.CGCENT,
-                                             '([0-9]{2})([0-9]{3})([0-9]{3})([0-9]{4})',
-                                             '\1.\2.\3/\4-') CNPJ,
+                              C.CGCENT CNPJ,
                               REPLACE(C.CEPENT, '-', '') AS CEP,
                               C.ESTENT UF,
                               NVL(F.CODFILIALJCCLUB, '99') CODFILIALJCCLUB,
