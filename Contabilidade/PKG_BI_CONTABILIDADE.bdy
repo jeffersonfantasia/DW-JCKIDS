@@ -13,9 +13,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      V.CODSUPERVISOR,
                      V.CODGERENTE,
                      M.DTCANCEL,
-                     (M.CODFORNEC || ' - ' || F.FORNECEDOR) FORNECEDOR,
-                     (M.CODCLI || ' - ' || C.CLIENTE) CLIENTE,
-                     ROUND(SUM(M.CUSTOCONTABIL * M.QT), 2) CUSTOCONTABIL,
+                     (F.FORNECEDOR || ' - Cód. ' || M.CODFORNEC) FORNECEDOR,
+                     (C.CLIENTE || ' - Cód. ' || M.CODCLI) CLIENTE,
+                     ROUND(SUM(M.CUSTOCONTABIL), 2) CUSTOCONTABIL,
                      ROUND(SUM(M.VLCONTABIL), 2) VALORCONTABIL,
                      ROUND(SUM(M.VLST), 2) VALORST,
                      ROUND(SUM(M.VLSTGUIA), 2) VALORSTGUIA,
@@ -68,6 +68,17 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     END LOOP;
   
   END FN_MOV_PROD_BASE;
+	
+	/*  -----------------------CENTROS DE CUSTO
+   vCC_SPMARKET         VARCHAR(3) := '1.1';
+   vCC_PARQUE           VARCHAR(3) := '1.2';
+   vCC_JUNDIAI          VARCHAR(3) := '1.3';
+   vCC_TRIMAIS          VARCHAR(3) := '1.4';
+   vCC_CAMPINAS         VARCHAR(3) := '1.5';
+   vCC_DISTRIBUICAO_SP  VARCHAR(3) := '2.1';
+	 vCC_DISTRIBUICAO_ES  VARCHAR(3) := '2.2';
+	 vCC_ECOMMERCE_SP     VARCHAR(3) := '3.1';
+	 vCC_CORPORATIVO_SP   VARCHAR(3) := '4.1';*/
 
 END PKG_BI_CONTABILIDADE;
 /
