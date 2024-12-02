@@ -76,19 +76,66 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
 
   FUNCTION FN_MOV_PROD_VLCONTABIL_INTEIRO RETURN T_MOV_PROD_CONTABIL_TABLE
     PIPELINED IS
-    -----------------------CENTROS DE CUSTO
-    vCC_SPMARKET        VARCHAR(3) := '1.1';
-    vCC_PARQUE          VARCHAR(3) := '1.2';
-    vCC_JUNDIAI         VARCHAR(3) := '1.3';
-    vCC_TRIMAIS         VARCHAR(3) := '1.4';
-    vCC_CAMPINAS        VARCHAR(3) := '1.5';
-    vCC_DISTRIBUICAO_SP VARCHAR(3) := '2.1';
-    vCC_DISTRIBUICAO_ES VARCHAR(3) := '2.2';
-    vCC_ECOMMERCE_SP    VARCHAR(3) := '3.1';
-    vCC_CORPORATIVO_SP  VARCHAR(3) := '4.1';
-  
-  BEGIN
-    FOR r IN (WITH FILIAL_CC AS
+
+   -----------------------CENTROS DE CUSTO
+   vCC_SPMARKET         VARCHAR(3) := '1.1';
+   vCC_PARQUE           VARCHAR(3) := '1.2';
+   vCC_JUNDIAI          VARCHAR(3) := '1.3';
+   vCC_TRIMAIS          VARCHAR(3) := '1.4';
+   vCC_CAMPINAS         VARCHAR(3) := '1.5';
+   vCC_DISTRIBUICAO_SP  VARCHAR(3) := '2.1';
+   vCC_DISTRIBUICAO_ES  VARCHAR(3) := '2.2';
+   vCC_ECOMMERCE_SP     VARCHAR(3) := '3.1';
+   vCC_CORPORATIVO_SP   VARCHAR(3) := '4.1' ;
+
+    -----------------------CODIGO CONTAS
+    vCLIENTES_NACIONAIS              NUMBER := 1152;
+    vFATURAMENTO_BRUTO               NUMBER := 3101;
+    vFATURAMENTO_ANTECIPADO          NUMBER := 1182;
+    vCMV                             NUMBER := 3110;
+    vESTOQUE                         NUMBER := 1174;
+    vICMS_VENDA                      NUMBER := 3104;
+    vPIS_VENDA                       NUMBER := 3105;
+    vCOFINS_VENDA                    NUMBER := 3106;
+    vST_VENDA                        NUMBER := 3107;
+    vICMS_RECOLHER                   NUMBER := 2251;
+    vICMS_RECOLHER_ES                NUMBER := 2261;
+    vPIS_RECOLHER                    NUMBER := 2254;
+    vCOFINS_RECOLHER                 NUMBER := 2255;
+    vST_RECOLHER                     NUMBER := 2260;
+    vDIFAL_RECOLHER                  NUMBER := 2252;
+    vESTOQUE_CONSIGANDO              NUMBER := 1176;
+    vMERCADORIA_RECEBIDA_CONSIGADO   NUMBER := 2200;
+    vDEVOLUCAO_RECEBER               NUMBER := 1178;
+    vICMS_RECUPERAR                  NUMBER := 1201;
+    vICMS_RECUPERAR_ES               NUMBER := 1204;
+    vPIS_RECUPERAR                   NUMBER := 1202;
+    vCOFINS_RECUPERAR                NUMBER := 1203;
+    vVENDA_BONIFICADA                NUMBER := 3113;
+    vTRANSFERENCIA_MERCADORIA        NUMBER := 1183;
+    vREMESSA_CONSERTO                NUMBER := 3117;
+    vRETORNO_CONSERTO                NUMBER := 3120;
+    vESTOQUE_TRANSITO                NUMBER := 1175;
+    vREMESSA_DEMOSTRACAO             NUMBER := 3119;
+    vRETORNO_DEMOSTRACAO             NUMBER := 3122;
+    vENVIO_SIMPLES_REMESSA           NUMBER := 3118;
+    vRECEBIMENTO_SIMPLES_REMESSA     NUMBER := 3121;
+    vPERDA_MERCADORIA                NUMBER := 3114;
+    vENTRADA_BONIFICADA              NUMBER := 3115;
+    vDEVOLUCAO_PRODUTO               NUMBER := 3102;
+    vDEVOLUCAO_CLIENTE               NUMBER := 2201;
+    vENTRADA_INVENTARIO              NUMBER := 3116;
+
+    -----------------------FORNECEDOR SEM CONTA CONTABIL
+    vOUTRO_FORNECEDOR  NUMBER := 99999;
+	
+	BEGIN
+    FOR r IN (
+        WITH 
+		
+		vFORNECEDORES_JCBROTHERS AS (SELECT DISTINCT CODFORNEC FROM BI_SINC_FILIAL WHERE INSTR(EMPRESA, 'JC BROTHERS') > 0),
+
+				        FILIAL_CC AS
                  (SELECT CODFILIAL,
                         (CASE CODFILIAL
                           WHEN '1' THEN vCC_SPMARKET
@@ -131,13 +178,21 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                        M.DATA,
                        ---------TIPOLANCAMENTO
                        (CASE
-                         WHEN M.TIPOMOV IN
+                         WHEN M.TIPOMOV IN ('ENTRADA SIMPLES REMESSA') THEN
+                         (CASE  
+                           WHEN M.TEMVENDAORIG = 'S' THEN 2 
+                           WHEN M.CODFORNEC IN (SELECT CODFORNEC FROM vFORNECEDORES_JCBROTHERS) THEN 2 
+                           ELSE 3
+                          END)
+                        WHEN M.TIPOMOV IN
                               ('SAIDA DEVOLUCAO', 'SAIDA TRANSFERENCIA') THEN
                           1
                          WHEN M.TIPOMOV IN ('ENTRADA COMPRA',
                                             'ENTRADA COMPRA CONSIGNADO',
                                             'ENTRADA COMPRA TRIANGULAR',
-                                            'ENTRADA BONIFICADA') THEN
+                                            'ENTRADA BONIFICADA',
+                                            'ENTRADA TRANSFERENCIA',
+                                            'ENTRADA REM ENTREGA FUTURA') THEN
                           2
                        
                          ELSE
@@ -153,23 +208,37 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                               ('SAIDA VENDA',
                                'SAIDA FAT CONTA E ORDEM',
                                'SAIDA FAT ENTREGA FUTURA') THEN
-                          1152
+                          vCLIENTES_NACIONAIS
                          WHEN M.TIPOMOV IN ('SAIDA REM ENTREGA FUTURA') THEN
-                          1182
+                          vFATURAMENTO_ANTECIPADO
                          WHEN M.TIPOMOV IN ('SAIDA DEVOLUCAO CONSIGNADO') THEN
-                          2200
+                          vMERCADORIA_RECEBIDA_CONSIGADO
                          WHEN M.TIPOMOV IN ('SAIDA SIMPLES REMESSA') THEN
-                          3118
+                          vENVIO_SIMPLES_REMESSA
                          WHEN M.TIPOMOV IN ('SAIDA CONSERTO') THEN
-                          3117
+                          vREMESSA_CONSERTO
                          WHEN M.TIPOMOV IN ('SAIDA DEMONSTRACAO') THEN
-                          3119
+                          vREMESSA_DEMOSTRACAO
                          WHEN M.TIPOMOV IN ('SAIDA PERDA MERCADORIA') THEN
-                          3114
+                          vPERDA_MERCADORIA
                          WHEN M.TIPOMOV IN ('SAIDA DEVOLUCAO') THEN
-                          1178
+                          vDEVOLUCAO_RECEBER
                          WHEN M.TIPOMOV IN ('SAIDA TRANSFERENCIA') THEN
-                          1183
+                          vTRANSFERENCIA_MERCADORIA
+                         WHEN M.TIPOMOV IN ('ENTRADA CONSIGNADO') THEN
+                          vESTOQUE_CONSIGANDO
+                         WHEN M.TIPOMOV IN ('ENTRADA DEVOLUCAO') THEN
+                          vDEVOLUCAO_PRODUTO
+                         WHEN M.TIPOMOV IN ('ENTRADA DEMONSTRACAO') THEN
+                          vRETORNO_DEMOSTRACAO
+                         WHEN M.TIPOMOV IN ('ENTRADA SIMPLES REMESSA') THEN
+                         (CASE  
+                           WHEN M.TEMVENDAORIG = 'S' THEN NULL
+                           WHEN M.CODFORNEC IN (SELECT CODFORNEC FROM vFORNECEDORES_JCBROTHERS) THEN NULL 
+                           ELSE vRECEBIMENTO_SIMPLES_REMESSA
+                          END)
+                         WHEN M.TIPOMOV IN ('ENTRADA FAT ENTREGA FUTURA') THEN
+                          vESTOQUE_TRANSITO
                          ELSE
                           NULL
                        END) CONTADEBITO,
@@ -180,26 +249,43 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                               ('SAIDA VENDA',
                                'SAIDA FAT CONTA E ORDEM',
                                'SAIDA REM ENTREGA FUTURA') THEN
-                          3101
+                          vFATURAMENTO_BRUTO
                          WHEN M.TIPOMOV IN ('SAIDA FAT ENTREGA FUTURA') THEN
-                          1182
+                          vFATURAMENTO_ANTECIPADO
                          WHEN M.TIPOMOV IN ('SAIDA DEVOLUCAO CONSIGNADO') THEN
-                          1176
+                          vESTOQUE_CONSIGANDO
                          WHEN M.TIPOMOV IN ('SAIDA SIMPLES REMESSA') THEN
-                          3121
+                          vRECEBIMENTO_SIMPLES_REMESSA
                          WHEN M.TIPOMOV IN ('SAIDA CONSERTO') THEN
-                          3120
+                          vRETORNO_CONSERTO
                          WHEN M.TIPOMOV IN ('SAIDA DEMONSTRACAO') THEN
-                          3122
+                          vRETORNO_DEMOSTRACAO
                          WHEN M.TIPOMOV IN ('SAIDA PERDA MERCADORIA') THEN
-                          1174
+                          vESTOQUE
                          WHEN M.TIPOMOV IN
                               ('ENTRADA COMPRA',
                                'ENTRADA COMPRA CONSIGNADO',
-                               'ENTRADA COMPRA TRIANGULAR') THEN
-                          NVL(C.CODCONTABIL, 999999)
+                               'ENTRADA COMPRA TRIANGULAR',
+                               'ENTRADA FAT ENTREGA FUTURA') THEN
+                          NVL(C.CODCONTABIL, vOUTRO_FORNECEDOR)
                          WHEN M.TIPOMOV IN ('ENTRADA BONIFICADA') THEN
-                          3115
+                          vENTRADA_BONIFICADA
+                         WHEN M.TIPOMOV IN ('ENTRADA CONSIGNADO') THEN
+                          vMERCADORIA_RECEBIDA_CONSIGADO
+                         WHEN M.TIPOMOV IN ('ENTRADA DEVOLUCAO') THEN
+                          vDEVOLUCAO_CLIENTE
+                         WHEN M.TIPOMOV IN ('ENTRADA TRANSFERENCIA') THEN
+                          vTRANSFERENCIA_MERCADORIA
+                         WHEN M.TIPOMOV IN ('ENTRADA DEMONSTRACAO') THEN
+                          vREMESSA_DEMOSTRACAO
+                         WHEN M.TIPOMOV IN ('ENTRADA SIMPLES REMESSA') THEN
+                         (CASE  
+                           WHEN M.TEMVENDAORIG = 'S' THEN vDEVOLUCAO_RECEBER
+                           WHEN M.CODFORNEC IN (SELECT CODFORNEC FROM vFORNECEDORES_JCBROTHERS) THEN vENTRADA_INVENTARIO 
+                           ELSE vENVIO_SIMPLES_REMESSA
+                          END)
+                          WHEN M.TIPOMOV IN ('ENTRADA REM ENTREGA FUTURA') THEN
+                          vESTOQUE_TRANSITO
                          ELSE
                           NULL
                        END) CONTACREDITO,
@@ -217,7 +303,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                          WHEN M.TIPOMOV IN
                               ('SAIDA VENDA',
                                'SAIDA FAT CONTA E ORDEM',
-                               'SAIDA REM ENTREGA FUTURA') THEN
+                               'SAIDA REM ENTREGA FUTURA',
+                               'ENTRADA DEVOLUCAO') THEN
                           (CASE
                             WHEN M.CODGERENTE IN (1, 8, 9, 10) AND
                                  M.CODFILIAL = '11' THEN vCC_DISTRIBUICAO_ES
@@ -226,15 +313,21 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                           END)
                          WHEN M.TIPOMOV IN ('ENTRADA BONIFICADA') THEN
                           F.CODCC
+                         WHEN M.TIPOMOV IN ('ENTRADA SIMPLES REMESSA') THEN
+                         (CASE  
+                           WHEN M.TEMVENDAORIG = 'S' THEN NULL
+                           WHEN M.CODFORNEC IN (SELECT CODFORNEC FROM vFORNECEDORES_JCBROTHERS) THEN F.CODCC
+                           ELSE NULL
+                          END)
                          ELSE
                           NULL
                        END) CODCC_CREDITO,
                        
                        (M.TIPOMOV || ' - Nº TRANS: ' || M.NUMTRANSACAO) ATIVIDADE,
                        
-                       ----------ENVIAR_HISTORICO
+                       ----------HISTORICO
                        (CASE
-                         WHEN M.MOVIMENTO = 'S' THEN
+                         WHEN (M.MOVIMENTO = 'S' OR M.TIPOMOV IN ('ENTRADA DEVOLUCAO','ENTRADA DEMONSTRACAO'))THEN
                           ('NF ' || M.NUMNOTA || ' - ' || M.CLIENTE)
                          ELSE
                           ('NF ' || M.NUMNOTA || ' - ' || M.FORNECEDOR)
@@ -260,7 +353,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                                                       AND C.CODFORNEC =
                                                           M.CODFORNEC
                  WHERE 1 = 1
-                   AND M.TIPOMOV IN ('SAIDA VENDA',
+                   /*AND M.TIPOMOV IN ('SAIDA VENDA',
                                      'SAIDA FAT CONTA E ORDEM',
                                      'SAIDA FAT ENTREGA FUTURA',
                                      'SAIDA REM ENTREGA FUTURA',
@@ -274,7 +367,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                                      'ENTRADA COMPRA',
                                      'ENTRADA COMPRA CONSIGNADO',
                                      'ENTRADA COMPRA TRIANGULAR',
-                                     'ENTRADA BONIFICADA'))
+                                     'ENTRADA BONIFICADA',
+                                     'ENTRADA CONSIGNADO',
+                                     'ENTRADA DEMONSTRACAO')*/)
     
     LOOP
       PIPE ROW(T_MOV_PROD_CONTABIL_RECORD(r.CODEMPRESA,
