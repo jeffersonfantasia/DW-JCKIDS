@@ -247,7 +247,7 @@ FOR r IN (
                WHEN S.SERIE = 'SF' THEN (PE.QTPARCELA * CC.PRAZOPARCELA)
                ELSE S.PRAZOMEDIO
              END) PRAZO,
-             NVL(M.CODUSUR,0) CODUSUR,
+             DECODE(NVL(M.CODUSUR,0),0, S.CODUSUR, M.CODUSUR) CODUSUR,
              0 CODFORNEC,
              S.CODCLI,
              M.NUMNOTA,
