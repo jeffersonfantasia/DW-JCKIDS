@@ -104,7 +104,13 @@ BEGIN
                                 SQLERRM);
     END;
   END LOOP;
+	
+  COMMIT;
 
+	BEGIN
+    EXECUTE IMMEDIATE 'DELETE FROM BI_SINC_PLANO_CONTAS_JC WHERE NIVEL <> 5';
+  END;
+  
   COMMIT;
 
 END;
