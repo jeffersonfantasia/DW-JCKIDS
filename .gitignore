@@ -5,3 +5,5 @@
 .project
 Contabilidade/PKG_BI_CONTABILIDADE.~bdy
 Contabilidade/PKG_BI_CONTABILIDADE.~spc
+*.~spc
+*.~bdy
