@@ -183,8 +183,7 @@ BEGIN
           LEFT JOIN BI_SINC_MOV_CONTABIL M ON M.CODLANC = S.CODLANC
                                               AND M.IDENTIFICADOR =
                                               S.IDENTIFICADOR
-         WHERE M.CODLANC IS NULL)'
-;
+         WHERE M.CODLANC IS NULL)';
   END;
   
   COMMIT;
