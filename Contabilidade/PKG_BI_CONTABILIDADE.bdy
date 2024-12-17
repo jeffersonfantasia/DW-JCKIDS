@@ -48,6 +48,16 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   vDEVOLUCAO_PRODUTO             NUMBER := 3102;
   vDEVOLUCAO_CLIENTE             NUMBER := 2201;
   vENTRADA_INVENTARIO            NUMBER := 3116;
+  vAQUISICAOIMOBILIZADO          NUMBER := 1451;
+  vFRETE                         NUMBER := 3202;
+  vDIFAL_MATERIAL_OPERACAO       NUMBER := 3555;
+  vDIFAL_EQUIPAMENTO             NUMBER := 3653;
+
+  ----------------OUTROS CODIGO CONTAS
+  vOUTROSESTOQUES NUMBER := 200159;
+
+  ----------------GRUPO CONTA
+  vGRUPO_MATERIAL_OPERACAO NUMBER := 355;
 
   ----FORNECEDOR SEM CONTA CONTABIL
   vOUTRO_FORNECEDOR NUMBER := 99999;
@@ -61,9 +71,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   FUNCTION FN_FORNEC_JCBROTHERS RETURN T_FORNEC_JCBROTHERS_TABLE
     PIPELINED IS
   BEGIN
-    FOR r IN (SELECT DISTINCT CODFORNEC
-                FROM BI_SINC_FILIAL
-               WHERE INSTR(EMPRESA, 'JC BROTHERS') > 0)
+    FOR r IN (SELECT DISTINCT CODFORNEC FROM BI_SINC_FILIAL WHERE INSTR(EMPRESA, 'JC BROTHERS') > 0)
     LOOP
       PIPE ROW(T_FORNEC_JCBROTHERS_RECORD(r.CODFORNEC));
     END LOOP;
@@ -116,8 +124,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   BEGIN
     FOR r IN (SELECT DISTINCT CODSUPERVISOR,
                               (CASE
-                                WHEN CODSUPERVISOR IN
-                                     (1, 2, 4, 11, 12, 6) THEN
+                                WHEN CODSUPERVISOR IN (1, 2, 4, 11, 12, 6) THEN
                                  vCC_DISTRIBUICAO_SP
                                 WHEN CODSUPERVISOR IN (3, 9) THEN
                                  vCC_CORPORATIVO_SP
@@ -154,23 +161,19 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                         (CASE
                           WHEN M.TEMVENDAORIG = 'S' THEN
                            2
-                          WHEN M.CODFORNEC IN
-                               (SELECT CODFORNEC
-                                  FROM TABLE(PKG_BI_CONTABILIDADE.FN_FORNEC_JCBROTHERS())) THEN
+                          WHEN M.CODFORNEC IN (SELECT CODFORNEC FROM TABLE(PKG_BI_CONTABILIDADE.FN_FORNEC_JCBROTHERS())) THEN
                            2
                           ELSE
                            3
                         END)
-                       WHEN M.TIPOMOV IN
-                            ('SAIDA DEVOLUCAO', 'SAIDA TRANSFERENCIA') THEN
+                       WHEN M.TIPOMOV IN ('SAIDA DEVOLUCAO', 'SAIDA TRANSFERENCIA') THEN
                         1
-                       WHEN M.TIPOMOV IN
-                            ('ENTRADA COMPRA',
-                             'ENTRADA COMPRA CONSIGNADO',
-                             'ENTRADA COMPRA TRIANGULAR',
-                             'ENTRADA BONIFICADA',
-                             'ENTRADA TRANSFERENCIA',
-                             'ENTRADA REM ENTREGA FUTURA') THEN
+                       WHEN M.TIPOMOV IN ('ENTRADA COMPRA',
+                                          'ENTRADA COMPRA CONSIGNADO',
+                                          'ENTRADA COMPRA TRIANGULAR',
+                                          'ENTRADA BONIFICADA',
+                                          'ENTRADA TRANSFERENCIA',
+                                          'ENTRADA REM ENTREGA FUTURA') THEN
                         2
                        ELSE
                         3
@@ -181,10 +184,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      
                      ----------CONTADEBITO
                      (CASE
-                       WHEN M.TIPOMOV IN
-                            ('SAIDA VENDA',
-                             'SAIDA FAT CONTA E ORDEM',
-                             'SAIDA FAT ENTREGA FUTURA') THEN
+                       WHEN M.TIPOMOV IN ('SAIDA VENDA', 'SAIDA FAT CONTA E ORDEM', 'SAIDA FAT ENTREGA FUTURA') THEN
                         vCLIENTES_NACIONAIS
                        WHEN M.TIPOMOV IN ('SAIDA REM ENTREGA FUTURA') THEN
                         vFATURAMENTO_ANTECIPADO
@@ -212,9 +212,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                         (CASE
                           WHEN M.TEMVENDAORIG = 'S' THEN
                            NULL
-                          WHEN M.CODFORNEC IN
-                               (SELECT CODFORNEC
-                                  FROM TABLE(PKG_BI_CONTABILIDADE.FN_FORNEC_JCBROTHERS())) THEN
+                          WHEN M.CODFORNEC IN (SELECT CODFORNEC FROM TABLE(PKG_BI_CONTABILIDADE.FN_FORNEC_JCBROTHERS())) THEN
                            NULL
                           ELSE
                            vRECEBIMENTO_SIMPLES_REMESSA
@@ -227,10 +225,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      
                      ----------CONTACREDITO
                      (CASE
-                       WHEN M.TIPOMOV IN
-                            ('SAIDA VENDA',
-                             'SAIDA FAT CONTA E ORDEM',
-                             'SAIDA REM ENTREGA FUTURA') THEN
+                       WHEN M.TIPOMOV IN ('SAIDA VENDA', 'SAIDA FAT CONTA E ORDEM', 'SAIDA REM ENTREGA FUTURA') THEN
                         vFATURAMENTO_BRUTO
                        WHEN M.TIPOMOV IN ('SAIDA FAT ENTREGA FUTURA') THEN
                         vFATURAMENTO_ANTECIPADO
@@ -244,12 +239,11 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                         vRETORNO_DEMOSTRACAO
                        WHEN M.TIPOMOV IN ('SAIDA PERDA MERCADORIA') THEN
                         vESTOQUE
-                       WHEN M.TIPOMOV IN
-                            ('ENTRADA COMPRA',
-                             'ENTRADA COMPRA CONSIGNADO',
-                             'ENTRADA COMPRA TRIANGULAR',
-                             'ENTRADA FAT ENTREGA FUTURA') THEN
-                        NVL(C.CODFORNEC, vOUTRO_FORNECEDOR)
+                       WHEN M.TIPOMOV IN ('ENTRADA COMPRA',
+                                          'ENTRADA COMPRA CONSIGNADO',
+                                          'ENTRADA COMPRA TRIANGULAR',
+                                          'ENTRADA FAT ENTREGA FUTURA') THEN
+                        NVL(M.CODFORNEC, vOUTRO_FORNECEDOR)
                        WHEN M.TIPOMOV IN ('ENTRADA BONIFICADA') THEN
                         vENTRADA_BONIFICADA
                        WHEN M.TIPOMOV IN ('ENTRADA CONSIGNADO') THEN
@@ -264,9 +258,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                         (CASE
                           WHEN M.TEMVENDAORIG = 'S' THEN
                            vDEVOLUCAO_RECEBER
-                          WHEN M.CODFORNEC IN
-                               (SELECT CODFORNEC
-                                  FROM TABLE(PKG_BI_CONTABILIDADE.FN_FORNEC_JCBROTHERS())) THEN
+                          WHEN M.CODFORNEC IN (SELECT CODFORNEC FROM TABLE(PKG_BI_CONTABILIDADE.FN_FORNEC_JCBROTHERS())) THEN
                            vENTRADA_INVENTARIO
                           ELSE
                            vENVIO_SIMPLES_REMESSA
@@ -281,8 +273,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      (CASE
                        WHEN M.TIPOMOV IN ('ENTRADA DEVOLUCAO') THEN
                         (CASE
-                          WHEN M.CODGERENTE IN (1, 8, 9, 10) AND
-                               M.CODFILIAL = vCODFILIAL_ES THEN
+                          WHEN M.CODGERENTE IN (1, 8, 9, 10)
+                               AND M.CODFILIAL = vCODFILIAL_ES THEN
                            vCC_DISTRIBUICAO_ES
                           ELSE
                            V.CODCC
@@ -295,13 +287,10 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      
                      ----------CODCC_CREDITO
                      (CASE
-                       WHEN M.TIPOMOV IN
-                            ('SAIDA VENDA',
-                             'SAIDA FAT CONTA E ORDEM',
-                             'SAIDA REM ENTREGA FUTURA') THEN
+                       WHEN M.TIPOMOV IN ('SAIDA VENDA', 'SAIDA FAT CONTA E ORDEM', 'SAIDA REM ENTREGA FUTURA') THEN
                         (CASE
-                          WHEN M.CODGERENTE IN (1, 8, 9, 10) AND
-                               M.CODFILIAL = vCODFILIAL_ES THEN
+                          WHEN M.CODGERENTE IN (1, 8, 9, 10)
+                               AND M.CODFILIAL = vCODFILIAL_ES THEN
                            vCC_DISTRIBUICAO_ES
                           ELSE
                            V.CODCC
@@ -312,9 +301,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                         (CASE
                           WHEN M.TEMVENDAORIG = 'S' THEN
                            NULL
-                          WHEN M.CODFORNEC IN
-                               (SELECT CODFORNEC
-                                  FROM TABLE(PKG_BI_CONTABILIDADE.FN_FORNEC_JCBROTHERS())) THEN
+                          WHEN M.CODFORNEC IN (SELECT CODFORNEC FROM TABLE(PKG_BI_CONTABILIDADE.FN_FORNEC_JCBROTHERS())) THEN
                            F.CODCC
                           ELSE
                            NULL
@@ -323,15 +310,11 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                         NULL
                      END) CODCC_CREDITO,
                      
-                     (M.TIPOMOV || ' - F' || LPAD(M.CODFILIAL, 2, 0) ||
-                     ' - Nº TRANSACAO: ' || M.NUMTRANSACAO) ATIVIDADE,
+                     (M.TIPOMOV || ' - F' || LPAD(M.CODFILIAL, 2, 0) || ' - Nº TRANSACAO: ' || M.NUMTRANSACAO) ATIVIDADE,
                      
                      ----------HISTORICO
                      (CASE
-                       WHEN (M.MOVIMENTO = 'S' OR
-                            M.TIPOMOV IN
-                            ('ENTRADA DEVOLUCAO',
-                              'ENTRADA DEMONSTRACAO')) THEN
+                       WHEN (M.MOVIMENTO = 'S' OR M.TIPOMOV IN ('ENTRADA DEVOLUCAO', 'ENTRADA DEMONSTRACAO')) THEN
                         ('NF ' || M.NUMNOTA || ' - ' || M.CLIENTE)
                        ELSE
                         ('NF ' || M.NUMNOTA || ' - ' || M.FORNECEDOR)
@@ -342,11 +325,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      
                      ----------ENVIAR_CONTABIL
                      (CASE
-                       WHEN M.TIPOMOV IN ('SAIDA PERDA MERCADORIA') OR
-                            (M.TIPOMOV IN ('ENTRADA SIMPLES REMESSA') AND
-                            M.CODFORNEC IN
-                            (SELECT CODFORNEC
-                                FROM TABLE(PKG_BI_CONTABILIDADE.FN_FORNEC_JCBROTHERS()))) THEN
+                       WHEN M.TIPOMOV IN ('SAIDA PERDA MERCADORIA')
+                            OR (M.TIPOMOV IN ('ENTRADA SIMPLES REMESSA') AND
+                            M.CODFORNEC IN (SELECT CODFORNEC FROM TABLE(PKG_BI_CONTABILIDADE.FN_FORNEC_JCBROTHERS()))) THEN
                         'S'
                        ELSE
                         'N'
@@ -354,20 +335,10 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      
                      M.DTCANCEL
                 FROM BI_SINC_MOV_PROD_BASE_AGG M
-                LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_FILIAL()) F ON F.CODFILIAL =
-                                                                          M.CODFILIAL
-                LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_VENDEDOR()) V ON V.CODSUPERVISOR =
-                                                                            M.CODSUPERVISOR
-                LEFT JOIN BI_SINC_FORNECEDOR_CONTA C ON C.CODEMPRESA =
-                                                        M.CODEMPRESA
-                                                        AND
-                                                        C.CODFORNEC =
-                                                        M.CODFORNEC
+                LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_FILIAL()) F ON F.CODFILIAL = M.CODFILIAL
+                LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_VENDEDOR()) V ON V.CODSUPERVISOR = M.CODSUPERVISOR
                WHERE 1 = 1
-                     AND M.TIPOMOV NOT IN
-                     ('SAIDA BONIFICADA',
-                          'SAIDA DESCONSIDERAR',
-                          'SAIDA REM CONTA E ORDEM'))
+                 AND M.TIPOMOV NOT IN ('SAIDA BONIFICADA', 'SAIDA DESCONSIDERAR', 'SAIDA REM CONTA E ORDEM'))
     
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
@@ -401,8 +372,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      M.DATA,
                      ---------TIPOLANCAMENTO
                      (CASE
-                       WHEN M.TIPOMOV IN
-                            ('SAIDA DEVOLUCAO', 'SAIDA TRANSFERENCIA') THEN
+                       WHEN M.TIPOMOV IN ('SAIDA DEVOLUCAO', 'SAIDA TRANSFERENCIA') THEN
                         2
                        ELSE
                         1
@@ -414,19 +384,17 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      ----------CONTADEBITO
                      (CASE
                      
-                       WHEN M.TIPOMOV IN
-                            ('ENTRADA COMPRA',
-                             'ENTRADA COMPRA CONSIGNADO',
-                             'ENTRADA COMPRA TRIANGULAR',
-                             'ENTRADA BONIFICADA',
-                             'ENTRADA TRANSFERENCIA',
-                             'ENTRADA REM ENTREGA FUTURA') THEN
+                       WHEN M.TIPOMOV IN ('ENTRADA COMPRA',
+                                          'ENTRADA COMPRA CONSIGNADO',
+                                          'ENTRADA COMPRA TRIANGULAR',
+                                          'ENTRADA BONIFICADA',
+                                          'ENTRADA TRANSFERENCIA',
+                                          'ENTRADA REM ENTREGA FUTURA') THEN
                         vESTOQUE
-                       WHEN M.TIPOMOV IN ('ENTRADA SIMPLES REMESSA') AND
+                       WHEN M.TIPOMOV IN ('ENTRADA SIMPLES REMESSA')
+                            AND
                             (M.TEMVENDAORIG = 'S' OR
-                            M.CODFORNEC IN
-                            (SELECT CODFORNEC
-                                FROM TABLE(PKG_BI_CONTABILIDADE.FN_FORNEC_JCBROTHERS()))) THEN
+                            M.CODFORNEC IN (SELECT CODFORNEC FROM TABLE(PKG_BI_CONTABILIDADE.FN_FORNEC_JCBROTHERS()))) THEN
                         vESTOQUE
                        ELSE
                         NULL
@@ -434,8 +402,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      
                      ----------CONTACREDITO
                      (CASE
-                       WHEN M.TIPOMOV IN
-                            ('SAIDA DEVOLUCAO', 'SAIDA TRANSFERENCIA') THEN
+                       WHEN M.TIPOMOV IN ('SAIDA DEVOLUCAO', 'SAIDA TRANSFERENCIA') THEN
                         vESTOQUE
                        ELSE
                         NULL
@@ -447,23 +414,19 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      ----------CODCC_CREDITO
                      NULL CODCC_CREDITO,
                      
-                     (M.TIPOMOV || ' - F' || LPAD(M.CODFILIAL, 2, 0) ||
-                     ' - Nº TRANSACAO: ' || M.NUMTRANSACAO) ATIVIDADE,
+                     (M.TIPOMOV || ' - F' || LPAD(M.CODFILIAL, 2, 0) || ' - Nº TRANSACAO: ' || M.NUMTRANSACAO) ATIVIDADE,
                      
                      ----------HISTORICO
                      (CASE
-                       WHEN (M.MOVIMENTO = 'S' OR
-                            M.TIPOMOV IN ('ENTRADA DEVOLUCAO')) THEN
+                       WHEN (M.MOVIMENTO = 'S' OR M.TIPOMOV IN ('ENTRADA DEVOLUCAO')) THEN
                         ('NF ' || M.NUMNOTA || ' - ' || M.CLIENTE)
                        ELSE
                         ('NF ' || M.NUMNOTA || ' - ' || M.FORNECEDOR)
                      END) HISTORICO,
                      
                      (CASE
-                       WHEN (M.VALORCONTABIL - NVL(M.VALORICMS, 0) -
-                            NVL(M.VALORPIS, 0) - NVL(M.VALORCOFINS, 0)) > 0 THEN
-                        M.VALORCONTABIL - NVL(M.VALORICMS, 0) -
-                        NVL(M.VALORPIS, 0) - NVL(M.VALORCOFINS, 0)
+                       WHEN (M.VALORCONTABIL - NVL(M.VALORICMS, 0) - NVL(M.VALORPIS, 0) - NVL(M.VALORCOFINS, 0)) > 0 THEN
+                        M.VALORCONTABIL - NVL(M.VALORICMS, 0) - NVL(M.VALORPIS, 0) - NVL(M.VALORCOFINS, 0)
                        ELSE
                         0
                      END) VALOR,
@@ -475,16 +438,15 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      M.DTCANCEL
                 FROM BI_SINC_MOV_PROD_BASE_AGG M
                WHERE 1 = 1
-                     AND M.TIPOMOV IN
-                     ('SAIDA DEVOLUCAO',
-                          'SAIDA TRANSFERENCIA',
-                          'ENTRADA COMPRA',
-                          'ENTRADA COMPRA CONSIGNADO',
-                          'ENTRADA COMPRA TRIANGULAR',
-                          'ENTRADA BONIFICADA',
-                          'ENTRADA TRANSFERENCIA',
-                          'ENTRADA SIMPLES REMESSA',
-                          'ENTRADA REM ENTREGA FUTURA'))
+                 AND M.TIPOMOV IN ('SAIDA DEVOLUCAO',
+                                   'SAIDA TRANSFERENCIA',
+                                   'ENTRADA COMPRA',
+                                   'ENTRADA COMPRA CONSIGNADO',
+                                   'ENTRADA COMPRA TRIANGULAR',
+                                   'ENTRADA BONIFICADA',
+                                   'ENTRADA TRANSFERENCIA',
+                                   'ENTRADA SIMPLES REMESSA',
+                                   'ENTRADA REM ENTREGA FUTURA'))
     
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
@@ -523,20 +485,13 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      
                      ----------CONTADEBITO
                      (CASE
-                       WHEN M.TIPOMOV IN
-                            ('SAIDA VENDA',
-                             'SAIDA REM CONTA E ORDEM',
-                             'SAIDA REM ENTREGA FUTURA') THEN
+                       WHEN M.TIPOMOV IN ('SAIDA VENDA', 'SAIDA REM CONTA E ORDEM', 'SAIDA REM ENTREGA FUTURA') THEN
                         vCMV
                        WHEN M.TIPOMOV IN ('SAIDA BONIFICADA') THEN
                         vVENDA_BONIFICADA
-                       WHEN M.TIPOMOV IN
-                            ('SAIDA CONSERTO', 'SAIDA DEMONSTRACAO') THEN
+                       WHEN M.TIPOMOV IN ('SAIDA CONSERTO', 'SAIDA DEMONSTRACAO') THEN
                         vESTOQUE_TRANSITO
-                       WHEN M.TIPOMOV IN
-                            ('ENTRADA DEVOLUCAO',
-                             'ENTRADA CONSERTO',
-                             'ENTRADA DEMONSTRACAO') THEN
+                       WHEN M.TIPOMOV IN ('ENTRADA DEVOLUCAO', 'ENTRADA CONSERTO', 'ENTRADA DEMONSTRACAO') THEN
                         vESTOQUE
                        ELSE
                         NULL
@@ -544,18 +499,16 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      
                      ----------CONTACREDITO
                      (CASE
-                       WHEN M.TIPOMOV IN
-                            ('SAIDA VENDA',
-                             'SAIDA REM CONTA E ORDEM',
-                             'SAIDA REM ENTREGA FUTURA',
-                             'SAIDA BONIFICADA',
-                             'SAIDA CONSERTO',
-                             'SAIDA DEMONSTRACAO') THEN
+                       WHEN M.TIPOMOV IN ('SAIDA VENDA',
+                                          'SAIDA REM CONTA E ORDEM',
+                                          'SAIDA REM ENTREGA FUTURA',
+                                          'SAIDA BONIFICADA',
+                                          'SAIDA CONSERTO',
+                                          'SAIDA DEMONSTRACAO') THEN
                         vESTOQUE
                        WHEN M.TIPOMOV IN ('ENTRADA DEVOLUCAO') THEN
                         vCMV
-                       WHEN M.TIPOMOV IN
-                            ('ENTRADA CONSERTO', 'ENTRADA DEMONSTRACAO') THEN
+                       WHEN M.TIPOMOV IN ('ENTRADA CONSERTO', 'ENTRADA DEMONSTRACAO') THEN
                         vESTOQUE_TRANSITO
                        ELSE
                         NULL
@@ -564,13 +517,10 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      ----------CODCC_DEBITO
                      (CASE
                        WHEN M.TIPOMOV IN
-                            ('SAIDA VENDA',
-                             'SAIDA REM CONTA E ORDEM',
-                             'SAIDA REM ENTREGA FUTURA',
-                             'SAIDA BONIFICADA') THEN
+                            ('SAIDA VENDA', 'SAIDA REM CONTA E ORDEM', 'SAIDA REM ENTREGA FUTURA', 'SAIDA BONIFICADA') THEN
                         (CASE
-                          WHEN M.CODGERENTE IN (1, 8, 9, 10) AND
-                               M.CODFILIAL = vCODFILIAL_ES THEN
+                          WHEN M.CODGERENTE IN (1, 8, 9, 10)
+                               AND M.CODFILIAL = vCODFILIAL_ES THEN
                            vCC_DISTRIBUICAO_ES
                           ELSE
                            V.CODCC
@@ -583,8 +533,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      (CASE
                        WHEN M.TIPOMOV IN ('ENTRADA DEVOLUCAO') THEN
                         (CASE
-                          WHEN M.CODGERENTE IN (1, 8, 9, 10) AND
-                               M.CODFILIAL = vCODFILIAL_ES THEN
+                          WHEN M.CODGERENTE IN (1, 8, 9, 10)
+                               AND M.CODFILIAL = vCODFILIAL_ES THEN
                            vCC_DISTRIBUICAO_ES
                           ELSE
                            V.CODCC
@@ -593,15 +543,11 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                         NULL
                      END) CODCC_CREDITO,
                      
-                     (M.TIPOMOV || ' - F' || LPAD(M.CODFILIAL, 2, 0) ||
-                     ' - Nº TRANSACAO: ' || M.NUMTRANSACAO) ATIVIDADE,
+                     (M.TIPOMOV || ' - F' || LPAD(M.CODFILIAL, 2, 0) || ' - Nº TRANSACAO: ' || M.NUMTRANSACAO) ATIVIDADE,
                      
                      ----------HISTORICO
                      (CASE
-                       WHEN (M.MOVIMENTO = 'S' OR
-                            M.TIPOMOV IN
-                            ('ENTRADA DEVOLUCAO',
-                              'ENTRADA DEMONSTRACAO')) THEN
+                       WHEN (M.MOVIMENTO = 'S' OR M.TIPOMOV IN ('ENTRADA DEVOLUCAO', 'ENTRADA DEMONSTRACAO')) THEN
                         ('NF ' || M.NUMNOTA || ' - ' || M.CLIENTE)
                        ELSE
                         ('NF ' || M.NUMNOTA || ' - ' || M.FORNECEDOR)
@@ -610,10 +556,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      ----------VALOR
                      (CASE
                        WHEN M.TIPOMOV IN
-                            ('SAIDA CONSERTO',
-                             'SAIDA DEMONSTRACAO',
-                             'ENTRADA CONSERTO',
-                             'ENTRADA DEMONSTRACAO') THEN
+                            ('SAIDA CONSERTO', 'SAIDA DEMONSTRACAO', 'ENTRADA CONSERTO', 'ENTRADA DEMONSTRACAO') THEN
                         M.VALORCONTABIL
                        ELSE
                         M.CUSTOCONTABIL
@@ -625,19 +568,17 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      
                      M.DTCANCEL
                 FROM BI_SINC_MOV_PROD_BASE_AGG M
-                LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_VENDEDOR()) V ON V.CODSUPERVISOR =
-                                                                            M.CODSUPERVISOR
+                LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_VENDEDOR()) V ON V.CODSUPERVISOR = M.CODSUPERVISOR
                WHERE 1 = 1
-                     AND M.TIPOMOV IN
-                     ('SAIDA VENDA',
-                          'SAIDA REM CONTA E ORDEM',
-                          'SAIDA REM ENTREGA FUTURA',
-                          'SAIDA BONIFICADA',
-                          'SAIDA CONSERTO',
-                          'SAIDA DEMONSTRACAO',
-                          'ENTRADA DEVOLUCAO',
-                          'ENTRADA CONSERTO',
-                          'ENTRADA DEMONSTRACAO'))
+                 AND M.TIPOMOV IN ('SAIDA VENDA',
+                                   'SAIDA REM CONTA E ORDEM',
+                                   'SAIDA REM ENTREGA FUTURA',
+                                   'SAIDA BONIFICADA',
+                                   'SAIDA CONSERTO',
+                                   'SAIDA DEMONSTRACAO',
+                                   'ENTRADA DEVOLUCAO',
+                                   'ENTRADA CONSERTO',
+                                   'ENTRADA DEMONSTRACAO'))
     
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
@@ -671,17 +612,15 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      M.DATA,
                      ---------TIPOLANCAMENTO
                      (CASE
-                       WHEN M.TIPOMOV IN
-                            ('ENTRADA COMPRA',
-                             'ENTRADA COMPRA CONSIGNADO',
-                             'ENTRADA COMPRA TRIANGULAR',
-                             'ENTRADA BONIFICADA',
-                             'ENTRADA TRANSFERENCIA',
-                             'ENTRADA SIMPLES REMESSA',
-                             'ENTRADA REM ENTREGA FUTURA') THEN
+                       WHEN M.TIPOMOV IN ('ENTRADA COMPRA',
+                                          'ENTRADA COMPRA CONSIGNADO',
+                                          'ENTRADA COMPRA TRIANGULAR',
+                                          'ENTRADA BONIFICADA',
+                                          'ENTRADA TRANSFERENCIA',
+                                          'ENTRADA SIMPLES REMESSA',
+                                          'ENTRADA REM ENTREGA FUTURA') THEN
                         1
-                       WHEN M.TIPOMOV IN
-                            ('SAIDA DEVOLUCAO', 'SAIDA TRANSFERENCIA') THEN
+                       WHEN M.TIPOMOV IN ('SAIDA DEVOLUCAO', 'SAIDA TRANSFERENCIA') THEN
                         2
                        ELSE
                         3
@@ -692,32 +631,28 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      
                      ----------CONTADEBITO
                      (CASE
-                       WHEN M.TIPOMOV IN
-                            ('SAIDA VENDA',
-                             'SAIDA FAT CONTA E ORDEM',
-                             'SAIDA REM ENTREGA FUTURA',
-                             'SAIDA BONIFICADA',
-                             'SAIDA DEMONSTRACAO',
-                             'SAIDA DEVOLUCAO CONSIGNADO') THEN
+                       WHEN M.TIPOMOV IN ('SAIDA VENDA',
+                                          'SAIDA FAT CONTA E ORDEM',
+                                          'SAIDA REM ENTREGA FUTURA',
+                                          'SAIDA BONIFICADA',
+                                          'SAIDA DEMONSTRACAO',
+                                          'SAIDA DEVOLUCAO CONSIGNADO') THEN
                         vICMS_VENDA
-                       WHEN M.TIPOMOV IN
-                            ('ENTRADA COMPRA',
-                             'ENTRADA COMPRA CONSIGNADO',
-                             'ENTRADA COMPRA TRIANGULAR',
-                             'ENTRADA BONIFICADA',
-                             'ENTRADA TRANSFERENCIA',
-                             'ENTRADA SIMPLES REMESSA',
-                             'ENTRADA REM ENTREGA FUTURA',
-                             'ENTRADA CONSIGNADO') THEN
+                       WHEN M.TIPOMOV IN ('ENTRADA COMPRA',
+                                          'ENTRADA COMPRA CONSIGNADO',
+                                          'ENTRADA COMPRA TRIANGULAR',
+                                          'ENTRADA BONIFICADA',
+                                          'ENTRADA TRANSFERENCIA',
+                                          'ENTRADA SIMPLES REMESSA',
+                                          'ENTRADA REM ENTREGA FUTURA',
+                                          'ENTRADA CONSIGNADO') THEN
                         (CASE
                           WHEN M.CODFILIAL = vCODFILIAL_ES THEN
                            vICMS_RECUPERAR_ES
                           ELSE
                            vICMS_RECUPERAR
                         END)
-                       WHEN M.TIPOMOV IN
-                            ('ENTRADA DEVOLUCAO',
-                             'ENTRADA DEMONSTRACAO') THEN
+                       WHEN M.TIPOMOV IN ('ENTRADA DEVOLUCAO', 'ENTRADA DEMONSTRACAO') THEN
                         (CASE
                           WHEN M.CODFILIAL = vCODFILIAL_ES THEN
                            vICMS_RECOLHER_ES
@@ -730,14 +665,13 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      
                      ----------CONTACREDITO
                      (CASE
-                       WHEN M.TIPOMOV IN
-                            ('SAIDA VENDA',
-                             'SAIDA FAT CONTA E ORDEM',
-                             'SAIDA REM ENTREGA FUTURA',
-                             'SAIDA BONIFICADA',
-                             'SAIDA TRANSFERENCIA',
-                             'SAIDA DEMONSTRACAO',
-                             'SAIDA DEVOLUCAO CONSIGNADO') THEN
+                       WHEN M.TIPOMOV IN ('SAIDA VENDA',
+                                          'SAIDA FAT CONTA E ORDEM',
+                                          'SAIDA REM ENTREGA FUTURA',
+                                          'SAIDA BONIFICADA',
+                                          'SAIDA TRANSFERENCIA',
+                                          'SAIDA DEMONSTRACAO',
+                                          'SAIDA DEVOLUCAO CONSIGNADO') THEN
                         (CASE
                           WHEN M.CODFILIAL = vCODFILIAL_ES THEN
                            vICMS_RECOLHER_ES
@@ -752,9 +686,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                           ELSE
                            vICMS_RECUPERAR
                         END)
-                       WHEN M.TIPOMOV IN
-                            ('ENTRADA DEVOLUCAO',
-                             'ENTRADA DEMONSTRACAO') THEN
+                       WHEN M.TIPOMOV IN ('ENTRADA DEVOLUCAO', 'ENTRADA DEMONSTRACAO') THEN
                         vICMS_VENDA
                        WHEN M.TIPOMOV IN ('ENTRADA CONSIGNADO') THEN
                         vESTOQUE
@@ -764,15 +696,14 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      
                      ----------CODCC_DEBITO
                      (CASE
-                       WHEN M.TIPOMOV IN
-                            ('SAIDA VENDA',
-                             'SAIDA FAT CONTA E ORDEM',
-                             'SAIDA REM ENTREGA FUTURA',
-                             'SAIDA BONIFICADA',
-                             'SAIDA DEMONSTRACAO') THEN
+                       WHEN M.TIPOMOV IN ('SAIDA VENDA',
+                                          'SAIDA FAT CONTA E ORDEM',
+                                          'SAIDA REM ENTREGA FUTURA',
+                                          'SAIDA BONIFICADA',
+                                          'SAIDA DEMONSTRACAO') THEN
                         (CASE
-                          WHEN M.CODGERENTE IN (1, 8, 9, 10) AND
-                               M.CODFILIAL = vCODFILIAL_ES THEN
+                          WHEN M.CODGERENTE IN (1, 8, 9, 10)
+                               AND M.CODFILIAL = vCODFILIAL_ES THEN
                            vCC_DISTRIBUICAO_ES
                           ELSE
                            V.CODCC
@@ -785,12 +716,10 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      
                      ----------CODCC_CREDITO
                      (CASE
-                       WHEN M.TIPOMOV IN
-                            ('ENTRADA DEVOLUCAO',
-                             'ENTRADA DEMONSTRACAO') THEN
+                       WHEN M.TIPOMOV IN ('ENTRADA DEVOLUCAO', 'ENTRADA DEMONSTRACAO') THEN
                         (CASE
-                          WHEN M.CODGERENTE IN (1, 8, 9, 10) AND
-                               M.CODFILIAL = vCODFILIAL_ES THEN
+                          WHEN M.CODGERENTE IN (1, 8, 9, 10)
+                               AND M.CODFILIAL = vCODFILIAL_ES THEN
                            vCC_DISTRIBUICAO_ES
                           ELSE
                            V.CODCC
@@ -799,15 +728,11 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                         NULL
                      END) CODCC_CREDITO,
                      
-                     (M.TIPOMOV || ' - F' || LPAD(M.CODFILIAL, 2, 0) ||
-                     ' - Nº TRANSACAO: ' || M.NUMTRANSACAO) ATIVIDADE,
+                     (M.TIPOMOV || ' - F' || LPAD(M.CODFILIAL, 2, 0) || ' - Nº TRANSACAO: ' || M.NUMTRANSACAO) ATIVIDADE,
                      
                      ----------HISTORICO
                      (CASE
-                       WHEN (M.MOVIMENTO = 'S' OR
-                            M.TIPOMOV IN
-                            ('ENTRADA DEVOLUCAO',
-                              'ENTRADA DEMONSTRACAO')) THEN
+                       WHEN (M.MOVIMENTO = 'S' OR M.TIPOMOV IN ('ENTRADA DEVOLUCAO', 'ENTRADA DEMONSTRACAO')) THEN
                         ('NF ' || M.NUMNOTA || ' - ' || M.CLIENTE)
                        ELSE
                         ('NF ' || M.NUMNOTA || ' - ' || M.FORNECEDOR)
@@ -821,10 +746,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      
                      M.DTCANCEL
                 FROM BI_SINC_MOV_PROD_BASE_AGG M
-                LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_FILIAL()) F ON F.CODFILIAL =
-                                                                          M.CODFILIAL
-                LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_VENDEDOR()) V ON V.CODSUPERVISOR =
-                                                                            M.CODSUPERVISOR
+                LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_FILIAL()) F ON F.CODFILIAL = M.CODFILIAL
+                LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_VENDEDOR()) V ON V.CODSUPERVISOR = M.CODSUPERVISOR
                WHERE 1 = 1)
     
     LOOP
@@ -859,11 +782,10 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      M.DATA,
                      ---------TIPOLANCAMENTO
                      (CASE
-                       WHEN M.TIPOMOV IN
-                            ('ENTRADA COMPRA',
-                             'ENTRADA COMPRA CONSIGNADO',
-                             'ENTRADA COMPRA TRIANGULAR',
-                             'ENTRADA REM ENTREGA FUTURA') THEN
+                       WHEN M.TIPOMOV IN ('ENTRADA COMPRA',
+                                          'ENTRADA COMPRA CONSIGNADO',
+                                          'ENTRADA COMPRA TRIANGULAR',
+                                          'ENTRADA REM ENTREGA FUTURA') THEN
                         1
                        WHEN M.TIPOMOV IN ('SAIDA DEVOLUCAO') THEN
                         2
@@ -876,16 +798,12 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      
                      ----------CONTADEBITO
                      (CASE
-                       WHEN M.TIPOMOV IN
-                            ('SAIDA VENDA',
-                             'SAIDA FAT CONTA E ORDEM',
-                             'SAIDA REM ENTREGA FUTURA') THEN
+                       WHEN M.TIPOMOV IN ('SAIDA VENDA', 'SAIDA FAT CONTA E ORDEM', 'SAIDA REM ENTREGA FUTURA') THEN
                         vPIS_VENDA
-                       WHEN M.TIPOMOV IN
-                            ('ENTRADA COMPRA',
-                             'ENTRADA COMPRA CONSIGNADO',
-                             'ENTRADA COMPRA TRIANGULAR',
-                             'ENTRADA REM ENTREGA FUTURA') THEN
+                       WHEN M.TIPOMOV IN ('ENTRADA COMPRA',
+                                          'ENTRADA COMPRA CONSIGNADO',
+                                          'ENTRADA COMPRA TRIANGULAR',
+                                          'ENTRADA REM ENTREGA FUTURA') THEN
                         vPIS_RECUPERAR
                        WHEN M.TIPOMOV IN ('ENTRADA DEVOLUCAO') THEN
                         vPIS_RECOLHER
@@ -895,10 +813,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      
                      ----------CONTACREDITO
                      (CASE
-                       WHEN M.TIPOMOV IN
-                            ('SAIDA VENDA',
-                             'SAIDA FAT CONTA E ORDEM',
-                             'SAIDA REM ENTREGA FUTURA') THEN
+                       WHEN M.TIPOMOV IN ('SAIDA VENDA', 'SAIDA FAT CONTA E ORDEM', 'SAIDA REM ENTREGA FUTURA') THEN
                         vPIS_RECOLHER
                        WHEN M.TIPOMOV IN ('SAIDA DEVOLUCAO') THEN
                         vPIS_RECUPERAR
@@ -910,13 +825,10 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      
                      ----------CODCC_DEBITO
                      (CASE
-                       WHEN M.TIPOMOV IN
-                            ('SAIDA VENDA',
-                             'SAIDA FAT CONTA E ORDEM',
-                             'SAIDA REM ENTREGA FUTURA') THEN
+                       WHEN M.TIPOMOV IN ('SAIDA VENDA', 'SAIDA FAT CONTA E ORDEM', 'SAIDA REM ENTREGA FUTURA') THEN
                         (CASE
-                          WHEN M.CODGERENTE IN (1, 8, 9, 10) AND
-                               M.CODFILIAL = vCODFILIAL_ES THEN
+                          WHEN M.CODGERENTE IN (1, 8, 9, 10)
+                               AND M.CODFILIAL = vCODFILIAL_ES THEN
                            vCC_DISTRIBUICAO_ES
                           ELSE
                            V.CODCC
@@ -929,8 +841,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      (CASE
                        WHEN M.TIPOMOV IN ('ENTRADA DEVOLUCAO') THEN
                         (CASE
-                          WHEN M.CODGERENTE IN (1, 8, 9, 10) AND
-                               M.CODFILIAL = vCODFILIAL_ES THEN
+                          WHEN M.CODGERENTE IN (1, 8, 9, 10)
+                               AND M.CODFILIAL = vCODFILIAL_ES THEN
                            vCC_DISTRIBUICAO_ES
                           ELSE
                            V.CODCC
@@ -939,13 +851,11 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                         NULL
                      END) CODCC_CREDITO,
                      
-                     (M.TIPOMOV || ' - F' || LPAD(M.CODFILIAL, 2, 0) ||
-                     ' - Nº TRANSACAO: ' || M.NUMTRANSACAO) ATIVIDADE,
+                     (M.TIPOMOV || ' - F' || LPAD(M.CODFILIAL, 2, 0) || ' - Nº TRANSACAO: ' || M.NUMTRANSACAO) ATIVIDADE,
                      
                      ----------HISTORICO
                      (CASE
-                       WHEN (M.MOVIMENTO = 'S' OR
-                            M.TIPOMOV IN ('ENTRADA DEVOLUCAO')) THEN
+                       WHEN (M.MOVIMENTO = 'S' OR M.TIPOMOV IN ('ENTRADA DEVOLUCAO')) THEN
                         ('NF ' || M.NUMNOTA || ' - ' || M.CLIENTE)
                        ELSE
                         ('NF ' || M.NUMNOTA || ' - ' || M.FORNECEDOR)
@@ -959,8 +869,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      
                      M.DTCANCEL
                 FROM BI_SINC_MOV_PROD_BASE_AGG M
-                LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_VENDEDOR()) V ON V.CODSUPERVISOR =
-                                                                            M.CODSUPERVISOR
+                LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_VENDEDOR()) V ON V.CODSUPERVISOR = M.CODSUPERVISOR
                WHERE 1 = 1)
     
     LOOP
@@ -995,11 +904,10 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      M.DATA,
                      ---------TIPOLANCAMENTO
                      (CASE
-                       WHEN M.TIPOMOV IN
-                            ('ENTRADA COMPRA',
-                             'ENTRADA COMPRA CONSIGNADO',
-                             'ENTRADA COMPRA TRIANGULAR',
-                             'ENTRADA REM ENTREGA FUTURA') THEN
+                       WHEN M.TIPOMOV IN ('ENTRADA COMPRA',
+                                          'ENTRADA COMPRA CONSIGNADO',
+                                          'ENTRADA COMPRA TRIANGULAR',
+                                          'ENTRADA REM ENTREGA FUTURA') THEN
                         1
                        WHEN M.TIPOMOV IN ('SAIDA DEVOLUCAO') THEN
                         2
@@ -1012,16 +920,12 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      
                      ----------CONTADEBITO
                      (CASE
-                       WHEN M.TIPOMOV IN
-                            ('SAIDA VENDA',
-                             'SAIDA FAT CONTA E ORDEM',
-                             'SAIDA REM ENTREGA FUTURA') THEN
+                       WHEN M.TIPOMOV IN ('SAIDA VENDA', 'SAIDA FAT CONTA E ORDEM', 'SAIDA REM ENTREGA FUTURA') THEN
                         vCOFINS_VENDA
-                       WHEN M.TIPOMOV IN
-                            ('ENTRADA COMPRA',
-                             'ENTRADA COMPRA CONSIGNADO',
-                             'ENTRADA COMPRA TRIANGULAR',
-                             'ENTRADA REM ENTREGA FUTURA') THEN
+                       WHEN M.TIPOMOV IN ('ENTRADA COMPRA',
+                                          'ENTRADA COMPRA CONSIGNADO',
+                                          'ENTRADA COMPRA TRIANGULAR',
+                                          'ENTRADA REM ENTREGA FUTURA') THEN
                         vCOFINS_RECUPERAR
                        WHEN M.TIPOMOV IN ('ENTRADA DEVOLUCAO') THEN
                         vCOFINS_RECOLHER
@@ -1031,10 +935,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      
                      ----------CONTACREDITO
                      (CASE
-                       WHEN M.TIPOMOV IN
-                            ('SAIDA VENDA',
-                             'SAIDA FAT CONTA E ORDEM',
-                             'SAIDA REM ENTREGA FUTURA') THEN
+                       WHEN M.TIPOMOV IN ('SAIDA VENDA', 'SAIDA FAT CONTA E ORDEM', 'SAIDA REM ENTREGA FUTURA') THEN
                         vCOFINS_RECOLHER
                        WHEN M.TIPOMOV IN ('SAIDA DEVOLUCAO') THEN
                         vCOFINS_RECUPERAR
@@ -1046,13 +947,10 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      
                      ----------CODCC_DEBITO
                      (CASE
-                       WHEN M.TIPOMOV IN
-                            ('SAIDA VENDA',
-                             'SAIDA FAT CONTA E ORDEM',
-                             'SAIDA REM ENTREGA FUTURA') THEN
+                       WHEN M.TIPOMOV IN ('SAIDA VENDA', 'SAIDA FAT CONTA E ORDEM', 'SAIDA REM ENTREGA FUTURA') THEN
                         (CASE
-                          WHEN M.CODGERENTE IN (1, 8, 9, 10) AND
-                               M.CODFILIAL = vCODFILIAL_ES THEN
+                          WHEN M.CODGERENTE IN (1, 8, 9, 10)
+                               AND M.CODFILIAL = vCODFILIAL_ES THEN
                            vCC_DISTRIBUICAO_ES
                           ELSE
                            V.CODCC
@@ -1065,8 +963,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      (CASE
                        WHEN M.TIPOMOV IN ('ENTRADA DEVOLUCAO') THEN
                         (CASE
-                          WHEN M.CODGERENTE IN (1, 8, 9, 10) AND
-                               M.CODFILIAL = vCODFILIAL_ES THEN
+                          WHEN M.CODGERENTE IN (1, 8, 9, 10)
+                               AND M.CODFILIAL = vCODFILIAL_ES THEN
                            vCC_DISTRIBUICAO_ES
                           ELSE
                            V.CODCC
@@ -1075,13 +973,11 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                         NULL
                      END) CODCC_CREDITO,
                      
-                     (M.TIPOMOV || ' - F' || LPAD(M.CODFILIAL, 2, 0) ||
-                     ' - Nº TRANSACAO: ' || M.NUMTRANSACAO) ATIVIDADE,
+                     (M.TIPOMOV || ' - F' || LPAD(M.CODFILIAL, 2, 0) || ' - Nº TRANSACAO: ' || M.NUMTRANSACAO) ATIVIDADE,
                      
                      ----------HISTORICO
                      (CASE
-                       WHEN (M.MOVIMENTO = 'S' OR
-                            M.TIPOMOV IN ('ENTRADA DEVOLUCAO')) THEN
+                       WHEN (M.MOVIMENTO = 'S' OR M.TIPOMOV IN ('ENTRADA DEVOLUCAO')) THEN
                         ('NF ' || M.NUMNOTA || ' - ' || M.CLIENTE)
                        ELSE
                         ('NF ' || M.NUMNOTA || ' - ' || M.FORNECEDOR)
@@ -1095,8 +991,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      
                      M.DTCANCEL
                 FROM BI_SINC_MOV_PROD_BASE_AGG M
-                LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_VENDEDOR()) V ON V.CODSUPERVISOR =
-                                                                            M.CODSUPERVISOR
+                LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_VENDEDOR()) V ON V.CODSUPERVISOR = M.CODSUPERVISOR
                WHERE 1 = 1)
     
     LOOP
@@ -1135,10 +1030,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      
                      ----------CONTADEBITO
                      (CASE
-                       WHEN M.TIPOMOV IN
-                            ('ENTRADA COMPRA',
-                             'ENTRADA COMPRA CONSIGNADO',
-                             'ENTRADA COMPRA TRIANGULAR') THEN
+                       WHEN M.TIPOMOV IN ('ENTRADA COMPRA', 'ENTRADA COMPRA CONSIGNADO', 'ENTRADA COMPRA TRIANGULAR') THEN
                         vESTOQUE
                        ELSE
                         vST_VENDA
@@ -1148,8 +1040,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      vST_RECOLHER CONTACREDITO,
                      ----------CODCC_DEBITO
                      (CASE
-                       WHEN M.CODGERENTE IN (1, 8, 9, 10) AND
-                            M.CODFILIAL = vCODFILIAL_ES THEN
+                       WHEN M.CODGERENTE IN (1, 8, 9, 10)
+                            AND M.CODFILIAL = vCODFILIAL_ES THEN
                         vCC_DISTRIBUICAO_ES
                        ELSE
                         V.CODCC
@@ -1157,8 +1049,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      
                      ----------CODCC_CREDITO
                      NULL CODCC_CREDITO,
-                     (M.TIPOMOV || ' - F' || LPAD(M.CODFILIAL, 2, 0) ||
-                     ' - Nº TRANSACAO: ' || M.NUMTRANSACAO) ATIVIDADE,
+                     (M.TIPOMOV || ' - F' || LPAD(M.CODFILIAL, 2, 0) || ' - Nº TRANSACAO: ' || M.NUMTRANSACAO) ATIVIDADE,
                      
                      ----------HISTORICO
                      (CASE
@@ -1169,10 +1060,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      END) HISTORICO,
                      ----------VALOR
                      (CASE
-                       WHEN M.TIPOMOV IN
-                            ('ENTRADA COMPRA',
-                             'ENTRADA COMPRA CONSIGNADO',
-                             'ENTRADA COMPRA TRIANGULAR') THEN
+                       WHEN M.TIPOMOV IN ('ENTRADA COMPRA', 'ENTRADA COMPRA CONSIGNADO', 'ENTRADA COMPRA TRIANGULAR') THEN
                         M.VALORSTGUIA
                        ELSE
                         M.VALORST
@@ -1184,16 +1072,14 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      
                      M.DTCANCEL
                 FROM BI_SINC_MOV_PROD_BASE_AGG M
-                LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_VENDEDOR()) V ON V.CODSUPERVISOR =
-                                                                            M.CODSUPERVISOR
+                LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_VENDEDOR()) V ON V.CODSUPERVISOR = M.CODSUPERVISOR
                WHERE 1 = 1
-                     AND M.TIPOMOV IN
-                     ('SAIDA VENDA',
-                          'SAIDA FAT CONTA E ORDEM',
-                          'SAIDA REM ENTREGA FUTURA',
-                          'ENTRADA COMPRA',
-                          'ENTRADA COMPRA CONSIGNADO',
-                          'ENTRADA COMPRA TRIANGULAR'))
+                 AND M.TIPOMOV IN ('SAIDA VENDA',
+                                   'SAIDA FAT CONTA E ORDEM',
+                                   'SAIDA REM ENTREGA FUTURA',
+                                   'ENTRADA COMPRA',
+                                   'ENTRADA COMPRA CONSIGNADO',
+                                   'ENTRADA COMPRA TRIANGULAR'))
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
@@ -1231,8 +1117,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      vDIFAL_RECOLHER CONTACREDITO,
                      ----------CODCC_DEBITO
                      (CASE
-                       WHEN M.CODGERENTE IN (1, 8, 9, 10) AND
-                            M.CODFILIAL = vCODFILIAL_ES THEN
+                       WHEN M.CODGERENTE IN (1, 8, 9, 10)
+                            AND M.CODFILIAL = vCODFILIAL_ES THEN
                         vCC_DISTRIBUICAO_ES
                        ELSE
                         V.CODCC
@@ -1240,13 +1126,11 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      
                      ----------CODCC_CREDITO
                      NULL CODCC_CREDITO,
-                     (M.TIPOMOV || ' - Nº TRANSACAO: ' ||
-                     M.NUMTRANSACAO) ATIVIDADE,
+                     (M.TIPOMOV || ' - F' || LPAD(M.CODFILIAL, 2, 0) || ' - Nº TRANSACAO: ' || M.NUMTRANSACAO) ATIVIDADE,
                      
                      ----------HISTORICO
                      (CASE
-                       WHEN (M.MOVIMENTO = 'S' OR
-                            M.TIPOMOV IN ('ENTRADA DEVOLUCAO')) THEN
+                       WHEN (M.MOVIMENTO = 'S' OR M.TIPOMOV IN ('ENTRADA DEVOLUCAO')) THEN
                         ('NF ' || M.NUMNOTA || ' - ' || M.CLIENTE)
                        ELSE
                         ('NF ' || M.NUMNOTA || ' - ' || M.FORNECEDOR)
@@ -1260,13 +1144,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      
                      M.DTCANCEL
                 FROM BI_SINC_MOV_PROD_BASE_AGG M
-                LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_VENDEDOR()) V ON V.CODSUPERVISOR =
-                                                                            M.CODSUPERVISOR
+                LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_VENDEDOR()) V ON V.CODSUPERVISOR = M.CODSUPERVISOR
                WHERE 1 = 1
-                     AND M.TIPOMOV IN
-                     ('SAIDA VENDA',
-                          'SAIDA FAT CONTA E ORDEM',
-                          'SAIDA REM ENTREGA FUTURA'))
+                 AND M.TIPOMOV IN ('SAIDA VENDA', 'SAIDA FAT CONTA E ORDEM', 'SAIDA REM ENTREGA FUTURA'))
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
@@ -1289,56 +1169,110 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   
   END FN_MOV_PROD_DIFAL;
 
-----DESPESA FISCAL - VALOR CONTABIL INTEIRO
+  ----DESPESA FISCAL - VALOR CONTABIL INTEIRO
   FUNCTION FN_DESP_FISCAL_VLCONTABIL_INTEIRO RETURN T_CONTABIL_TABLE
-    PIPELINED IS 
-
+    PIPELINED IS
+  
   BEGIN
-    FOR r IN (SELECT 'D01' CODLANC,
-                     M.CODEMPRESA,
-                     M.DATA,
-                     3 TIPOLANCAMENTO,
-                     M.NUMTRANSACAO IDENTIFICADOR,
-                     M.NUMNOTA DOCUMENTO,
-                     vICMS_VENDA CONTADEBITO,
-                     vDIFAL_RECOLHER CONTACREDITO,
-                     ----------CODCC_DEBITO
-                     (CASE
-                       WHEN M.CODGERENTE IN (1, 8, 9, 10) AND
-                            M.CODFILIAL = vCODFILIAL_ES THEN
-                        vCC_DISTRIBUICAO_ES
-                       ELSE
-                        V.CODCC
-                     END) CODCC_DEBITO,
-                     
-                     ----------CODCC_CREDITO
-                     NULL CODCC_CREDITO,
-                     (M.TIPOMOV || ' - Nº TRANSACAO: ' ||
-                     M.NUMTRANSACAO) ATIVIDADE,
-                     
-                     ----------HISTORICO
-                     (CASE
-                       WHEN (M.MOVIMENTO = 'S' OR
-                            M.TIPOMOV IN ('ENTRADA DEVOLUCAO')) THEN
-                        ('NF ' || M.NUMNOTA || ' - ' || M.CLIENTE)
-                       ELSE
-                        ('NF ' || M.NUMNOTA || ' - ' || M.FORNECEDOR)
-                     END) HISTORICO,
-                     
-                     M.VALORICMSDIFAL VALOR,
-                     ('MOVPROD_VL_DIFAL') ORIGEM,
-                     
-                     ----------ENVIAR_CONTABIL
-                     'N' ENVIAR_CONTABIL,
-                     
-                     M.DTCANCEL
-                FROM BI_SINC_DESP
-
-               WHERE 1 = 1
-                     AND M.TIPOMOV IN
-                     ('SAIDA VENDA',
-                          'SAIDA FAT CONTA E ORDEM',
-                          'SAIDA REM ENTREGA FUTURA'))
+    FOR r IN (WITH vENT_BONIFICADA AS
+                 (SELECT CODFISCAL FROM PCCFO F WHERE F.CODFISCAL IN (1910, 2910, 1911)),
+                vENT_REM_ENTREGA_FUTURA AS
+                 (SELECT CODFISCAL FROM PCCFO F WHERE F.CODFISCAL IN (1116, 1117, 2116, 2117))
+                
+                SELECT 'D01' CODLANC,
+                       E.CODEMPRESA,
+                       E.DATA,
+                       
+                       ----------TIPO LANCAMENTO
+                       (CASE
+                         WHEN E.VLIMPOSTO > 0 THEN
+                          1
+                         WHEN E.CFOP IN (SELECT CODFISCAL FROM vENT_BONIFICADA) THEN
+                          2
+                         ELSE
+                          3
+                       END) TIPOLANCAMENTO,
+                       
+                       E.NUMTRANSENT IDENTIFICADOR,
+                       E.NUMNOTA DOCUMENTO,
+                       
+                       ----------CONTA_DEBITO
+                       (CASE
+                         WHEN E.CODCONTA = vOUTROSESTOQUES THEN
+                          NULL
+                         ELSE
+                          E.CODCONTA
+                       END) CONTADEBITO,
+                       
+                       ----------CONTA_CREDITO
+                       (CASE
+                         WHEN E.CODCONTA = vOUTROSESTOQUES
+                              AND E.CFOP IN (SELECT CODFISCAL FROM vENT_BONIFICADA) THEN
+                          vENTRADA_BONIFICADA
+                         WHEN E.VLIMPOSTO > 0 THEN
+                          NULL
+                         WHEN E.CFOP IN (SELECT CODFISCAL FROM vENT_REM_ENTREGA_FUTURA) THEN
+                          vAQUISICAOIMOBILIZADO
+                         ELSE
+                          NVL(E.CODFORNEC, vOUTRO_FORNECEDOR)
+                       END) CONTACREDITO,
+                       
+                       ----------CODCC_DEBITO
+                       (CASE
+                         WHEN E.CODCONTA = vOUTROSESTOQUES THEN
+                          NULL
+                         WHEN E.CODCONTA = vFRETE
+                              AND E.CODCC = '0' THEN
+                          (CASE
+                            WHEN E.CODFILIAL = '1' THEN
+                             vCC_CORPORATIVO_SP
+                            ELSE
+                             L.CODCC
+                          END)
+                         WHEN E.CODCC = '0' THEN
+                          NULL
+                         ELSE
+                          E.CODCC
+                       END) CODCC_DEBITO,
+                       
+                       ----------CODCC_CREDITO
+                       (CASE
+                         WHEN E.CODCONTA = vOUTROSESTOQUES
+                              AND E.CFOP IN (SELECT CODFISCAL FROM vENT_BONIFICADA) THEN
+                          L.CODCC
+                         ELSE
+                          NULL
+                       END) CODCC_CREDITO,
+                       
+                       ----------ATIVIDADE
+                       (CASE
+                         WHEN E.RECNUM > 0 THEN
+                          (UPPER(C.CONTA) || ' - F' || LPAD(E.CODFILIAL, 2, 0) || ' - VLTOTAL: ' ||
+                          TRIM(TRANSLATE(TO_CHAR(E.VALOR, '999,999.00'), '.,', ',.')) || ' - RAT: ' ||
+                          REPLACE(TO_CHAR(E.PERCRATEIO, '999.00'), '.', ',') || '% - Nº TRANSENT: ' || E.NUMTRANSENT ||
+                          ' - RECNUM: ' || E.RECNUM)
+                         ELSE
+                          (UPPER(C.CONTA) || ' - F' || LPAD(E.CODFILIAL, 2, 0) || ' - Nº TRANSENT: ' || E.NUMTRANSENT)
+                       END) ATIVIDADE,
+                       
+                       ----------HISTORICO
+                       (E.ESPECIE || ' ' || E.NUMNOTA || ' - ' || F.CNPJ || ' - ' || E.FORNECEDOR || ' - Cód: ' ||
+                       E.CODFORNEC) HISTORICO,
+                       
+                       ROUND(E.VLRATEIO, 2) VALOR,
+                       
+                       ('DESP_FISCAL_VL_INTEIRO') ORIGEM,
+                       
+                       ----------ENVIAR_CONTABIL
+                       'N' ENVIAR_CONTABIL,
+                       
+                       TO_DATE(NULL, 'DD/MM/YYYY') DTCANCEL
+                  FROM BI_SINC_DESPESA_FISCAL_BASE E
+                  LEFT JOIN BI_SINC_PLANO_CONTAS_JC C ON C.CODGERENCIAL = E.CODCONTA
+                  LEFT JOIN BI_SINC_FORNECEDOR F ON F.CODFORNEC = E.CODFORNEC
+                  LEFT JOIN TABLE (PKG_BI_CONTABILIDADE.FN_CC_FILIAL()) L ON L.CODFILIAL = E.CODFILIAL
+                 WHERE 1 = 1)
+    
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
@@ -1360,6 +1294,492 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     END LOOP;
   
   END FN_DESP_FISCAL_VLCONTABIL_INTEIRO;
+
+  ----DESPESA FISCAL - VALOR CONTABIL PARCIAL
+  FUNCTION FN_DESP_FISCAL_VLCONTABIL_PARCIAL RETURN T_CONTABIL_TABLE
+    PIPELINED IS
+  
+  BEGIN
+    FOR r IN (WITH vENT_BONIFICADA AS
+                 (SELECT CODFISCAL FROM PCCFO F WHERE F.CODFISCAL IN (1910, 2910, 1911))
+                
+                SELECT DISTINCT 'D02' CODLANC,
+                                E.CODEMPRESA,
+                                E.DATA,
+                                
+                                ----------TIPO LANCAMENTO
+                                (CASE
+                                  WHEN E.VLIMPOSTO > 0 THEN
+                                   2
+                                  ELSE
+                                   1
+                                END) TIPOLANCAMENTO,
+                                
+                                E.NUMTRANSENT IDENTIFICADOR,
+                                E.NUMNOTA DOCUMENTO,
+                                
+                                ----------CONTA_DEBITO
+                                (CASE
+                                  WHEN E.CFOP IN (SELECT CODFISCAL FROM vENT_BONIFICADA) THEN
+                                   vESTOQUE
+                                  ELSE
+                                   NULL
+                                END) CONTADEBITO,
+                                
+                                ----------CONTA_CREDITO
+                                (CASE
+                                  WHEN E.VLIMPOSTO > 0 THEN
+                                   NVL(E.CODFORNEC, vOUTRO_FORNECEDOR)
+                                  ELSE
+                                   NULL
+                                END) CONTACREDITO,
+                                
+                                ----------CODCC_DEBITO
+                                NULL CODCC_DEBITO,
+                                
+                                ----------CODCC_CREDITO
+                                NULL CODCC_CREDITO,
+                                
+                                ----------ATIVIDADE
+                                (CASE
+                                  WHEN E.RECNUM > 0 THEN
+                                   (UPPER(C.CONTA) || ' - F' || LPAD(E.CODFILIAL, 2, 0) || ' - VLTOTAL: ' ||
+                                   TRIM(TRANSLATE(TO_CHAR(E.VALOR, '999,999.00'), '.,', ',.')) || ' - Nº TRANSENT: ' ||
+                                   E.NUMTRANSENT || ' - RECNUM: ' || E.RECNUM)
+                                  ELSE
+                                   ('REMESSA BONIFICADA - F' || LPAD(E.CODFILIAL, 2, 0) || ' - Nº TRANSENT: ' ||
+                                   E.NUMTRANSENT)
+                                END) ATIVIDADE,
+                                
+                                ----------HISTORICO
+                                (E.ESPECIE || ' ' || E.NUMNOTA || ' - ' || F.CNPJ || ' - ' || E.FORNECEDOR || ' - Cód: ' ||
+                                E.CODFORNEC) HISTORICO,
+                                
+                                ----------VALOR
+                                (CASE
+                                  WHEN E.VLIMPOSTO > 0 THEN
+                                   ROUND(E.VALOR - E.VLIMPOSTO, 2)
+                                  ELSE
+                                   ROUND(E.VALOR - E.VLICMS, 2)
+                                END) VALOR,
+                                
+                                ('DESP_FISCAL_VL_PARCIAL') ORIGEM,
+                                
+                                ----------ENVIAR_CONTABIL
+                                'N' ENVIAR_CONTABIL,
+                                
+                                TO_DATE(NULL, 'DD/MM/YYYY') DTCANCEL
+                  FROM BI_SINC_DESPESA_FISCAL_BASE E
+                  LEFT JOIN BI_SINC_PLANO_CONTAS_JC C ON C.CODGERENCIAL = E.CODCONTA
+                  LEFT JOIN BI_SINC_FORNECEDOR F ON F.CODFORNEC = E.CODFORNEC
+                 WHERE E.VLIMPOSTO > 0
+                    OR E.CFOP IN (SELECT CODFISCAL FROM vENT_BONIFICADA))
+    
+    LOOP
+      PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
+                                 r.CODEMPRESA,
+                                 r.DATA,
+                                 r.TIPOLANCAMENTO,
+                                 r.IDENTIFICADOR,
+                                 r.DOCUMENTO,
+                                 r.CONTADEBITO,
+                                 r.CONTACREDITO,
+                                 r.CODCC_DEBITO,
+                                 r.CODCC_CREDITO,
+                                 r.ATIVIDADE,
+                                 r.HISTORICO,
+                                 r.VALOR,
+                                 r.ORIGEM,
+                                 r.ENVIAR_CONTABIL,
+                                 r.DTCANCEL));
+    
+    END LOOP;
+  
+  END FN_DESP_FISCAL_VLCONTABIL_PARCIAL;
+
+  ----DESPESA FISCAL - ICMS
+  FUNCTION FN_DESP_FISCAL_ICMS RETURN T_CONTABIL_TABLE
+    PIPELINED IS
+  
+  BEGIN
+    FOR r IN (WITH vENT_BONIFICADA AS
+                 (SELECT CODFISCAL FROM PCCFO F WHERE F.CODFISCAL IN (1910, 2910, 1911)),
+                vENT_SIMPLES_REMESSA AS
+                 (SELECT CODFISCAL FROM PCCFO F WHERE F.CODFISCAL IN (1908, 1909, 1949, 2949))
+                
+                SELECT 'D03' CODLANC,
+                       E.CODEMPRESA,
+                       E.DATA,
+                       
+                       ----------TIPO LANCAMENTO
+                       (CASE
+                         WHEN E.CFOP IN (SELECT CODFISCAL FROM vENT_BONIFICADA) THEN
+                          1
+                         ELSE
+                          3
+                       END) TIPOLANCAMENTO,
+                       
+                       E.NUMTRANSENT IDENTIFICADOR,
+                       E.NUMNOTA DOCUMENTO,
+                       
+                       ----------CONTA_DEBITO
+                       (CASE
+                         WHEN E.CODFILIAL = vCODFILIAL_ES THEN
+                          vICMS_RECUPERAR_ES
+                         ELSE
+                          vICMS_RECUPERAR
+                       END) CONTADEBITO,
+                       
+                       ----------CONTA_CREDITO
+                       (CASE
+                         WHEN (E.CODCONTA = vOUTROSESTOQUES AND E.CFOP IN (SELECT CODFISCAL FROM vENT_SIMPLES_REMESSA)) THEN
+                          vESTOQUE
+                         WHEN (E.CODCONTA = vOUTROSESTOQUES AND E.CFOP IN (SELECT CODFISCAL FROM vENT_BONIFICADA)) THEN
+                          NULL
+                         ELSE
+                          E.CODCONTA
+                       END) CONTACREDITO,
+                       
+                       ----------CODCC_DEBITO
+                       NULL CODCC_DEBITO,
+                       
+                       ----------CODCC_CREDITO
+                       (CASE
+                         WHEN (E.CODCONTA = vFRETE AND E.CODCC = '0') THEN
+                          (CASE
+                            WHEN E.CODFILIAL = '1' THEN
+                             vCC_CORPORATIVO_SP
+                            ELSE
+                             L.CODCC
+                          END)
+                         WHEN (E.CODCC = '0' OR E.CODCONTA = vOUTROSESTOQUES) THEN
+                          NULL
+                         ELSE
+                          E.CODCC
+                       END) CODCC_CREDITO,
+                       
+                       ----------ATIVIDADE
+                       (CASE
+                         WHEN E.RECNUM > 0 THEN
+                          (UPPER(C.CONTA) || ' - F' || LPAD(E.CODFILIAL, 2, 0) || ' - VLTOTAL: ' ||
+                          TRIM(TRANSLATE(TO_CHAR(E.VALOR, '999,999.00'), '.,', ',.')) || ' - RAT: ' ||
+                          REPLACE(TO_CHAR(E.PERCRATEIO, '999.00'), '.', ',') || '% - Nº TRANSENT: ' || E.NUMTRANSENT ||
+                          ' - RECNUM: ' || E.RECNUM)
+                         ELSE
+                          ('REMESSA - F' || LPAD(E.CODFILIAL, 2, 0) || ' - Nº TRANSENT: ' || E.NUMTRANSENT)
+                       END) ATIVIDADE,
+                       
+                       ----------HISTORICO
+                       (E.ESPECIE || ' ' || E.NUMNOTA || ' - ' || F.CNPJ || ' - ' || E.FORNECEDOR || ' - Cód: ' ||
+                       E.CODFORNEC) HISTORICO,
+                       
+                       ROUND(E.VLICMS, 2) VALOR,
+                       
+                       ('DESP_FISCAL_ICMS') ORIGEM,
+                       
+                       ----------ENVIAR_CONTABIL
+                       'N' ENVIAR_CONTABIL,
+                       
+                       TO_DATE(NULL, 'DD/MM/YYYY') DTCANCEL
+                  FROM BI_SINC_DESPESA_FISCAL_BASE E
+                  LEFT JOIN BI_SINC_PLANO_CONTAS_JC C ON C.CODGERENCIAL = E.CODCONTA
+                  LEFT JOIN BI_SINC_FORNECEDOR F ON F.CODFORNEC = E.CODFORNEC
+                  LEFT JOIN TABLE (PKG_BI_CONTABILIDADE.FN_CC_FILIAL()) L ON L.CODFILIAL = E.CODFILIAL
+                 WHERE E.VLICMS > 0
+                   AND E.CODEMPRESA = 1)
+    
+    LOOP
+      PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
+                                 r.CODEMPRESA,
+                                 r.DATA,
+                                 r.TIPOLANCAMENTO,
+                                 r.IDENTIFICADOR,
+                                 r.DOCUMENTO,
+                                 r.CONTADEBITO,
+                                 r.CONTACREDITO,
+                                 r.CODCC_DEBITO,
+                                 r.CODCC_CREDITO,
+                                 r.ATIVIDADE,
+                                 r.HISTORICO,
+                                 r.VALOR,
+                                 r.ORIGEM,
+                                 r.ENVIAR_CONTABIL,
+                                 r.DTCANCEL));
+    
+    END LOOP;
+  
+  END FN_DESP_FISCAL_ICMS;
+
+  ----DESPESA FISCAL - PIS
+  FUNCTION FN_DESP_FISCAL_PIS RETURN T_CONTABIL_TABLE
+    PIPELINED IS
+  
+  BEGIN
+    FOR r IN (SELECT 'D04' CODLANC,
+                     E.CODEMPRESA,
+                     E.DATA,
+                     
+                     ----------TIPO LANCAMENTO
+                     3 TIPOLANCAMENTO,
+                     
+                     E.NUMTRANSENT IDENTIFICADOR,
+                     E.NUMNOTA DOCUMENTO,
+                     
+                     ----------CONTA_DEBITO
+                     vPIS_RECUPERAR CONTADEBITO,
+                     
+                     ----------CONTA_CREDITO
+                     E.CODCONTA CONTACREDITO,
+                     
+                     ----------CODCC_DEBITO
+                     NULL CODCC_DEBITO,
+                     
+                     ----------CODCC_CREDITO
+                     (CASE
+                       WHEN (E.CODCONTA = vFRETE AND E.CODCC = '0') THEN
+                        (CASE
+                          WHEN E.CODFILIAL = '1' THEN
+                           vCC_CORPORATIVO_SP
+                          ELSE
+                           L.CODCC
+                        END)
+                       WHEN E.CODCC = '0' THEN
+                        L.CODCC
+                       ELSE
+                        E.CODCC
+                     END) CODCC_CREDITO,
+                     
+                     ----------ATIVIDADE
+                     (CASE
+                       WHEN E.RECNUM > 0 THEN
+                        (UPPER(C.CONTA) || ' - F' || LPAD(E.CODFILIAL, 2, 0) || ' - VLTOTAL: ' ||
+                        TRIM(TRANSLATE(TO_CHAR(E.VALOR, '999,999.00'), '.,', ',.')) || ' - RAT: ' ||
+                        REPLACE(TO_CHAR(E.PERCRATEIO, '999.00'), '.', ',') || '% - Nº TRANSENT: ' || E.NUMTRANSENT ||
+                        ' - RECNUM: ' || E.RECNUM)
+                       ELSE
+                        (UPPER(C.CONTA) || ' - F' || LPAD(E.CODFILIAL, 2, 0) || ' - Nº TRANSENT: ' || E.NUMTRANSENT)
+                     END) ATIVIDADE,
+                     
+                     ----------HISTORICO
+                     (E.ESPECIE || ' ' || E.NUMNOTA || ' - ' || F.CNPJ || ' - ' || E.FORNECEDOR || ' - Cód: ' ||
+                     E.CODFORNEC) HISTORICO,
+                     
+                     ROUND(E.VLPIS, 2) VALOR,
+                     
+                     ('DESP_FISCAL_PIS') ORIGEM,
+                     
+                     ----------ENVIAR_CONTABIL
+                     'N' ENVIAR_CONTABIL,
+                     
+                     TO_DATE(NULL, 'DD/MM/YYYY') DTCANCEL
+                FROM BI_SINC_DESPESA_FISCAL_BASE E
+                LEFT JOIN BI_SINC_PLANO_CONTAS_JC C ON C.CODGERENCIAL = E.CODCONTA
+                LEFT JOIN BI_SINC_FORNECEDOR F ON F.CODFORNEC = E.CODFORNEC
+                LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_FILIAL()) L ON L.CODFILIAL = E.CODFILIAL
+               WHERE E.VLPIS > 0
+                 AND E.CODEMPRESA = 1)
+    
+    LOOP
+      PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
+                                 r.CODEMPRESA,
+                                 r.DATA,
+                                 r.TIPOLANCAMENTO,
+                                 r.IDENTIFICADOR,
+                                 r.DOCUMENTO,
+                                 r.CONTADEBITO,
+                                 r.CONTACREDITO,
+                                 r.CODCC_DEBITO,
+                                 r.CODCC_CREDITO,
+                                 r.ATIVIDADE,
+                                 r.HISTORICO,
+                                 r.VALOR,
+                                 r.ORIGEM,
+                                 r.ENVIAR_CONTABIL,
+                                 r.DTCANCEL));
+    
+    END LOOP;
+  
+  END FN_DESP_FISCAL_PIS;
+
+  ----DESPESA FISCAL - COFINS
+  FUNCTION FN_DESP_FISCAL_COFINS RETURN T_CONTABIL_TABLE
+    PIPELINED IS
+  
+  BEGIN
+    FOR r IN (SELECT 'D05' CODLANC,
+                     E.CODEMPRESA,
+                     E.DATA,
+                     
+                     ----------TIPO LANCAMENTO
+                     3 TIPOLANCAMENTO,
+                     
+                     E.NUMTRANSENT IDENTIFICADOR,
+                     E.NUMNOTA DOCUMENTO,
+                     
+                     ----------CONTA_DEBITO
+                     vCOFINS_RECUPERAR CONTADEBITO,
+                     
+                     ----------CONTA_CREDITO
+                     E.CODCONTA CONTACREDITO,
+                     
+                     ----------CODCC_DEBITO
+                     NULL CODCC_DEBITO,
+                     
+                     ----------CODCC_CREDITO
+                     (CASE
+                       WHEN (E.CODCONTA = vFRETE AND E.CODCC = '0') THEN
+                        (CASE
+                          WHEN E.CODFILIAL = '1' THEN
+                           vCC_CORPORATIVO_SP
+                          ELSE
+                           L.CODCC
+                        END)
+                       WHEN E.CODCC = '0' THEN
+                        L.CODCC
+                       ELSE
+                        E.CODCC
+                     END) CODCC_CREDITO,
+                     
+                     ----------ATIVIDADE
+                     (CASE
+                       WHEN E.RECNUM > 0 THEN
+                        (UPPER(C.CONTA) || ' - F' || LPAD(E.CODFILIAL, 2, 0) || ' - VLTOTAL: ' ||
+                        TRIM(TRANSLATE(TO_CHAR(E.VALOR, '999,999.00'), '.,', ',.')) || ' - RAT: ' ||
+                        REPLACE(TO_CHAR(E.PERCRATEIO, '999.00'), '.', ',') || '% - Nº TRANSENT: ' || E.NUMTRANSENT ||
+                        ' - RECNUM: ' || E.RECNUM)
+                       ELSE
+                        (UPPER(C.CONTA) || ' - F' || LPAD(E.CODFILIAL, 2, 0) || ' - Nº TRANSENT: ' || E.NUMTRANSENT)
+                     END) ATIVIDADE,
+                     
+                     ----------HISTORICO
+                     (E.ESPECIE || ' ' || E.NUMNOTA || ' - ' || F.CNPJ || ' - ' || E.FORNECEDOR || ' - Cód: ' ||
+                     E.CODFORNEC) HISTORICO,
+                     
+                     ROUND(E.VLCOFINS, 2) VALOR,
+                     
+                     ('DESP_FISCAL_COFINS') ORIGEM,
+                     
+                     ----------ENVIAR_CONTABIL
+                     'N' ENVIAR_CONTABIL,
+                     
+                     TO_DATE(NULL, 'DD/MM/YYYY') DTCANCEL
+                FROM BI_SINC_DESPESA_FISCAL_BASE E
+                LEFT JOIN BI_SINC_PLANO_CONTAS_JC C ON C.CODGERENCIAL = E.CODCONTA
+                LEFT JOIN BI_SINC_FORNECEDOR F ON F.CODFORNEC = E.CODFORNEC
+                LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_FILIAL()) L ON L.CODFILIAL = E.CODFILIAL
+               WHERE E.VLCOFINS > 0
+                 AND E.CODEMPRESA = 1)
+    
+    LOOP
+      PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
+                                 r.CODEMPRESA,
+                                 r.DATA,
+                                 r.TIPOLANCAMENTO,
+                                 r.IDENTIFICADOR,
+                                 r.DOCUMENTO,
+                                 r.CONTADEBITO,
+                                 r.CONTACREDITO,
+                                 r.CODCC_DEBITO,
+                                 r.CODCC_CREDITO,
+                                 r.ATIVIDADE,
+                                 r.HISTORICO,
+                                 r.VALOR,
+                                 r.ORIGEM,
+                                 r.ENVIAR_CONTABIL,
+                                 r.DTCANCEL));
+    
+    END LOOP;
+  
+  END FN_DESP_FISCAL_COFINS;
+
+  ----DESPESA FISCAL - DIFAL
+  FUNCTION FN_DESP_FISCAL_DIFAL RETURN T_CONTABIL_TABLE
+    PIPELINED IS
+  
+  BEGIN
+    FOR r IN (SELECT 'D06' CODLANC,
+                     E.CODEMPRESA,
+                     E.DATA,
+                     
+                     ----------TIPO LANCAMENTO
+                     3 TIPOLANCAMENTO,
+                     
+                     E.NUMTRANSENT IDENTIFICADOR,
+                     E.NUMNOTA DOCUMENTO,
+                     
+                     ----------CONTA_DEBITO
+                     (CASE
+                       WHEN T.GRUPOCONTA = vGRUPO_MATERIAL_OPERACAO THEN
+                        vDIFAL_MATERIAL_OPERACAO
+                       ELSE
+                        vDIFAL_EQUIPAMENTO
+                     END) CONTADEBITO,
+                     
+                     ----------CONTA_CREDITO
+                     vICMS_RECOLHER CONTACREDITO,
+                     
+                     ----------CODCC_DEBITO
+                     (CASE
+                       WHEN E.CODCC = '0' THEN
+                        L.CODCC
+                       ELSE
+                        E.CODCC
+                     END) CODCC_DEBITO,
+                     
+                     ----------CODCC_CREDITO
+                     NULL CODCC_CREDITO,
+                     
+                     ----------ATIVIDADE
+                     (CASE
+                       WHEN E.RECNUM > 0 THEN
+                        (UPPER(C.CONTA) || ' - F' || LPAD(E.CODFILIAL, 2, 0) || ' - VLTOTAL: ' ||
+                        TRIM(TRANSLATE(TO_CHAR(E.VALOR, '999,999.00'), '.,', ',.')) || ' - RAT: ' ||
+                        REPLACE(TO_CHAR(E.PERCRATEIO, '999.00'), '.', ',') || '% - Nº TRANSENT: ' || E.NUMTRANSENT ||
+                        ' - RECNUM: ' || E.RECNUM)
+                       ELSE
+                        (UPPER(C.CONTA) || ' - F' || LPAD(E.CODFILIAL, 2, 0) || ' - Nº TRANSENT: ' || E.NUMTRANSENT)
+                     END) ATIVIDADE,
+                     
+                     ----------HISTORICO
+                     (E.ESPECIE || ' ' || E.NUMNOTA || ' - ' || F.CNPJ || ' - ' || E.FORNECEDOR || ' - Cód: ' ||
+                     E.CODFORNEC) HISTORICO,
+                     
+                     ROUND(E.VLDIFAL, 2) VALOR,
+                     
+                     ('DESP_FISCAL_DIFAL') ORIGEM,
+                     
+                     ----------ENVIAR_CONTABIL
+                     'N' ENVIAR_CONTABIL,
+                     
+                     TO_DATE(NULL, 'DD/MM/YYYY') DTCANCEL
+                FROM BI_SINC_DESPESA_FISCAL_BASE E
+                LEFT JOIN BI_SINC_PLANO_CONTAS_JC C ON C.CODGERENCIAL = E.CODCONTA
+                LEFT JOIN PCCONTA T ON T.CODCONTA = E.CODCONTA
+                LEFT JOIN BI_SINC_FORNECEDOR F ON F.CODFORNEC = E.CODFORNEC
+                LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_FILIAL()) L ON L.CODFILIAL = E.CODFILIAL
+               WHERE E.VLDIFAL > 0)
+    
+    LOOP
+      PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
+                                 r.CODEMPRESA,
+                                 r.DATA,
+                                 r.TIPOLANCAMENTO,
+                                 r.IDENTIFICADOR,
+                                 r.DOCUMENTO,
+                                 r.CONTADEBITO,
+                                 r.CONTACREDITO,
+                                 r.CODCC_DEBITO,
+                                 r.CODCC_CREDITO,
+                                 r.ATIVIDADE,
+                                 r.HISTORICO,
+                                 r.VALOR,
+                                 r.ORIGEM,
+                                 r.ENVIAR_CONTABIL,
+                                 r.DTCANCEL));
+    
+    END LOOP;
+  
+  END FN_DESP_FISCAL_DIFAL;
 
 END PKG_BI_CONTABILIDADE;
 /
