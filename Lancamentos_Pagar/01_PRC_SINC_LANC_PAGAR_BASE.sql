@@ -28,7 +28,7 @@ BEGIN
                          'PROVISIONADO'
                       END) TIPO,
                       NVL(R.CODIGOCENTROCUSTO, 0) CODCC,
-                      NVL(ROUND(R.PERCRATEIO, 2), 0) PERCRATEIO,
+                      NVL(R.PERCRATEIO, 0) PERCRATEIO,
                       R.VALOR VLRATEIO,
                       (CASE
                         WHEN L.DTPAGTO IS NULL THEN
@@ -254,7 +254,7 @@ BEGIN
 
   COMMIT;
 
-/*  --EXCLUIR REGISTROS QUE NAO PERTENCEM MAIS A PCLANC
+  --EXCLUIR REGISTROS QUE NAO PERTENCEM MAIS A PCLANC
   BEGIN
     EXECUTE IMMEDIATE 'DELETE FROM BI_SINC_LANC_PAGAR_BASE
  WHERE (RECNUM ) IN
@@ -264,6 +264,6 @@ BEGIN
         WHERE L.RECNUM IS NULL)';
   END;
 
-  COMMIT;*/
+  COMMIT;
 
 END;
