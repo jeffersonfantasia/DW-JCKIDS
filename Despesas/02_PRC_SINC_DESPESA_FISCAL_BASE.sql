@@ -1,5 +1,9 @@
 CREATE OR REPLACE PROCEDURE PRC_SINC_DESPESA_FISCAL_BASE AS
 
+  -----------------------DATAS DE ATUALIZACAO
+  --vDATA_MOV_INCREMENTAL DATE := TRUNC(SYSDATE) - 75;
+  vDATA_MOV_INCREMENTAL DATE := TO_DATE('01/01/2020', 'DD/MM/YYYY');
+
 BEGIN
   FOR r IN (WITH LANCAMENTO AS
                (SELECT *
@@ -40,7 +44,8 @@ BEGIN
                  LEFT JOIN LANCAMENTO L ON L.NUMNOTA = E.NUMNOTA
                                        AND L.CODFORNEC = E.CODFORNEC
                                        AND L.ANO_COMPETENCIA = E.ANO
-                 LEFT JOIN BI_SINC_LANC_PAGAR_BASE C ON C.RECNUM = L.RECNUM)
+                 LEFT JOIN BI_SINC_LANC_PAGAR_BASE C ON C.RECNUM = L.RECNUM
+                WHERE E.DATA >= vDATA_MOV_INCREMENTAL)
               
               SELECT E.*
                 FROM DESPESA_FISCAL_BASE E

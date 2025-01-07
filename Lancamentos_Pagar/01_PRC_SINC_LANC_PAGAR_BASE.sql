@@ -1,12 +1,15 @@
 CREATE OR REPLACE PROCEDURE PRC_SINC_LANC_PAGAR_BASE AS
+
+   -----------------------DATAS DE ATUALIZACAO
+   --vDATA_MOV_INCREMENTAL DATE := TRUNC(SYSDATE) - 120;
+   vDATA_MOV_INCREMENTAL DATE := TO_DATE('01/01/2020', 'DD/MM/YYYY'); 
+
 BEGIN
   
   FOR r IN (WITH BANCO AS
-               (SELECT F.CODEMPRESA,
-                      B.CODBANCO,
+               (SELECT B.CODBANCO,
                       C.CODCONTA
                  FROM PCBANCO B
-                 LEFT JOIN BI_SINC_FILIAL F ON F.CODFILIAL = B.CODFILIAL
                  LEFT JOIN PCCONTA C ON B.CODBANCO = C.CODCONTAMASTER),
               
               BASE AS
@@ -60,7 +63,6 @@ BEGIN
                       L.DTPAGTO DTPAGAMENTO,
                       M.DTCOMPENSACAO,
                       M.CODBANCO,
-                      B.CODEMPRESA CODEMPRESABANCO,
                       B.CODCONTA CONTABANCO,
                       L.CODROTINABAIXA,
                       L.DTESTORNOBAIXA,
@@ -72,6 +74,7 @@ BEGIN
                  LEFT JOIN PCRATEIOCENTROCUSTO R ON R.RECNUM = L.RECNUM
                  LEFT JOIN PCCONTA C ON C.CODCONTA = L.CODCONTA
                 WHERE 1 = 1
+                  AND L.DTCOMPETENCIA >= vDATA_MOV_INCREMENTAL
                   AND NVL(L.INDICE, '0') NOT IN ('B')
                   AND NVL(L.CODROTINABAIXA, 0) NOT IN (1207, 1502, 1503, 9806, 9876)
                   AND M.DTESTORNO IS NULL
@@ -106,7 +109,6 @@ BEGIN
                       L.DTPAGAMENTO,
                       L.DTCOMPENSACAO,
                       L.CODBANCO,
-                      L.CODEMPRESABANCO,
                       L.CONTABANCO,
                       L.CODROTINABAIXA,
                       L.DTESTORNOBAIXA
@@ -124,25 +126,24 @@ BEGIN
                   OR NVL(S.DTCOMPETENCIA, '01/01/1899') <> L.DTCOMPETENCIA
                   OR NVL(S.DTVENCIMENTO, '01/01/1899') <> L.DTVENCIMENTO
                   OR S.TIPO <> L.TIPO
-                  OR S.PERCRATEIO <> L.PERCRATEIO
+                  OR NVL(S.PERCRATEIO,0) <> NVL(L.PERCRATEIO,0)
                   OR S.VLRATEIO <> L.VLRATEIO
                   OR S.VALOR <> L.VALOR
-                  OR S.VLJUROS <> L.VLJUROS
-                  OR S.VLDESCONTO <> L.VLDESCONTO
-                  OR S.VLDEVOLUCAO <> L.VLDEVOLUCAO
-                  OR S.VLIMPOSTO <> L.VLIMPOSTO
-                  OR S.CODCONTA <> L.CODCONTA
-                  OR S.CODFORNEC <> L.CODFORNEC
+                  OR NVL(S.VLJUROS,0) <> NVL(L.VLJUROS,0)
+                  OR NVL(S.VLDESCONTO,0) <> NVL(L.VLDESCONTO,0)
+                  OR NVL(S.VLDEVOLUCAO,0) <> NVL(L.VLDEVOLUCAO,0)
+                  OR NVL(S.VLIMPOSTO,0) <> NVL(L.VLIMPOSTO,0)
+                  OR NVL(S.CODCONTA,0) <> NVL(L.CODCONTA,0)
+                  OR NVL(S.CODFORNEC,0) <> NVL(L.CODFORNEC,0)
                   OR S.TIPOPARCEIRO <> L.TIPOPARCEIRO
                   OR S.NUMNOTA <> L.NUMNOTA
                   OR S.HISTORICO <> L.HISTORICO
                   OR S.NUMTRANS <> L.NUMTRANS
                   OR NVL(S.DTPAGAMENTO, '01/01/1899') <> L.DTPAGAMENTO
                   OR NVL(S.DTCOMPENSACAO, '01/01/1899') <> L.DTCOMPENSACAO
-                  OR S.CODBANCO <> L.CODBANCO
-                  OR S.CODEMPRESABANCO <> L.CODEMPRESABANCO
-                  OR S.CONTABANCO <> L.CONTABANCO
-                  OR S.CODROTINABAIXA <> L.CODROTINABAIXA
+                  OR NVL(S.CODBANCO,0) <> NVL(L.CODBANCO,0)
+                  OR NVL(S.CONTABANCO,0) <> NVL(L.CONTABANCO,0)
+                  OR NVL(S.CODROTINABAIXA,0) <> NVL(L.CODROTINABAIXA,0)
                   OR NVL(S.DTESTORNOBAIXA, '01/01/1899') <> L.DTESTORNOBAIXA)
   
   -- Atualiza ou insere os resultados na tabela BI_SINC conforme as condições mencionadas
@@ -173,7 +174,6 @@ BEGIN
              DTPAGAMENTO     = r.DTPAGAMENTO,
              DTCOMPENSACAO   = r.DTCOMPENSACAO,
              CODBANCO        = r.CODBANCO,
-             CODEMPRESABANCO = r.CODEMPRESABANCO,
              CONTABANCO      = r.CONTABANCO,
              CODROTINABAIXA  = r.CODROTINABAIXA,
              DTESTORNOBAIXA  = r.DTESTORNOBAIXA,
@@ -208,7 +208,6 @@ BEGIN
            DTPAGAMENTO,
            DTCOMPENSACAO,
            CODBANCO,
-           CODEMPRESABANCO,
            CONTABANCO,
            CODROTINABAIXA,
            DTESTORNOBAIXA,
@@ -239,7 +238,6 @@ BEGIN
            r.DTPAGAMENTO,
            r.DTCOMPENSACAO,
            r.CODBANCO,
-           r.CODEMPRESABANCO,
            r.CONTABANCO,
            r.CODROTINABAIXA,
            r.DTESTORNOBAIXA,
@@ -257,7 +255,7 @@ BEGIN
   --EXCLUIR REGISTROS QUE NAO PERTENCEM MAIS A PCLANC
   BEGIN
     EXECUTE IMMEDIATE 'DELETE FROM BI_SINC_LANC_PAGAR_BASE
- WHERE (RECNUM ) IN
+ WHERE RECNUM IN
        (SELECT S.RECNUM
          FROM BI_SINC_LANC_PAGAR_BASE S
          LEFT JOIN PCLANC L ON S.RECNUM = L.RECNUM
