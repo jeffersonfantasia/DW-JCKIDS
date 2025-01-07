@@ -19,28 +19,39 @@ BEGIN
                           AND P.CODDRE IS NOT NULL)
                 WHERE RN = 1),
               
+              FRETES AS
+               (SELECT E.NUMTRANSENT,
+                      V.CODSUPERVISOR
+                 FROM BI_SINC_DESPESA_FISCAL E
+                 JOIN PCCONHECIMENTOFRETEI F ON F.NUMTRANSCONHEC = E.NUMTRANSENT
+                 JOIN PCNFSAID S ON S.CHAVENFE = F.CHAVENFE
+                 LEFT JOIN BI_SINC_VENDEDOR V ON V.CODUSUR = S.CODUSUR
+                WHERE E.ESPECIE = 'CT'),
+              
               DESPESA_FISCAL_BASE AS
                (SELECT E.CODEMPRESA,
                       E.CODFILIAL,
                       E.DATA,
                       E.NUMTRANSENT,
+                      F.CODSUPERVISOR,
                       E.NUMNOTA,
                       E.CODCONTA,
                       E.CODFORNEC,
                       E.FORNECEDOR,
                       E.ESPECIE,
                       E.CFOP,
-                      NVL(E.VALOR,0) VALOR,
-                      NVL(ROUND((E.VALOR * NVL(C.PERCRATEIO,100) / 100), 2), NVL(E.VALOR,0)) VLRATEIO,
-                      NVL(ROUND((E.VLICMS * NVL(C.PERCRATEIO,100) / 100), 6), NVL(E.VLICMS,0)) VLICMS,
-                      NVL(ROUND((E.VLPIS * NVL(C.PERCRATEIO,100) / 100), 6), NVL(E.VLPIS,0)) VLPIS,
-                      NVL(ROUND((E.VLCOFINS * NVL(C.PERCRATEIO,100) / 100), 6), NVL(E.VLCOFINS,0)) VLCOFINS,
-                      NVL(ROUND((E.VLDIFAL * NVL(C.PERCRATEIO,100) / 100), 2), NVL(E.VLDIFAL,0)) VLDIFAL,
+                      NVL(E.VALOR, 0) VALOR,
+                      NVL(ROUND((E.VALOR * NVL(C.PERCRATEIO, 100) / 100), 2), NVL(E.VALOR, 0)) VLRATEIO,
+                      NVL(ROUND((E.VLICMS * NVL(C.PERCRATEIO, 100) / 100), 6), NVL(E.VLICMS, 0)) VLICMS,
+                      NVL(ROUND((E.VLPIS * NVL(C.PERCRATEIO, 100) / 100), 6), NVL(E.VLPIS, 0)) VLPIS,
+                      NVL(ROUND((E.VLCOFINS * NVL(C.PERCRATEIO, 100) / 100), 6), NVL(E.VLCOFINS, 0)) VLCOFINS,
+                      NVL(ROUND((E.VLDIFAL * NVL(C.PERCRATEIO, 100) / 100), 2), NVL(E.VLDIFAL, 0)) VLDIFAL,
                       NVL(L.RECNUM, 0) RECNUM,
                       NVL(C.VLIMPOSTO, 0) VLIMPOSTO,
                       NVL(C.CODCC, '0') CODCC,
                       NVL(ROUND(C.PERCRATEIO, 2), 0) PERCRATEIO
                  FROM BI_SINC_DESPESA_FISCAL E
+                 LEFT JOIN FRETES F ON F.NUMTRANSENT = E.NUMTRANSENT
                  LEFT JOIN LANCAMENTO L ON L.NUMNOTA = E.NUMNOTA
                                        AND L.CODFORNEC = E.CODFORNEC
                                        AND L.ANO_COMPETENCIA = E.ANO
@@ -56,10 +67,11 @@ BEGIN
                   OR S.CODEMPRESA <> E.CODEMPRESA
                   OR S.CODFILIAL <> E.CODFILIAL
                   OR S.DATA <> E.DATA
+                  OR NVL(S.CODSUPERVISOR, 0) <> NVL(E.CODSUPERVISOR, 0)
                   OR S.NUMNOTA <> E.NUMNOTA
-                  OR NVL(S.CODCONTA, 0) <> E.CODCONTA
-                  OR NVL(S.CODFORNEC, 0) <> E.CODFORNEC
-                  OR NVL(S.FORNECEDOR, '0') <> E.FORNECEDOR
+                  OR NVL(S.CODCONTA, 0) <> NVL(E.CODCONTA, 0)
+                  OR NVL(S.CODFORNEC, 0) <> NVL(E.CODFORNEC, 0)
+                  OR NVL(S.FORNECEDOR, '0') <> NVL(E.FORNECEDOR, 0)
                   OR S.ESPECIE <> E.ESPECIE
                   OR S.CFOP <> E.CFOP
                   OR S.VALOR <> E.VALOR
@@ -78,25 +90,26 @@ BEGIN
   LOOP
     BEGIN
       UPDATE BI_SINC_DESPESA_FISCAL_BASE
-         SET CODEMPRESA = r.CODEMPRESA,
-             CODFILIAL  = r.CODFILIAL,
-             DATA       = r.DATA,
-             NUMNOTA    = r.NUMNOTA,
-             CODCONTA   = r.CODCONTA,
-             CODFORNEC  = r.CODFORNEC,
-             FORNECEDOR = r.FORNECEDOR,
-             ESPECIE    = r.ESPECIE,
-             CFOP       = r.CFOP,
-             VALOR      = r.VALOR,
-             VLRATEIO   = r.VLRATEIO,
-             VLICMS     = r.VLICMS,
-             VLPIS      = r.VLPIS,
-             VLCOFINS   = r.VLCOFINS,
-             VLDIFAL    = r.VLDIFAL,
-             RECNUM     = r.RECNUM,
-             VLIMPOSTO  = r.VLIMPOSTO,
-             PERCRATEIO = r.PERCRATEIO,
-             DT_UPDATE  = SYSDATE
+         SET CODEMPRESA    = r.CODEMPRESA,
+             CODFILIAL     = r.CODFILIAL,
+             DATA          = r.DATA,
+             CODSUPERVISOR = r.CODSUPERVISOR,
+             NUMNOTA       = r.NUMNOTA,
+             CODCONTA      = r.CODCONTA,
+             CODFORNEC     = r.CODFORNEC,
+             FORNECEDOR    = r.FORNECEDOR,
+             ESPECIE       = r.ESPECIE,
+             CFOP          = r.CFOP,
+             VALOR         = r.VALOR,
+             VLRATEIO      = r.VLRATEIO,
+             VLICMS        = r.VLICMS,
+             VLPIS         = r.VLPIS,
+             VLCOFINS      = r.VLCOFINS,
+             VLDIFAL       = r.VLDIFAL,
+             RECNUM        = r.RECNUM,
+             VLIMPOSTO     = r.VLIMPOSTO,
+             PERCRATEIO    = r.PERCRATEIO,
+             DT_UPDATE     = SYSDATE
        WHERE NUMTRANSENT = r.NUMTRANSENT
          AND NUMNOTA = r.NUMNOTA
          AND CODCC = r.CODCC;
@@ -107,6 +120,7 @@ BEGIN
            CODFILIAL,
            DATA,
            NUMTRANSENT,
+           CODSUPERVISOR,
            NUMNOTA,
            CODCONTA,
            CODFORNEC,
@@ -129,6 +143,7 @@ BEGIN
            r.CODFILIAL,
            r.DATA,
            r.NUMTRANSENT,
+           r.CODSUPERVISOR,
            r.NUMNOTA,
            r.CODCONTA,
            r.CODFORNEC,

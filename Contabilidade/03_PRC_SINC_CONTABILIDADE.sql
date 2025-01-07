@@ -2,7 +2,7 @@ CREATE OR REPLACE PROCEDURE PRC_SINC_CONTABILIDADE AS
 
   -----------------------DATAS DE ATUALIZACAO
   --vDATA_MOV_INCREMENTAL DATE := TRUNC(SYSDATE) - 75;
-  vDATA_MOV_INCREMENTAL DATE := TO_DATE('01/01/2014', 'DD/MM/YYYY');
+  vDATA_MOV_INCREMENTAL DATE := TO_DATE('01/01/2020', 'DD/MM/YYYY');
 
 BEGIN
   FOR r IN (WITH CONTA_DEBITO AS
@@ -69,23 +69,30 @@ BEGIN
                       M.ENVIAR_CONTABIL,
                       M.DT_UPDATE
                  FROM MOVIMENTO_CONTABIL M
-                 LEFT JOIN BI_SINC_PLANO_CONTAS_JC C ON C.CODGERENCIAL = M.CODGERENCIAL)
+                 LEFT JOIN BI_SINC_PLANO_CONTAS_JC C ON C.CODGERENCIAL = M.CODGERENCIAL
+                WHERE 1 = 1
+                  AND M.DATA >= vDATA_MOV_INCREMENTAL)
               
               SELECT M.*
                 FROM RESULTADO M
                 LEFT JOIN BI_SINC_CONTABILIDADE S ON M.CODLANC = S.CODLANC
                                                  AND S.IDENTIFICADOR = M.IDENTIFICADOR
                                                  AND S.CODCC = M.CODCC
-               WHERE 1 = 1
-                 AND M.DATA >= vDATA_MOV_INCREMENTAL
-                 AND (S.DT_UPDATE IS NULL OR S.CODEMPRESA <> M.CODEMPRESA OR
-                     NVL(S.DATA, TO_DATE('01/01/1889', 'DD/MM/YYYY')) <> M.DATA OR
-                     NVL(S.TIPOLANCAMENTO, 0) <> NVL(M.TIPOLANCAMENTO, 0) OR NVL(S.DOCUMENTO, 0) <> NVL(M.DOCUMENTO, 0) OR
-                     NVL(S.OPERACAO, 0) <> NVL(M.OPERACAO, 0) OR NVL(S.CODGERENCIAL, 0) <> NVL(M.CODGERENCIAL, 0) OR
-                     NVL(S.CODCC, '99') <> NVL(M.CODCC, '0') OR NVL(S.CODDRE, '0') <> NVL(M.CODDRE, '0') OR
-                     NVL(S.CODCONTABIL, '0') <> NVL(M.CODCONTABIL, '0') OR S.ATIVIDADE <> M.ATIVIDADE OR
-                     S.HISTORICO <> M.HISTORICO OR S.VALOR <> M.VALOR OR S.ORIGEM <> M.ORIGEM OR
-                     NVL(S.ENVIAR_CONTABIL, '0') <> M.ENVIAR_CONTABIL))
+               WHERE S.DT_UPDATE IS NULL
+                  OR S.CODEMPRESA <> M.CODEMPRESA
+                  OR NVL(S.DATA, TO_DATE('01/01/1889', 'DD/MM/YYYY')) <> M.DATA
+                  OR NVL(S.TIPOLANCAMENTO, 0) <> NVL(M.TIPOLANCAMENTO, 0)
+                  OR NVL(S.DOCUMENTO, 0) <> NVL(M.DOCUMENTO, 0)
+                  OR NVL(S.OPERACAO, 0) <> NVL(M.OPERACAO, 0)
+                  OR NVL(S.CODGERENCIAL, 0) <> NVL(M.CODGERENCIAL, 0)
+                  OR NVL(S.CODCC, '99') <> NVL(M.CODCC, '0')
+                  OR NVL(S.CODDRE, '0') <> NVL(M.CODDRE, '0')
+                  OR NVL(S.CODCONTABIL, '0') <> NVL(M.CODCONTABIL, '0')
+                  OR S.ATIVIDADE <> M.ATIVIDADE
+                  OR S.HISTORICO <> M.HISTORICO
+                  OR S.VALOR <> M.VALOR
+                  OR S.ORIGEM <> M.ORIGEM
+                  OR NVL(S.ENVIAR_CONTABIL, '0') <> M.ENVIAR_CONTABIL)
   
   -- Atualiza ou insere os resultados na tabela BI_SINC conforme as condições mencionadas
   
