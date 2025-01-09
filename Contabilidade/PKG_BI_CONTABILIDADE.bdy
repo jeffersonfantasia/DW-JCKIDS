@@ -1885,7 +1885,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      
                      ----------ATIVIDADE
                      (UPPER(C.CONTA) || ' - F' || LPAD(L.CODFILIAL, 2, 0) || ' - VLTOTAL: ' ||
-                     TRIM(TRANSLATE(TO_CHAR(L.VLRATEIO, '999,999.00'), '.,', ',.')) || ' - RAT: ' ||
+                     TRIM(TRANSLATE(TO_CHAR(L.VALOR, '999,999.00'), '.,', ',.')) || ' - RAT: ' ||
                      REPLACE(TO_CHAR(L.PERCRATEIO, '999.00'), '.', ',') || '% - RECNUM: ' || L.RECNUM) ATIVIDADE,
                      
                      ----------HISTORICO
@@ -1967,12 +1967,12 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      
                      ----------ATIVIDADE
                      (UPPER(C.CONTA) || ' - F' || LPAD(L.CODFILIAL, 2, 0) || ' - VLTOTAL: ' ||
-                     TRIM(TRANSLATE(TO_CHAR(L.VLRATEIO, '999,999.00'), '.,', ',.')) || ' - RECNUM: ' || L.RECNUM) ATIVIDADE,
+                     TRIM(TRANSLATE(TO_CHAR(L.VALOR, '999,999.00'), '.,', ',.')) || ' - RECNUM: ' || L.RECNUM) ATIVIDADE,
                      
                      ----------HISTORICO
                      ('IMPOSTO NS' || L.NUMNOTA || ' - ' || F.CNPJ || ' - ' || F.FORNECEDOR || ' - Cód: ' || L.CODFORNEC) HISTORICO,
                      
-                     ROUND(L.VALOR, 2) VALOR,
+                     ROUND(L.VLRATEIO, 2) VALOR,
                      
                      ('DESP_GERENCIAL_IMPOSTO') ORIGEM,
                      

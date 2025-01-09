@@ -111,7 +111,7 @@ BEGIN
                                           AND S.CODCC_DEBITO = M.CODCC_DEBITO
                                           AND S.CODCC_CREDITO = M.CODCC_CREDITO
          WHERE 1 = 1
-           AND S.DATA >= TRUNC(SYSDATE) - 75
+           AND S.DATA >=  TO_DATE(''' || TO_CHAR(vDATA_MOV_INCREMENTAL, 'DD/MM/YYYY') || ''', ''DD/MM/YYYY'')
            AND M.CODLANC IS NULL)';
  END;
  
