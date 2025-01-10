@@ -49,6 +49,7 @@ BEGIN
                       NVL(L.VALORDEV, 0) VLDEVOLUCAO,
                       (NVL(L.VLIRRF, 0) + NVL(L.VLISS, 0) + NVL(L.VLINSS, 0)) VLIMPOSTO,
                       L.CODCONTA,
+                      C.GRUPOCONTA,
                       L.CODFORNEC,
                       L.TIPOPARCEIRO,
                       L.NUMNOTA,
@@ -100,6 +101,7 @@ BEGIN
                       L.VLDEVOLUCAO,
                       L.VLIMPOSTO,
                       L.CODCONTA,
+                      L.GRUPOCONTA,
                       L.CODFORNEC,
                       L.TIPOPARCEIRO,
                       L.NUMNOTA,
@@ -134,6 +136,7 @@ BEGIN
                   OR NVL(S.VLDEVOLUCAO, 0) <> NVL(L.VLDEVOLUCAO, 0)
                   OR NVL(S.VLIMPOSTO, 0) <> NVL(L.VLIMPOSTO, 0)
                   OR NVL(S.CODCONTA, 0) <> NVL(L.CODCONTA, 0)
+                  OR S.GRUPOCONTA <> L.GRUPOCONTA
                   OR NVL(S.CODFORNEC, 0) <> NVL(L.CODFORNEC, 0)
                   OR S.TIPOPARCEIRO <> L.TIPOPARCEIRO
                   OR S.NUMNOTA <> L.NUMNOTA
@@ -166,6 +169,7 @@ BEGIN
              VLDEVOLUCAO     = r.VLDEVOLUCAO,
              VLIMPOSTO       = r.VLIMPOSTO,
              CODCONTA        = r.CODCONTA,
+             GRUPOCONTA      = r.GRUPOCONTA,
              CODFORNEC       = r.CODFORNEC,
              TIPOPARCEIRO    = r.TIPOPARCEIRO,
              NUMNOTA         = r.NUMNOTA,
@@ -200,6 +204,7 @@ BEGIN
            VLDEVOLUCAO,
            VLIMPOSTO,
            CODCONTA,
+           GRUPOCONTA,
            CODFORNEC,
            TIPOPARCEIRO,
            NUMNOTA,
@@ -230,6 +235,7 @@ BEGIN
            r.VLDEVOLUCAO,
            r.VLIMPOSTO,
            r.CODCONTA,
+           r.GRUPOCONTA,
            r.CODFORNEC,
            r.TIPOPARCEIRO,
            r.NUMNOTA,
