@@ -2009,5 +2009,110 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   
   END FN_DESP_GERENCIAL_IMPOSTO;
 
+  ----LANCAMENTOS PAGAMENTO - OUTROS
+  FUNCTION FN_LANC_TIPO_OUTROS RETURN T_CONTABIL_TABLE
+    PIPELINED IS
+  
+  BEGIN
+    FOR r IN (SELECT 'L01' CODLANC,
+                     L.CODEMPRESA,
+                     L.DTCOMPENSACAO DATA,
+                     
+                     ----------TIPO LANCAMENTO
+                     3 TIPOLANCAMENTO,
+                     
+                     L.RECNUM IDENTIFICADOR,
+                     L.NUMNOTA DOCUMENTO,
+                     
+                     ----------CONTA_DEBITO
+                     (CASE
+                       WHEN L.VALOR > 0 THEN
+                        L.CODCONTA
+                       ELSE
+                        L.CONTABANCO
+                     END) CONTADEBITO,
+                     
+                     ----------CONTA_CREDITO
+                     (CASE
+                       WHEN L.VALOR > 0 THEN
+                        L.CONTABANCO
+                       ELSE
+                        L.CODCONTA
+                     END) CONTACREDITO,
+                     
+                     ----------CODCC_DEBITO
+                     (CASE
+                       WHEN L.VALOR > 0
+                            AND C.CODDRE > 0 THEN
+                        DECODE(L.CODCC, '0', FL.CODCC, L.CODCC)
+                       ELSE
+                        NULL
+                     END) CODCC_DEBITO,
+                     
+                     ----------CODCC_CREDITO
+                     (CASE
+                       WHEN L.VALOR < 0
+                            AND C.CODDRE > 0 THEN
+                        DECODE(L.CODCC, '0', FL.CODCC, L.CODCC)
+                       ELSE
+                        NULL
+                     END) CODCC_CREDITO,
+                     
+                     ----------ATIVIDADE
+                     (UPPER(C.CONTA) || ' - F' || LPAD(L.CODFILIAL, 2, 0) || ' - VLTOTAL: ' ||
+                     TRIM(TRANSLATE(TO_CHAR(L.VALOR, '999,999.00'), '.,', ',.')) || ' - RECNUM: ' || L.RECNUM) ATIVIDADE,
+                     
+                     ----------HISTORICO
+                     (CASE
+                       WHEN L.NUMNOTA > 0 THEN
+                        ('DOC ' || L.NUMNOTA || ' - ' || UPPER(L.HISTORICO))
+                       ELSE
+                        UPPER(L.HISTORICO)
+                     END) HISTORICO,
+                     
+                     ROUND(L.VLRATEIO, 2) VALOR,
+                     
+                     ('LANC_PAG_OUTROS') ORIGEM,
+                     
+                     ----------ENVIAR_CONTABIL
+                     'S' ENVIAR_CONTABIL,
+                     
+                     TO_DATE(NULL, 'DD/MM/YYYY') DTCANCEL
+                FROM BI_SINC_LANC_PAGAR_BASE L
+                LEFT JOIN PCCONTA C ON C.CODCONTA = L.CODCONTA
+                LEFT JOIN BI_SINC_FORNECEDOR F ON F.CODFORNEC = L.CODFORNEC
+                LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_FILIAL()) FL ON FL.CODFILIAL = L.CODFILIAL
+                LEFT JOIN BI_SINC_PLANO_CONTAS_JC C ON C.CODGERENCIAL = L.CODCONTA
+               WHERE 1 = 1
+                 AND L.CODCONTA <> L.CONTABANCO
+                 AND L.CODBANCO NOT IN (17, 20, 22, 40, 41)
+                 AND (L.GRUPOCONTA NOT IN (680, 900) OR L.CODCONTA = 9005)
+                 AND L.NUMTRANS IS NOT NULL
+                 AND L.DTCOMPENSACAO IS NOT NULL
+                 AND L.ADIANTAMENTO = 'N'
+                 AND L.TIPOPARCEIRO <> 'F')
+    
+    LOOP
+      PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
+                                 r.CODEMPRESA,
+                                 r.DATA,
+                                 r.TIPOLANCAMENTO,
+                                 r.IDENTIFICADOR,
+                                 r.DOCUMENTO,
+                                 r.CONTADEBITO,
+                                 r.CONTACREDITO,
+                                 r.CODCC_DEBITO,
+                                 r.CODCC_CREDITO,
+                                 r.ATIVIDADE,
+                                 r.HISTORICO,
+                                 r.VALOR,
+                                 r.ORIGEM,
+                                 r.ENVIAR_CONTABIL,
+                                 r.DTCANCEL));
+    
+    END LOOP;
+  
+  END FN_LANC_TIPO_OUTROS;
+
 END PKG_BI_CONTABILIDADE;
 /
