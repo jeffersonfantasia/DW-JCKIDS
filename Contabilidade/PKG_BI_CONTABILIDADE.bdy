@@ -1,5 +1,8 @@
 CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
 
+  -----------------------DATA PARA ATUALIZACAO INCREMENTAL
+  vDATA_MOV_INCREMENTAL DATE := TO_DATE('01/01/2020', 'DD/MM/YYYY');
+
   -----------------------CENTROS DE CUSTO
   vCC_SPMARKET        VARCHAR(3) := '1.1';
   vCC_PARQUE          VARCHAR(3) := '1.2';
@@ -52,12 +55,19 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   vFRETE                         NUMBER := 3202;
   vDIFAL_MATERIAL_OPERACAO       NUMBER := 3555;
   vDIFAL_EQUIPAMENTO             NUMBER := 3653;
-
-  ----------------OUTROS CODIGO CONTAS
-  vOUTROSESTOQUES NUMBER := 200159;
+  vOUTROSESTOQUES                NUMBER := 200159;
+  ----------------------------------------------
+  vDESCONTOS_OBTIDOS NUMBER := 4005;
+  vJUROS_PAGOS       NUMBER := 4109;
+  vCONTA_PAGTO_FRETE NUMBER := 9005;
 
   ----------------GRUPO CONTA
   vGRUPO_MATERIAL_OPERACAO NUMBER := 355;
+  vGRUPO_TRIBUTOS_RECOLHER NUMBER := 225;
+
+  ----------------BANCOS
+  vBANCO_COMISSAO_MKT NUMBER := 40;
+  vBANCO_CARTAO_CORP  NUMBER := 41;
 
   ----FORNECEDOR SEM CONTA CONTABIL
   vOUTRO_FORNECEDOR NUMBER := 99999;
@@ -116,6 +126,20 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   
   END FN_FORNEC_DESP_GER;
 
+  ----CODIGO FORNECEDORES DESCONSIDERAR LANCAMENTO - CONSIDERAR CONTA
+  FUNCTION FN_FORNECEDOR_LANC_TIPO_FORNEC_CONSIDERA_CONTA RETURN T_FORNEC_TABLE
+    PIPELINED IS
+  BEGIN
+    FOR r IN (SELECT CODFORNEC
+                FROM BI_SINC_FORNECEDOR
+               WHERE CODFORNEC IN
+                     (21, 162, 185, 9177, 9158, 9178, 9160, 9421, 9444, 9852, 9870, 9851, 10117, 10535, 10506))
+    LOOP
+      PIPE ROW(T_FORNEC_RECORD(r.CODFORNEC));
+    END LOOP;
+  
+  END FN_FORNECEDOR_LANC_TIPO_FORNEC_CONSIDERA_CONTA;
+
   ----CODIGO CONTA GERENCIAL - DESPESAS IMPOSTOS A RECOLHER 
   FUNCTION FN_CONTA_IMPOSTO_DESP_GER RETURN T_CONTA_TABLE
     PIPELINED IS
@@ -128,6 +152,63 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     END LOOP;
   
   END FN_CONTA_IMPOSTO_DESP_GER;
+
+  ----GRUPOS GERENCIAIS DESCONSIDERADOS DOS LANCAMENTOS
+  FUNCTION FN_GRUPO_LANC_DESCONSIDERAR RETURN T_GRUPO_TABLE
+    PIPELINED IS
+  BEGIN
+    FOR r IN (SELECT CODGRUPO FROM PCGRUPO WHERE CODGRUPO IN (680, 900))
+    LOOP
+      PIPE ROW(T_GRUPO_RECORD(r.CODGRUPO));
+    END LOOP;
+  
+  END FN_GRUPO_LANC_DESCONSIDERAR;
+
+  ----GRUPOS COM LANCAMENTOS TIPO FORNECEDORES - CONSIDERAR CONTA GERENCIAL
+  FUNCTION FN_GRUPO_LANC_TIPO_FORNEC_CONSIDERA_CONTA RETURN T_GRUPO_TABLE
+    PIPELINED IS
+  BEGIN
+    FOR r IN (SELECT CODGRUPO FROM PCGRUPO WHERE CODGRUPO IN (110, 210, 225, 230, 240, 245))
+    LOOP
+      PIPE ROW(T_GRUPO_RECORD(r.CODGRUPO));
+    END LOOP;
+  
+  END FN_GRUPO_LANC_TIPO_FORNEC_CONSIDERA_CONTA;
+
+  ----CONTAS COM LANCAMENTOS TIPO FORNECEDORES - CONSIDERAR CONTA GERENCIAL
+  FUNCTION FN_CONTA_LANC_TIPO_FORNEC_CONSIDERA_CONTA RETURN T_CONTA_TABLE
+    PIPELINED IS
+  BEGIN
+    FOR r IN (SELECT CODCONTA FROM PCCONTA WHERE CODCONTA IN (3406, 3451, 3454, 3705, 3706))
+    LOOP
+      PIPE ROW(T_CONTA_RECORD(r.CODCONTA));
+    END LOOP;
+  
+  END FN_CONTA_LANC_TIPO_FORNEC_CONSIDERA_CONTA;
+
+  ----CODIGO CONTA GERENCIAL - DESCRICAO DE FATURA AO INVES DE NOTA
+  FUNCTION FN_CONTA_DESCRICAO_FATURA RETURN T_CONTA_TABLE
+    PIPELINED IS
+  BEGIN
+    FOR r IN (SELECT CODCONTA
+                FROM PCCONTA
+               WHERE CODCONTA IN (3406, 3450, 3451, 3452, 3453, 3454, 3455, 3456, 3705, 3706))
+    LOOP
+      PIPE ROW(T_CONTA_RECORD(r.CODCONTA));
+    END LOOP;
+  
+  END FN_CONTA_DESCRICAO_FATURA;
+
+  ----BANCOS DESCONSIDERADOS DOS LANCAMENTOS E DAS BAIXAS
+  FUNCTION FN_BANCOS_DESCONSIDERAR RETURN T_BANCO_TABLE
+    PIPELINED IS
+  BEGIN
+    FOR r IN (SELECT CODBANCO FROM PCBANCO WHERE CODBANCO IN (17, 20, 22))
+    LOOP
+      PIPE ROW(T_BANCO_RECORD(r.CODBANCO));
+    END LOOP;
+  
+  END FN_BANCOS_DESCONSIDERAR;
 
   ----CENTRO DE CUSTO POR FILIAL
   FUNCTION FN_CC_FILIAL RETURN T_CC_FILIAL_TABLE
@@ -197,6 +278,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
       PIPE ROW(T_CC_VENDEDOR_RECORD(r.CODSUPERVISOR, r.CODCC));
     END LOOP;
   END FN_CC_VENDEDOR;
+
+  -----------------------------------------------------------------------------------
 
   ----MOVIMENTACAO PRODUTOS - VALOR CONTABIL INTEIRO
   FUNCTION FN_MOV_PROD_VLCONTABIL_INTEIRO RETURN T_CONTABIL_TABLE
@@ -385,10 +468,11 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      END) ENVIAR_CONTABIL,
                      
                      M.DTCANCEL
-                FROM BI_SINC_MOV_PROD_BASE_AGG M
+                FROM VIEW_BI_SINC_MOV_PROD_AGG M
                 LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_FILIAL()) F ON F.CODFILIAL = M.CODFILIAL
                 LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_VENDEDOR()) V ON V.CODSUPERVISOR = M.CODSUPERVISOR
                WHERE 1 = 1
+                 AND M.DATA >= vDATA_MOV_INCREMENTAL
                  AND M.TIPOMOV NOT IN ('SAIDA BONIFICADA', 'SAIDA DESCONSIDERAR', 'SAIDA REM CONTA E ORDEM'))
     
     LOOP
@@ -487,8 +571,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      'N' ENVIAR_CONTABIL,
                      
                      M.DTCANCEL
-                FROM BI_SINC_MOV_PROD_BASE_AGG M
+                FROM VIEW_BI_SINC_MOV_PROD_AGG M
                WHERE 1 = 1
+                 AND M.DATA >= vDATA_MOV_INCREMENTAL
                  AND M.TIPOMOV IN ('SAIDA DEVOLUCAO',
                                    'SAIDA TRANSFERENCIA',
                                    'ENTRADA COMPRA',
@@ -618,9 +703,10 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      'S' ENVIAR_CONTABIL,
                      
                      M.DTCANCEL
-                FROM BI_SINC_MOV_PROD_BASE_AGG M
+                FROM VIEW_BI_SINC_MOV_PROD_AGG M
                 LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_VENDEDOR()) V ON V.CODSUPERVISOR = M.CODSUPERVISOR
                WHERE 1 = 1
+                 AND M.DATA >= vDATA_MOV_INCREMENTAL
                  AND M.TIPOMOV IN ('SAIDA VENDA',
                                    'SAIDA REM CONTA E ORDEM',
                                    'SAIDA REM ENTREGA FUTURA',
@@ -796,10 +882,11 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      'N' ENVIAR_CONTABIL,
                      
                      M.DTCANCEL
-                FROM BI_SINC_MOV_PROD_BASE_AGG M
+                FROM VIEW_BI_SINC_MOV_PROD_AGG M
                 LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_FILIAL()) F ON F.CODFILIAL = M.CODFILIAL
                 LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_VENDEDOR()) V ON V.CODSUPERVISOR = M.CODSUPERVISOR
-               WHERE 1 = 1)
+               WHERE 1 = 1
+                 AND M.DATA >= vDATA_MOV_INCREMENTAL)
     
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
@@ -919,9 +1006,10 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      'N' ENVIAR_CONTABIL,
                      
                      M.DTCANCEL
-                FROM BI_SINC_MOV_PROD_BASE_AGG M
+                FROM VIEW_BI_SINC_MOV_PROD_AGG M
                 LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_VENDEDOR()) V ON V.CODSUPERVISOR = M.CODSUPERVISOR
-               WHERE 1 = 1)
+               WHERE 1 = 1
+                 AND M.DATA >= vDATA_MOV_INCREMENTAL)
     
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
@@ -1041,9 +1129,10 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      'N' ENVIAR_CONTABIL,
                      
                      M.DTCANCEL
-                FROM BI_SINC_MOV_PROD_BASE_AGG M
+                FROM VIEW_BI_SINC_MOV_PROD_AGG M
                 LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_VENDEDOR()) V ON V.CODSUPERVISOR = M.CODSUPERVISOR
-               WHERE 1 = 1)
+               WHERE 1 = 1
+                 AND M.DATA >= vDATA_MOV_INCREMENTAL)
     
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
@@ -1122,9 +1211,10 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      'N' ENVIAR_CONTABIL,
                      
                      M.DTCANCEL
-                FROM BI_SINC_MOV_PROD_BASE_AGG M
+                FROM VIEW_BI_SINC_MOV_PROD_AGG M
                 LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_VENDEDOR()) V ON V.CODSUPERVISOR = M.CODSUPERVISOR
                WHERE 1 = 1
+                 AND M.DATA >= vDATA_MOV_INCREMENTAL
                  AND M.TIPOMOV IN ('SAIDA VENDA',
                                    'SAIDA FAT CONTA E ORDEM',
                                    'SAIDA REM ENTREGA FUTURA',
@@ -1194,9 +1284,10 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      'N' ENVIAR_CONTABIL,
                      
                      M.DTCANCEL
-                FROM BI_SINC_MOV_PROD_BASE_AGG M
+                FROM VIEW_BI_SINC_MOV_PROD_AGG M
                 LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_VENDEDOR()) V ON V.CODSUPERVISOR = M.CODSUPERVISOR
                WHERE 1 = 1
+                 AND M.DATA >= vDATA_MOV_INCREMENTAL
                  AND M.TIPOMOV IN ('SAIDA VENDA', 'SAIDA FAT CONTA E ORDEM', 'SAIDA REM ENTREGA FUTURA'))
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
@@ -1230,7 +1321,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                 vENT_REM_ENTREGA_FUTURA AS
                  (SELECT CODFISCAL FROM PCCFO F WHERE F.CODFISCAL IN (1116, 1117, 2116, 2117))
                 
-                SELECT 'D01' CODLANC,
+                SELECT ('D01' || '.CC_' || DECODE(E.CODCC, '0', L.CODCC, E.CODCC)) CODLANC,
                        E.CODEMPRESA,
                        E.DATA,
                        
@@ -1323,12 +1414,13 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                        'N' ENVIAR_CONTABIL,
                        
                        TO_DATE(NULL, 'DD/MM/YYYY') DTCANCEL
-                  FROM BI_SINC_DESPESA_FISCAL_BASE E
+                  FROM VIEW_BI_SINC_DESPESA_CONTABIL E
                   LEFT JOIN BI_SINC_PLANO_CONTAS_JC C ON C.CODGERENCIAL = E.CODCONTA
                   LEFT JOIN BI_SINC_FORNECEDOR F ON F.CODFORNEC = E.CODFORNEC
                   LEFT JOIN TABLE (PKG_BI_CONTABILIDADE.FN_CC_FILIAL()) L ON L.CODFILIAL = E.CODFILIAL
                   LEFT JOIN TABLE (PKG_BI_CONTABILIDADE.FN_CC_VENDEDOR()) V ON V.CODSUPERVISOR = E.CODSUPERVISOR
-                 WHERE 1 = 1)
+                 WHERE 1 = 1
+                   AND E.DATA >= vDATA_MOV_INCREMENTAL)
     
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
@@ -1360,7 +1452,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     FOR r IN (WITH vENT_BONIFICADA AS
                  (SELECT CODFISCAL FROM PCCFO F WHERE F.CODFISCAL IN (1910, 2910, 1911))
                 
-                SELECT DISTINCT 'D02' CODLANC,
+                SELECT DISTINCT ('D02' || '.CC_' || E.CODCC) CODLANC,
                                 E.CODEMPRESA,
                                 E.DATA,
                                 
@@ -1426,11 +1518,12 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                                 'N' ENVIAR_CONTABIL,
                                 
                                 TO_DATE(NULL, 'DD/MM/YYYY') DTCANCEL
-                  FROM BI_SINC_DESPESA_FISCAL_BASE E
+                  FROM VIEW_BI_SINC_DESPESA_CONTABIL E
                   LEFT JOIN BI_SINC_PLANO_CONTAS_JC C ON C.CODGERENCIAL = E.CODCONTA
                   LEFT JOIN BI_SINC_FORNECEDOR F ON F.CODFORNEC = E.CODFORNEC
-                 WHERE E.VLIMPOSTO > 0
-                    OR E.CFOP IN (SELECT CODFISCAL FROM vENT_BONIFICADA))
+                 WHERE 1 = 1
+                   AND E.DATA >= vDATA_MOV_INCREMENTAL
+                   AND (E.VLIMPOSTO > 0 OR E.CFOP IN (SELECT CODFISCAL FROM vENT_BONIFICADA)))
     
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
@@ -1464,7 +1557,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                 vENT_SIMPLES_REMESSA AS
                  (SELECT CODFISCAL FROM PCCFO F WHERE F.CODFISCAL IN (1908, 1909, 1949, 2949))
                 
-                SELECT 'D03' CODLANC,
+                SELECT ('D03' || '.CC_' || DECODE(E.CODCC, '0', L.CODCC, E.CODCC)) CODLANC,
                        E.CODEMPRESA,
                        E.DATA,
                        
@@ -1543,12 +1636,14 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                        'N' ENVIAR_CONTABIL,
                        
                        TO_DATE(NULL, 'DD/MM/YYYY') DTCANCEL
-                  FROM BI_SINC_DESPESA_FISCAL_BASE E
+                  FROM VIEW_BI_SINC_DESPESA_CONTABIL E
                   LEFT JOIN BI_SINC_PLANO_CONTAS_JC C ON C.CODGERENCIAL = E.CODCONTA
                   LEFT JOIN BI_SINC_FORNECEDOR F ON F.CODFORNEC = E.CODFORNEC
                   LEFT JOIN TABLE (PKG_BI_CONTABILIDADE.FN_CC_FILIAL()) L ON L.CODFILIAL = E.CODFILIAL
                   LEFT JOIN TABLE (PKG_BI_CONTABILIDADE.FN_CC_VENDEDOR()) V ON V.CODSUPERVISOR = E.CODSUPERVISOR
-                 WHERE E.VLICMS > 0
+                 WHERE 1 = 1
+                   AND E.DATA >= vDATA_MOV_INCREMENTAL
+                   AND E.VLICMS > 0
                    AND E.CODEMPRESA = 1)
     
     LOOP
@@ -1578,7 +1673,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     PIPELINED IS
   
   BEGIN
-    FOR r IN (SELECT 'D04' CODLANC,
+    FOR r IN (SELECT ('D04' || '.CC_' || DECODE(E.CODCC, '0', L.CODCC, E.CODCC)) CODLANC,
                      E.CODEMPRESA,
                      E.DATA,
                      
@@ -1640,12 +1735,14 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      'N' ENVIAR_CONTABIL,
                      
                      TO_DATE(NULL, 'DD/MM/YYYY') DTCANCEL
-                FROM BI_SINC_DESPESA_FISCAL_BASE E
+                FROM VIEW_BI_SINC_DESPESA_CONTABIL E
                 LEFT JOIN BI_SINC_PLANO_CONTAS_JC C ON C.CODGERENCIAL = E.CODCONTA
                 LEFT JOIN BI_SINC_FORNECEDOR F ON F.CODFORNEC = E.CODFORNEC
                 LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_FILIAL()) L ON L.CODFILIAL = E.CODFILIAL
                 LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_VENDEDOR()) V ON V.CODSUPERVISOR = E.CODSUPERVISOR
-               WHERE E.VLPIS > 0
+               WHERE 1 = 1
+                 AND E.DATA >= vDATA_MOV_INCREMENTAL
+                 AND E.VLPIS > 0
                  AND E.CODEMPRESA = 1)
     
     LOOP
@@ -1675,7 +1772,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     PIPELINED IS
   
   BEGIN
-    FOR r IN (SELECT 'D05' CODLANC,
+    FOR r IN (SELECT ('D05' || '.CC_' || DECODE(E.CODCC, '0', L.CODCC, E.CODCC)) CODLANC,
                      E.CODEMPRESA,
                      E.DATA,
                      
@@ -1737,12 +1834,14 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      'N' ENVIAR_CONTABIL,
                      
                      TO_DATE(NULL, 'DD/MM/YYYY') DTCANCEL
-                FROM BI_SINC_DESPESA_FISCAL_BASE E
+                FROM VIEW_BI_SINC_DESPESA_CONTABIL E
                 LEFT JOIN BI_SINC_PLANO_CONTAS_JC C ON C.CODGERENCIAL = E.CODCONTA
                 LEFT JOIN BI_SINC_FORNECEDOR F ON F.CODFORNEC = E.CODFORNEC
                 LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_FILIAL()) L ON L.CODFILIAL = E.CODFILIAL
                 LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_VENDEDOR()) V ON V.CODSUPERVISOR = E.CODSUPERVISOR
-               WHERE E.VLCOFINS > 0
+               WHERE 1 = 1
+                 AND E.DATA >= vDATA_MOV_INCREMENTAL
+                 AND E.VLCOFINS > 0
                  AND E.CODEMPRESA = 1)
     
     LOOP
@@ -1772,7 +1871,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     PIPELINED IS
   
   BEGIN
-    FOR r IN (SELECT 'D06' CODLANC,
+    FOR r IN (SELECT ('D06' || '.CC_' || DECODE(E.CODCC, '0', L.CODCC, E.CODCC)) CODLANC,
                      E.CODEMPRESA,
                      E.DATA,
                      
@@ -1827,12 +1926,14 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      'N' ENVIAR_CONTABIL,
                      
                      TO_DATE(NULL, 'DD/MM/YYYY') DTCANCEL
-                FROM BI_SINC_DESPESA_FISCAL_BASE E
+                FROM VIEW_BI_SINC_DESPESA_CONTABIL E
                 LEFT JOIN BI_SINC_PLANO_CONTAS_JC C ON C.CODGERENCIAL = E.CODCONTA
                 LEFT JOIN PCCONTA T ON T.CODCONTA = E.CODCONTA
                 LEFT JOIN BI_SINC_FORNECEDOR F ON F.CODFORNEC = E.CODFORNEC
                 LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_FILIAL()) L ON L.CODFILIAL = E.CODFILIAL
-               WHERE E.VLDIFAL > 0)
+               WHERE 1 = 1
+                 AND E.DATA >= vDATA_MOV_INCREMENTAL
+                 AND E.VLDIFAL > 0)
     
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
@@ -1861,7 +1962,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     PIPELINED IS
   
   BEGIN
-    FOR r IN (SELECT 'G01' CODLANC,
+    FOR r IN (SELECT ('G01' || '.CC_' || L.CODCC) CODLANC,
                      L.CODEMPRESA,
                      L.DTCOMPETENCIA DATA,
                      
@@ -1900,11 +2001,13 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      
                      TO_DATE(NULL, 'DD/MM/YYYY') DTCANCEL
                 FROM BI_SINC_LANC_PAGAR_BASE L
-                LEFT JOIN BI_SINC_DESPESA_FISCAL_BASE E ON E.RECNUM = L.RECNUM
+                LEFT JOIN VIEW_BI_SINC_DESPESA_CONTABIL E ON E.RECNUM = L.RECNUM
                 LEFT JOIN PCCONTA C ON C.CODCONTA = L.CODCONTA
                 LEFT JOIN BI_SINC_PLANO_CONTAS_JC P ON P.CODGERENCIAL = L.CODCONTA
                 LEFT JOIN BI_SINC_FORNECEDOR F ON F.CODFORNEC = L.CODFORNEC
-               WHERE L.CODFORNEC IN (SELECT CODFORNEC FROM TABLE(PKG_BI_CONTABILIDADE.FN_FORNEC_DESP_GER()))
+               WHERE 1 = 1
+                 AND L.DTCOMPETENCIA >= vDATA_MOV_INCREMENTAL
+                 AND L.CODFORNEC IN (SELECT CODFORNEC FROM TABLE(PKG_BI_CONTABILIDADE.FN_FORNEC_DESP_GER()))
                  AND L.TIPO = 'CONFIRMADO'
                  AND L.VLRATEIO > 0
                  AND L.ADIANTAMENTO = 'N'
@@ -1938,7 +2041,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     PIPELINED IS
   
   BEGIN
-    FOR r IN (SELECT 'G02' CODLANC,
+    FOR r IN (SELECT ('G02' || '.CC_' || L.CODCC) CODLANC,
                      L.CODEMPRESA,
                      L.DTCOMPETENCIA DATA,
                      
@@ -1954,10 +2057,10 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      L.NUMNOTA DOCUMENTO,
                      
                      ----------CONTA_DEBITO
-                     L.CODCONTA CONTADEBITO,
+                     C.CODCONTACONTRAPARTIDA CONTADEBITO,
                      
                      ----------CONTA_CREDITO
-                     C.CODCONTACONTRAPARTIDA CONTACREDITO,
+                     L.CODCONTA CONTACREDITO,
                      
                      ----------CODCC_DEBITO
                      NULL CODCC_DEBITO,
@@ -1970,7 +2073,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      TRIM(TRANSLATE(TO_CHAR(L.VALOR, '999,999.00'), '.,', ',.')) || ' - RECNUM: ' || L.RECNUM) ATIVIDADE,
                      
                      ----------HISTORICO
-                     ('IMPOSTO NS' || L.NUMNOTA || ' - ' || F.CNPJ || ' - ' || F.FORNECEDOR || ' - Cód: ' || L.CODFORNEC) HISTORICO,
+                     ('IMPOSTO NS ' || L.NUMNOTA || ' - ' || F.CNPJ || ' - ' || F.FORNECEDOR || ' - Cód: ' ||
+                     L.CODFORNEC) HISTORICO,
                      
                      ROUND(L.VLRATEIO, 2) VALOR,
                      
@@ -1983,7 +2087,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                 FROM BI_SINC_LANC_PAGAR_BASE L
                 LEFT JOIN PCCONTA C ON C.CODCONTA = L.CODCONTA
                 LEFT JOIN BI_SINC_FORNECEDOR F ON F.CODFORNEC = L.CODFORNEC
-               WHERE L.CODCONTA IN (SELECT CODCONTA FROM TABLE(PKG_BI_CONTABILIDADE.FN_CONTA_IMPOSTO_DESP_GER()))
+               WHERE 1 = 1
+                 AND L.DTCOMPETENCIA >= vDATA_MOV_INCREMENTAL
+                 AND L.CODCONTA IN (SELECT CODCONTA FROM TABLE(PKG_BI_CONTABILIDADE.FN_CONTA_IMPOSTO_DESP_GER()))
                  AND L.TIPO = 'CONFIRMADO'
                  AND L.VLRATEIO > 0)
     
@@ -2014,7 +2120,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     PIPELINED IS
   
   BEGIN
-    FOR r IN (SELECT 'L01' CODLANC,
+    FOR r IN (SELECT ('L01' || '.CC_' || L.CODCC) CODLANC,
                      L.CODEMPRESA,
                      L.DTCOMPENSACAO DATA,
                      
@@ -2060,7 +2166,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      
                      ----------ATIVIDADE
                      (UPPER(C.CONTA) || ' - F' || LPAD(L.CODFILIAL, 2, 0) || ' - VLTOTAL: ' ||
-                     TRIM(TRANSLATE(TO_CHAR(L.VALOR, '999,999.00'), '.,', ',.')) || ' - RECNUM: ' || L.RECNUM) ATIVIDADE,
+                     TRIM(TRANSLATE(TO_CHAR(L.VALOR, '999,999.00'), '.,', ',.')) || ' - RAT: ' ||
+                     REPLACE(TO_CHAR(L.PERCRATEIO, '999.00'), '.', ',') || ' - RECNUM: ' || L.RECNUM) ATIVIDADE,
                      
                      ----------HISTORICO
                      (CASE
@@ -2084,12 +2191,17 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                 LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_FILIAL()) FL ON FL.CODFILIAL = L.CODFILIAL
                 LEFT JOIN BI_SINC_PLANO_CONTAS_JC C ON C.CODGERENCIAL = L.CODCONTA
                WHERE 1 = 1
+                 AND L.DTCOMPENSACAO >= vDATA_MOV_INCREMENTAL
                  AND L.CODCONTA <> L.CONTABANCO
-                 AND L.CODBANCO NOT IN (17, 20, 22, 40, 41)
-                 AND (L.GRUPOCONTA NOT IN (680, 900) OR L.CODCONTA = 9005)
+                 AND L.CODBANCO NOT IN (SELECT CODBANCO FROM TABLE(PKG_BI_CONTABILIDADE.FN_BANCOS_DESCONSIDERAR()))
+                 AND L.CODBANCO NOT IN (vBANCO_COMISSAO_MKT, vBANCO_CARTAO_CORP)
+                 AND (L.GRUPOCONTA NOT IN
+                     (SELECT CODGRUPO FROM TABLE(PKG_BI_CONTABILIDADE.FN_GRUPO_LANC_DESCONSIDERAR())) OR
+                     L.CODCONTA = vCONTA_PAGTO_FRETE)
                  AND L.NUMTRANS IS NOT NULL
                  AND L.DTCOMPENSACAO IS NOT NULL
                  AND L.ADIANTAMENTO = 'N'
+                 AND L.CODCONTA NOT IN (vDESCONTOS_OBTIDOS, vJUROS_PAGOS)
                  AND L.TIPOPARCEIRO <> 'F')
     
     LOOP
@@ -2113,6 +2225,385 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     END LOOP;
   
   END FN_LANC_TIPO_OUTROS;
+
+  ----LANCAMENTOS PAGAMENTO - FORNECEDORES
+  FUNCTION FN_LANC_TIPO_FORNECEDOR RETURN T_CONTABIL_TABLE
+    PIPELINED IS
+  
+  BEGIN
+    FOR r IN (SELECT ('L02' || '.CC_' || L.CODCC) CODLANC,
+                     L.CODEMPRESA,
+                     L.DTCOMPENSACAO DATA,
+                     
+                     ----------TIPO LANCAMENTO
+                     3 TIPOLANCAMENTO,
+                     
+                     L.RECNUM IDENTIFICADOR,
+                     L.NUMNOTA DOCUMENTO,
+                     
+                     ----------CONTA_DEBITO
+                     (CASE
+                       WHEN L.VALOR > 0 THEN
+                        (CASE
+                          WHEN (L.GRUPOCONTA IN
+                               (SELECT CODGRUPO FROM TABLE(PKG_BI_CONTABILIDADE.FN_GRUPO_LANC_TIPO_FORNEC_CONSIDERA_CONTA())) OR
+                               L.CODCONTA IN
+                               (SELECT CODCONTA FROM TABLE(PKG_BI_CONTABILIDADE.FN_CONTA_LANC_TIPO_FORNEC_CONSIDERA_CONTA())) OR
+                               L.CODFORNEC IN
+                               (SELECT CODFORNEC
+                                   FROM TABLE(PKG_BI_CONTABILIDADE.FN_FORNECEDOR_LANC_TIPO_FORNEC_CONSIDERA_CONTA()))) THEN
+                           L.CODCONTA
+                          ELSE
+                           L.CODFORNEC
+                        END)
+                       ELSE
+                        L.CONTABANCO
+                     END) CONTADEBITO,
+                     
+                     ----------CONTA_CREDITO
+                     (CASE
+                       WHEN L.VALOR < 0 THEN
+                        (CASE
+                          WHEN (L.GRUPOCONTA IN
+                               (SELECT CODGRUPO FROM TABLE(PKG_BI_CONTABILIDADE.FN_GRUPO_LANC_TIPO_FORNEC_CONSIDERA_CONTA())) OR
+                               L.CODCONTA IN
+                               (SELECT CODCONTA FROM TABLE(PKG_BI_CONTABILIDADE.FN_CONTA_LANC_TIPO_FORNEC_CONSIDERA_CONTA())) OR
+                               L.CODFORNEC IN
+                               (SELECT CODFORNEC
+                                   FROM TABLE(PKG_BI_CONTABILIDADE.FN_FORNECEDOR_LANC_TIPO_FORNEC_CONSIDERA_CONTA()))) THEN
+                           L.CODCONTA
+                          ELSE
+                           L.CODFORNEC
+                        END)
+                       ELSE
+                        L.CONTABANCO
+                     END) CONTACREDITO,
+                     
+                     ----------CODCC_DEBITO
+                     (CASE
+                       WHEN L.VALOR > 0
+                            AND C.CODDRE > 0
+                            AND
+                            (L.GRUPOCONTA IN
+                            (SELECT CODGRUPO FROM TABLE(PKG_BI_CONTABILIDADE.FN_GRUPO_LANC_TIPO_FORNEC_CONSIDERA_CONTA())) OR
+                            L.CODCONTA IN
+                            (SELECT CODCONTA FROM TABLE(PKG_BI_CONTABILIDADE.FN_CONTA_LANC_TIPO_FORNEC_CONSIDERA_CONTA())) OR
+                            L.CODFORNEC IN
+                            (SELECT CODFORNEC
+                                FROM TABLE(PKG_BI_CONTABILIDADE.FN_FORNECEDOR_LANC_TIPO_FORNEC_CONSIDERA_CONTA()))) THEN
+                        DECODE(L.CODCC, '0', FL.CODCC, L.CODCC)
+                       ELSE
+                        NULL
+                     END) CODCC_DEBITO,
+                     
+                     ----------CODCC_CREDITO
+                     (CASE
+                       WHEN L.VALOR < 0
+                            AND C.CODDRE > 0
+                            AND
+                            (L.GRUPOCONTA IN
+                            (SELECT CODGRUPO FROM TABLE(PKG_BI_CONTABILIDADE.FN_GRUPO_LANC_TIPO_FORNEC_CONSIDERA_CONTA())) OR
+                            L.CODCONTA IN
+                            (SELECT CODCONTA FROM TABLE(PKG_BI_CONTABILIDADE.FN_CONTA_LANC_TIPO_FORNEC_CONSIDERA_CONTA())) OR
+                            L.CODFORNEC IN
+                            (SELECT CODFORNEC
+                                FROM TABLE(PKG_BI_CONTABILIDADE.FN_FORNECEDOR_LANC_TIPO_FORNEC_CONSIDERA_CONTA()))) THEN
+                        DECODE(L.CODCC, '0', FL.CODCC, L.CODCC)
+                       ELSE
+                        NULL
+                     END) CODCC_CREDITO,
+                     
+                     ----------ATIVIDADE
+                     (CASE
+                       WHEN C.CODDRE > 0
+                            AND
+                            (L.GRUPOCONTA IN
+                            (SELECT CODGRUPO FROM TABLE(PKG_BI_CONTABILIDADE.FN_GRUPO_LANC_TIPO_FORNEC_CONSIDERA_CONTA())) OR
+                            L.CODCONTA IN
+                            (SELECT CODCONTA FROM TABLE(PKG_BI_CONTABILIDADE.FN_CONTA_LANC_TIPO_FORNEC_CONSIDERA_CONTA())) OR
+                            L.CODFORNEC IN
+                            (SELECT CODFORNEC
+                                FROM TABLE(PKG_BI_CONTABILIDADE.FN_FORNECEDOR_LANC_TIPO_FORNEC_CONSIDERA_CONTA()))) THEN
+                        (UPPER(C.CONTA) || ' - F' || LPAD(L.CODFILIAL, 2, 0) || ' - VLTOTAL: ' ||
+                        TRIM(TRANSLATE(TO_CHAR(L.VALOR, '999,999.00'), '.,', ',.')) || ' - RAT: ' ||
+                        REPLACE(TO_CHAR(L.PERCRATEIO, '999.00'), '.', ',') || ' - CC: ' || L.CODCC || ' - RECNUM: ' ||
+                        L.RECNUM)
+                       ELSE
+                        (UPPER(C.CONTA) || ' - F' || LPAD(L.CODFILIAL, 2, 0) || ' - VLTOTAL: ' ||
+                        TRIM(TRANSLATE(TO_CHAR(L.VALOR, '999,999.00'), '.,', ',.')) || ' - RECNUM: ' || L.RECNUM)
+                     END) ATIVIDADE,
+                     
+                     ----------HISTORICO
+                     (CASE
+                       WHEN L.GRUPOCONTA IN (vGRUPO_TRIBUTOS_RECOLHER) THEN
+                        ('Nº ' || L.NUMNOTA || ' - ' || UPPER(L.HISTORICO) || ' - ' || F.CNPJ || ' - ' || F.FORNECEDOR ||
+                        ' - Cód: ' || L.CODFORNEC)
+                       WHEN L.CODCONTA IN (SELECT CODCONTA FROM TABLE(PKG_BI_CONTABILIDADE.FN_CONTA_DESCRICAO_FATURA())) THEN
+                        ('FATURA ' || L.NUMNOTA || ' - ' || F.CNPJ || ' - ' || F.FORNECEDOR || ' - Cód: ' || L.CODFORNEC)
+                       WHEN (L.GRUPOCONTA IN
+                            (SELECT CODGRUPO FROM TABLE(PKG_BI_CONTABILIDADE.FN_GRUPO_LANC_TIPO_FORNEC_CONSIDERA_CONTA())) OR
+                            L.CODCONTA IN
+                            (SELECT CODCONTA FROM TABLE(PKG_BI_CONTABILIDADE.FN_CONTA_LANC_TIPO_FORNEC_CONSIDERA_CONTA())) OR
+                            L.CODFORNEC IN
+                            (SELECT CODFORNEC
+                                FROM TABLE(PKG_BI_CONTABILIDADE.FN_FORNECEDOR_LANC_TIPO_FORNEC_CONSIDERA_CONTA()))) THEN
+                        (UPPER(C.CONTA) || ' - ' || UPPER(L.HISTORICO))
+                       ELSE
+                        ('Nº ' || L.NUMNOTA || ' - ' || F.CNPJ || ' - ' || F.FORNECEDOR || ' - Cód: ' || L.CODFORNEC)
+                     END) HISTORICO,
+                     
+                     ROUND(L.VLRATEIO, 2) VALOR,
+                     
+                     ('LANC_PAG_FORNECEDOR') ORIGEM,
+                     
+                     ----------ENVIAR_CONTABIL
+                     'S' ENVIAR_CONTABIL,
+                     
+                     TO_DATE(NULL, 'DD/MM/YYYY') DTCANCEL
+                FROM BI_SINC_LANC_PAGAR_BASE L
+                LEFT JOIN PCCONTA C ON C.CODCONTA = L.CODCONTA
+                LEFT JOIN BI_SINC_FORNECEDOR F ON F.CODFORNEC = L.CODFORNEC
+                LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_FILIAL()) FL ON FL.CODFILIAL = L.CODFILIAL
+                LEFT JOIN BI_SINC_PLANO_CONTAS_JC C ON C.CODGERENCIAL = L.CODCONTA
+               WHERE 1 = 1
+                 AND L.DTCOMPENSACAO >= vDATA_MOV_INCREMENTAL
+                 AND L.CODCONTA <> L.CONTABANCO
+                 AND L.CODBANCO NOT IN (SELECT CODBANCO FROM TABLE(PKG_BI_CONTABILIDADE.FN_BANCOS_DESCONSIDERAR()))
+                 AND L.CODBANCO NOT IN (vBANCO_COMISSAO_MKT, vBANCO_CARTAO_CORP)
+                 AND (L.GRUPOCONTA NOT IN
+                     (SELECT CODGRUPO FROM TABLE(PKG_BI_CONTABILIDADE.FN_GRUPO_LANC_DESCONSIDERAR())) OR
+                     L.CODCONTA = vCONTA_PAGTO_FRETE)
+                 AND L.NUMTRANS IS NOT NULL
+                 AND L.DTCOMPENSACAO IS NOT NULL
+                 AND L.ADIANTAMENTO = 'N'
+                 AND L.CODCONTA NOT IN (vDESCONTOS_OBTIDOS, vJUROS_PAGOS)
+                 AND L.TIPOPARCEIRO = 'F')
+    
+    LOOP
+      PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
+                                 r.CODEMPRESA,
+                                 r.DATA,
+                                 r.TIPOLANCAMENTO,
+                                 r.IDENTIFICADOR,
+                                 r.DOCUMENTO,
+                                 r.CONTADEBITO,
+                                 r.CONTACREDITO,
+                                 r.CODCC_DEBITO,
+                                 r.CODCC_CREDITO,
+                                 r.ATIVIDADE,
+                                 r.HISTORICO,
+                                 r.VALOR,
+                                 r.ORIGEM,
+                                 r.ENVIAR_CONTABIL,
+                                 r.DTCANCEL));
+    
+    END LOOP;
+  
+  END FN_LANC_TIPO_FORNECEDOR;
+
+  ----LANCAMENTOS PAGAMENTO - JUROS PAGOS
+  FUNCTION FN_LANC_JUROS_PAGOS RETURN T_CONTABIL_TABLE
+    PIPELINED IS
+  
+  BEGIN
+    FOR r IN (SELECT ('L03' || '.CC_' || L.CODCC) CODLANC,
+                     L.CODEMPRESA,
+                     L.DTCOMPENSACAO DATA,
+                     
+                     ----------TIPO LANCAMENTO
+                     3 TIPOLANCAMENTO,
+                     
+                     L.RECNUM IDENTIFICADOR,
+                     L.NUMNOTA DOCUMENTO,
+                     
+                     ----------CONTA_DEBITO
+                     (CASE
+                       WHEN L.VALOR > 0 THEN
+                        L.CODCONTA
+                       ELSE
+                        L.CONTABANCO
+                     END) CONTADEBITO,
+                     
+                     ----------CONTA_CREDITO
+                     (CASE
+                       WHEN L.VALOR < 0 THEN
+                        L.CODCONTA
+                       ELSE
+                        L.CONTABANCO
+                     END) CONTACREDITO,
+                     
+                     ----------CODCC_DEBITO
+                     (CASE
+                       WHEN L.VALOR > 0
+                            AND C.CODDRE > 0 THEN
+                        DECODE(L.CODCC, '0', FL.CODCC, L.CODCC)
+                       ELSE
+                        NULL
+                     END) CODCC_DEBITO,
+                     
+                     ----------CODCC_CREDITO
+                     (CASE
+                       WHEN L.VALOR < 0
+                            AND C.CODDRE > 0 THEN
+                        DECODE(L.CODCC, '0', FL.CODCC, L.CODCC)
+                       ELSE
+                        NULL
+                     END) CODCC_CREDITO,
+                     
+                     ----------ATIVIDADE
+                     (UPPER(C.CONTA) || ' - F' || LPAD(L.CODFILIAL, 2, 0) || ' - VLTOTAL: ' ||
+                     TRIM(TRANSLATE(TO_CHAR(L.VALOR, '999,999.00'), '.,', ',.')) || ' - RECNUM: ' || L.RECNUM) ATIVIDADE,
+                     
+                     ----------HISTORICO
+                     (CASE
+                       WHEN L.NUMNOTA > 0 THEN
+                        ('Nº ' || L.NUMNOTA || ' - ' || UPPER(L.HISTORICO) || ' - ' || F.CNPJ || ' - ' || F.FORNECEDOR ||
+                        ' - Cód: ' || L.CODFORNEC)
+                       ELSE
+                        UPPER(L.HISTORICO)
+                     END) HISTORICO,
+                     
+                     ROUND(L.VLRATEIO, 2) VALOR,
+                     
+                     ('LANC_JUROS_PAGOS') ORIGEM,
+                     
+                     ----------ENVIAR_CONTABIL
+                     'S' ENVIAR_CONTABIL,
+                     
+                     TO_DATE(NULL, 'DD/MM/YYYY') DTCANCEL
+                FROM BI_SINC_LANC_PAGAR_BASE L
+                LEFT JOIN PCCONTA C ON C.CODCONTA = L.CODCONTA
+                LEFT JOIN BI_SINC_FORNECEDOR F ON F.CODFORNEC = L.CODFORNEC
+                LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_FILIAL()) FL ON FL.CODFILIAL = L.CODFILIAL
+                LEFT JOIN BI_SINC_PLANO_CONTAS_JC C ON C.CODGERENCIAL = L.CODCONTA
+               WHERE 1 = 1
+                 AND L.DTCOMPENSACAO >= vDATA_MOV_INCREMENTAL
+                 AND L.CODBANCO NOT IN (SELECT CODBANCO FROM TABLE(PKG_BI_CONTABILIDADE.FN_BANCOS_DESCONSIDERAR()))
+                 AND L.CODCONTA = vJUROS_PAGOS)
+    
+    LOOP
+      PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
+                                 r.CODEMPRESA,
+                                 r.DATA,
+                                 r.TIPOLANCAMENTO,
+                                 r.IDENTIFICADOR,
+                                 r.DOCUMENTO,
+                                 r.CONTADEBITO,
+                                 r.CONTACREDITO,
+                                 r.CODCC_DEBITO,
+                                 r.CODCC_CREDITO,
+                                 r.ATIVIDADE,
+                                 r.HISTORICO,
+                                 r.VALOR,
+                                 r.ORIGEM,
+                                 r.ENVIAR_CONTABIL,
+                                 r.DTCANCEL));
+    
+    END LOOP;
+  
+  END FN_LANC_JUROS_PAGOS;
+
+  ----LANCAMENTOS PAGAMENTO - DESCONTOS OBTIDOS
+  FUNCTION FN_LANC_DESCONTO_OBTIDO RETURN T_CONTABIL_TABLE
+    PIPELINED IS
+  
+  BEGIN
+    FOR r IN (SELECT ('L04' || '.CC_' || L.CODCC) CODLANC,
+                     L.CODEMPRESA,
+                     L.DTCOMPENSACAO DATA,
+                     
+                     ----------TIPO LANCAMENTO
+                     3 TIPOLANCAMENTO,
+                     
+                     L.RECNUM IDENTIFICADOR,
+                     L.NUMNOTA DOCUMENTO,
+                     
+                     ----------CONTA_DEBITO
+                     (CASE
+                       WHEN L.VALOR > 0 THEN
+                        L.CODCONTA
+                       ELSE
+                        L.CONTABANCO
+                     END) CONTADEBITO,
+                     
+                     ----------CONTA_CREDITO
+                     (CASE
+                       WHEN L.VALOR < 0 THEN
+                        L.CODCONTA
+                       ELSE
+                        L.CONTABANCO
+                     END) CONTACREDITO,
+                     
+                     ----------CODCC_DEBITO
+                     (CASE
+                       WHEN L.VALOR > 0
+                            AND C.CODDRE > 0 THEN
+                        DECODE(L.CODCC, '0', FL.CODCC, L.CODCC)
+                       ELSE
+                        NULL
+                     END) CODCC_DEBITO,
+                     
+                     ----------CODCC_CREDITO
+                     (CASE
+                       WHEN L.VALOR < 0
+                            AND C.CODDRE > 0 THEN
+                        DECODE(L.CODCC, '0', FL.CODCC, L.CODCC)
+                       ELSE
+                        NULL
+                     END) CODCC_CREDITO,
+                     
+                     ----------ATIVIDADE
+                     (UPPER(C.CONTA) || ' - F' || LPAD(L.CODFILIAL, 2, 0) || ' - VLTOTAL: ' ||
+                     TRIM(TRANSLATE(TO_CHAR(L.VALOR, '999,999.00'), '.,', ',.')) || ' - RECNUM: ' || L.RECNUM) ATIVIDADE,
+                     
+                     ----------HISTORICO
+                     (CASE
+                       WHEN L.NUMNOTA > 0 THEN
+                        ('Nº ' || L.NUMNOTA || ' - ' || UPPER(L.HISTORICO) || ' - ' || F.CNPJ || ' - ' || F.FORNECEDOR ||
+                        ' - Cód: ' || L.CODFORNEC)
+                       ELSE
+                        UPPER(L.HISTORICO)
+                     END) HISTORICO,
+                     
+                     ROUND(L.VLRATEIO, 2) VALOR,
+                     
+                     ('LANC_DESCONTO_OBTIDO') ORIGEM,
+                     
+                     ----------ENVIAR_CONTABIL
+                     'S' ENVIAR_CONTABIL,
+                     
+                     TO_DATE(NULL, 'DD/MM/YYYY') DTCANCEL
+                FROM BI_SINC_LANC_PAGAR_BASE L
+                LEFT JOIN PCCONTA C ON C.CODCONTA = L.CODCONTA
+                LEFT JOIN BI_SINC_FORNECEDOR F ON F.CODFORNEC = L.CODFORNEC
+                LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_FILIAL()) FL ON FL.CODFILIAL = L.CODFILIAL
+                LEFT JOIN BI_SINC_PLANO_CONTAS_JC C ON C.CODGERENCIAL = L.CODCONTA
+               WHERE 1 = 1
+                 AND L.DTCOMPENSACAO >= vDATA_MOV_INCREMENTAL
+                 AND L.CODBANCO NOT IN (SELECT CODBANCO FROM TABLE(PKG_BI_CONTABILIDADE.FN_BANCOS_DESCONSIDERAR()))
+                 AND L.CODCONTA = vDESCONTOS_OBTIDOS)
+    
+    LOOP
+      PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
+                                 r.CODEMPRESA,
+                                 r.DATA,
+                                 r.TIPOLANCAMENTO,
+                                 r.IDENTIFICADOR,
+                                 r.DOCUMENTO,
+                                 r.CONTADEBITO,
+                                 r.CONTACREDITO,
+                                 r.CODCC_DEBITO,
+                                 r.CODCC_CREDITO,
+                                 r.ATIVIDADE,
+                                 r.HISTORICO,
+                                 r.VALOR,
+                                 r.ORIGEM,
+                                 r.ENVIAR_CONTABIL,
+                                 r.DTCANCEL));
+    
+    END LOOP;
+  
+  END FN_LANC_DESCONTO_OBTIDO;
 
 END PKG_BI_CONTABILIDADE;
 /
