@@ -49,7 +49,7 @@ BEGIN
                         ELSE
                          E.CODCONT
                       END) CODCONTA,
-                      E.CODFORNEC,
+                      E.CODFORNECNF CODFORNEC,
                       E.FORNECEDOR,
                       E.ESPECIE,
                       B.CODFISCAL CFOP,
