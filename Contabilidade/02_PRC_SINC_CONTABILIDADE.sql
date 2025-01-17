@@ -15,7 +15,7 @@ BEGIN
                       M.ATIVIDADE,
                       M.HISTORICO,
                       (M.VALOR * -1) VALOR_DEBITO,
-                      M.VALOR VALOR_CREDITO,
+                      (M.VALOR) VALOR_CREDITO,
                       M.ORIGEM,
                       M.ENVIAR_CONTABIL
                  FROM VIEW_BI_SINC_MOV_CONTABIL M
@@ -172,7 +172,7 @@ BEGIN
 
   COMMIT;
 
-/*  BEGIN
+  BEGIN
      EXECUTE IMMEDIATE 'DELETE FROM BI_SINC_CONTABILIDADE
   WHERE (CODLANC, IDENTIFICADOR) IN
         (SELECT S.CODLANC,
@@ -185,5 +185,5 @@ BEGIN
    END;
   
    COMMIT;
-*/
+
 END;
