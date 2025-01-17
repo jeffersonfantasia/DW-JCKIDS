@@ -1,28 +1,29 @@
 CREATE OR REPLACE PROCEDURE PRC_SINC_CENTRO_CUSTO AS
 BEGIN
 
-  FOR temp_rec IN (WITH CENTROCUSTO AS
-                      (SELECT CODIGOCENTROCUSTO CODCENTROCUSTO,
-                             (CODIGOCENTROCUSTO || ' - ' || DESCRICAO) CENTROCUSTO
-                        FROM PCCENTROCUSTO
-                       WHERE LENGTH(CODIGOCENTROCUSTO) <= 3
-                         AND RECEBE_LANCTO = 'S')
-                     
-                     SELECT C.*
-                       FROM CENTROCUSTO C
-                       LEFT JOIN BI_SINC_CENTRO_CUSTO S ON S.CODCENTROCUSTO =
-                                                           C.CODCENTROCUSTO
-                      WHERE S.DT_UPDATE IS NULL
-                         OR S.CENTROCUSTO <> C.CENTROCUSTO)
+  FOR r IN (WITH CENTROCUSTO AS
+               (SELECT CODIGOCENTROCUSTO CODCENTROCUSTO,
+                      (CODIGOCENTROCUSTO || ' - ' || DESCRICAO) CENTROCUSTO
+                 FROM PCCENTROCUSTO
+               UNION
+               SELECT '0' CODCENTROCUSTO,
+                      '0 - SEM CC' CENTROCUSTO
+                 FROM DUAL)
+              
+              SELECT C.*
+                FROM CENTROCUSTO C
+                LEFT JOIN BI_SINC_CENTRO_CUSTO S ON S.CODCENTROCUSTO = C.CODCENTROCUSTO
+               WHERE S.DT_UPDATE IS NULL
+                  OR S.CENTROCUSTO <> C.CENTROCUSTO)
   
   -- Atualiza ou insere os resultados na tabela BI_SINC conforme as condições mencionadas
   
   LOOP
     BEGIN
       UPDATE BI_SINC_CENTRO_CUSTO
-         SET CENTROCUSTO = temp_rec.CENTROCUSTO,
+         SET CENTROCUSTO = r.CENTROCUSTO,
              DT_UPDATE   = SYSDATE
-       WHERE CODCENTROCUSTO = temp_rec.CODCENTROCUSTO;
+       WHERE CODCENTROCUSTO = r.CODCENTROCUSTO;
     
       IF SQL%NOTFOUND THEN
         INSERT INTO BI_SINC_CENTRO_CUSTO
@@ -30,16 +31,14 @@ BEGIN
            CENTROCUSTO,
            DT_UPDATE)
         VALUES
-          (temp_rec.CODCENTROCUSTO,
-           temp_rec.CENTROCUSTO,
+          (r.CODCENTROCUSTO,
+           r.CENTROCUSTO,
            SYSDATE);
       END IF;
     EXCEPTION
       WHEN OTHERS THEN
         DBMS_OUTPUT.PUT_LINE('Erro encontrado: ' || SQLERRM);
-        RAISE_APPLICATION_ERROR(-20000,
-                                'Erro durante a insercao na tabela: ' ||
-                                SQLERRM);
+        RAISE_APPLICATION_ERROR(-20000, 'Erro durante a insercao na tabela: ' || SQLERRM);
     END;
   END LOOP;
 
