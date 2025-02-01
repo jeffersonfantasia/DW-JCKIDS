@@ -9,7 +9,7 @@ BEGIN
                        TO_NUMBER(col003) SUBTOTAL,
                        TRIM(TO_CHAR(col004)) CONTADRE,
                        TRIM(TO_CHAR(col005)) GRUPODRE
-                  FROM apex_data_parser.parse(p_content           => apex_web_service.make_rest_request_b(p_url         => 'http://10.0.0.6:90/planilhas/DRE.xlsx',
+                  FROM apex_data_parser.parse(p_content           => apex_web_service.make_rest_request_b(p_url         => 'http://10.122.152.4:90/planilhas/DRE.xlsx',
                                                                                                           p_http_method => 'GET'),
                                               p_skip_rows         => 1,
                                               p_detect_data_types => 'S',
