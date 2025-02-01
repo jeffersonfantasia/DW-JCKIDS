@@ -7,7 +7,7 @@ BEGIN
                       M.DATA,
                       M.TIPOLANCAMENTO,
                       M.IDENTIFICADOR,
-                      M.DOCUMENTO,
+                      M.DOCUMENTO, 
                       M.CONTADEBITO,
                       M.CODCC_DEBITO,
                       M.CONTACREDITO,
