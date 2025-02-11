@@ -1,6 +1,6 @@
 CREATE OR REPLACE PROCEDURE PRC_SINC_ESTOQUE AS
 BEGIN
-FOR temp_rec IN (
+FOR r IN (
 
     WITH ESTOQUE AS
      (SELECT E.CODFILIAL,
@@ -70,31 +70,31 @@ FOR temp_rec IN (
   LOOP
     BEGIN
       UPDATE BI_SINC_ESTOQUE
-         SET QTCONTABIL          = temp_rec.QTCONTABIL,
-             QTGERENCIAL         = temp_rec.QTGERENCIAL,
-             QTBLOQUEADA         = temp_rec.QTBLOQUEADA,
-             QTPENDENTE          = temp_rec.QTPENDENTE,
-             QTRESERVADA         = temp_rec.QTRESERVADA,
-             QTAVARIADA          = temp_rec.QTAVARIADA,
-             QTDISPONIVEL        = temp_rec.QTDISPONIVEL,
-             QTFRENTELOJA        = temp_rec.QTFRENTELOJA,
-             QTDEPOSITO          = temp_rec.QTDEPOSITO,
-             VALORULTENT         = temp_rec.VALORULTENT,
-             CUSTOREPOSICAO      = temp_rec.CUSTOREPOSICAO,
-             CUSTOFINANCEIRO     = temp_rec.CUSTOFINANCEIRO,
-             CUSTOCONTABIL       = temp_rec.CUSTOCONTABIL,
-             VLESTOQUECONTABIL   = temp_rec.VLESTOQUECONTABIL,
-             VLESTOQUEFINANCEIRO = temp_rec.VLESTOQUEFINANCEIRO,
-             VLESTOQUEGERENCIAL  = temp_rec.VLESTOQUEGERENCIAL,
-             VLESTOQUELOJA       = temp_rec.VLESTOQUELOJA,
-             VLESTOQUEDEPOSITO   = temp_rec.VLESTOQUEDEPOSITO,
-             VLESTOQUEDISPONIVEL = temp_rec.VLESTOQUEDISPONIVEL,
-             VLESTOQUEAVARIADO   = temp_rec.VLESTOQUEAVARIADO,
-             CODBLOQUEIO         = temp_rec.CODBLOQUEIO,
-             MOTIVOBLOQUEIO      = temp_rec.MOTIVOBLOQUEIO,
+         SET QTCONTABIL          = r.QTCONTABIL,
+             QTGERENCIAL         = r.QTGERENCIAL,
+             QTBLOQUEADA         = r.QTBLOQUEADA,
+             QTPENDENTE          = r.QTPENDENTE,
+             QTRESERVADA         = r.QTRESERVADA,
+             QTAVARIADA          = r.QTAVARIADA,
+             QTDISPONIVEL        = r.QTDISPONIVEL,
+             QTFRENTELOJA        = r.QTFRENTELOJA,
+             QTDEPOSITO          = r.QTDEPOSITO,
+             VALORULTENT         = r.VALORULTENT,
+             CUSTOREPOSICAO      = r.CUSTOREPOSICAO,
+             CUSTOFINANCEIRO     = r.CUSTOFINANCEIRO,
+             CUSTOCONTABIL       = r.CUSTOCONTABIL,
+             VLESTOQUECONTABIL   = r.VLESTOQUECONTABIL,
+             VLESTOQUEFINANCEIRO = r.VLESTOQUEFINANCEIRO,
+             VLESTOQUEGERENCIAL  = r.VLESTOQUEGERENCIAL,
+             VLESTOQUELOJA       = r.VLESTOQUELOJA,
+             VLESTOQUEDEPOSITO   = r.VLESTOQUEDEPOSITO,
+             VLESTOQUEDISPONIVEL = r.VLESTOQUEDISPONIVEL,
+             VLESTOQUEAVARIADO   = r.VLESTOQUEAVARIADO,
+             CODBLOQUEIO         = r.CODBLOQUEIO,
+             MOTIVOBLOQUEIO      = r.MOTIVOBLOQUEIO,
              DT_UPDATE           = SYSDATE
-       WHERE CODFILIAL = temp_rec.CODFILIAL
-         AND CODPROD = temp_rec.CODPROD;
+       WHERE CODFILIAL = r.CODFILIAL
+         AND CODPROD = r.CODPROD;
     
       IF SQL%NOTFOUND
       THEN
@@ -125,30 +125,30 @@ FOR temp_rec IN (
            MOTIVOBLOQUEIO,
            DT_UPDATE)
         VALUES
-          (temp_rec.CODFILIAL,
-           temp_rec.CODPROD,
-           temp_rec.QTCONTABIL,
-           temp_rec.QTGERENCIAL,
-           temp_rec.QTBLOQUEADA,
-           temp_rec.QTPENDENTE,
-           temp_rec.QTRESERVADA,
-           temp_rec.QTAVARIADA,
-           temp_rec.QTDISPONIVEL,
-           temp_rec.QTFRENTELOJA,
-           temp_rec.QTDEPOSITO,
-           temp_rec.VALORULTENT,
-           temp_rec.CUSTOREPOSICAO,
-           temp_rec.CUSTOFINANCEIRO,
-           temp_rec.CUSTOCONTABIL,
-           temp_rec.VLESTOQUECONTABIL,
-           temp_rec.VLESTOQUEFINANCEIRO,
-           temp_rec.VLESTOQUEGERENCIAL,
-           temp_rec.VLESTOQUELOJA,
-           temp_rec.VLESTOQUEDEPOSITO,
-           temp_rec.VLESTOQUEDISPONIVEL,
-           temp_rec.VLESTOQUEAVARIADO,
-           temp_rec.CODBLOQUEIO,
-           temp_rec.MOTIVOBLOQUEIO,
+          (r.CODFILIAL,
+           r.CODPROD,
+           r.QTCONTABIL,
+           r.QTGERENCIAL,
+           r.QTBLOQUEADA,
+           r.QTPENDENTE,
+           r.QTRESERVADA,
+           r.QTAVARIADA,
+           r.QTDISPONIVEL,
+           r.QTFRENTELOJA,
+           r.QTDEPOSITO,
+           r.VALORULTENT,
+           r.CUSTOREPOSICAO,
+           r.CUSTOFINANCEIRO,
+           r.CUSTOCONTABIL,
+           r.VLESTOQUECONTABIL,
+           r.VLESTOQUEFINANCEIRO,
+           r.VLESTOQUEGERENCIAL,
+           r.VLESTOQUELOJA,
+           r.VLESTOQUEDEPOSITO,
+           r.VLESTOQUEDISPONIVEL,
+           r.VLESTOQUEAVARIADO,
+           r.CODBLOQUEIO,
+           r.MOTIVOBLOQUEIO,
            SYSDATE);
       END IF;
     EXCEPTION
