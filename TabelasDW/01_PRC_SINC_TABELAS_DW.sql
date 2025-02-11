@@ -60,6 +60,7 @@ BEGIN
      QTCXMASTER      NUMBER(8, 2),
      IMPORTADO       VARCHAR2(1),
      REVENDA         VARCHAR2(1),
+     ENVIAFV         VARCHAR2(1),
      NCM             VARCHAR2(15),
      NCMEX           VARCHAR2(20),
      TIPOMERCADORIA  VARCHAR2(20),
