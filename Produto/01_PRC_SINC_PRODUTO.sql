@@ -1,6 +1,6 @@
 CREATE OR REPLACE PROCEDURE PRC_SINC_PRODUTO AS
 BEGIN
-FOR temp_rec IN (
+FOR r IN (
 
     WITH PRODUTOS AS
      (SELECT P.CODPROD,
@@ -38,6 +38,7 @@ FOR temp_rec IN (
              P.QTUNITCX QTCXMASTER,
              P.IMPORTADO,
              P.REVENDA,
+             P.ENVIARFORCAVENDAS ENVIAFV,
              P.NBM NCM,
              P.CODNCMEX NCMEX,
              DECODE(P.TIPOMERC,
@@ -98,13 +99,14 @@ FOR temp_rec IN (
         OR S.ALTURA <> P.ALTURA
         OR S.COMPRIMENTO <> P.COMPRIMENTO
         OR S.VOLUME <> P.VOLUME
-        OR S.QTCXMASTER <> P.QTCXMASTER
-        OR S.IMPORTADO <> P.IMPORTADO
-        OR S.REVENDA <> P.REVENDA
-        OR S.NCM <> P.NCM
-        OR S.NCMEX <> P.NCMEX
-        OR S.TIPOMERCADORIA <> P.TIPOMERCADORIA
-        OR S.FORALINHA <> P.FORALINHA
+        OR NVL(S.QTCXMASTER,0) <> P.QTCXMASTER
+        OR NVL(S.IMPORTADO,'0') <> P.IMPORTADO
+        OR NVL(S.REVENDA,'0') <> P.REVENDA
+        OR NVL(S.ENVIAFV,'0') <> NVL(P.ENVIAFV,'0')
+        OR NVL(S.NCM,'0') <> P.NCM
+        OR NVL(S.NCMEX,'0') <> P.NCMEX
+        OR NVL(S.TIPOMERCADORIA,'0') <> P.TIPOMERCADORIA
+        OR NVL(S.FORALINHA,'0') <> P.FORALINHA
         OR S.CERTIFICACAO <> P.CERTIFICACAO
 )
 
@@ -113,40 +115,41 @@ FOR temp_rec IN (
   LOOP
     BEGIN
       UPDATE BI_SINC_PRODUTO
-         SET PRODUTO         = temp_rec.PRODUTO,
-             CODPRODMASTER   = CODPRODMASTER,
-             PRODUTOMASTER   = temp_rec.PRODUTOMASTER,
-             CODDEPTO        = temp_rec.CODDEPTO,
-             DEPARTAMENTO    = temp_rec.DEPARTAMENTO,
-             CODSECAO        = temp_rec.CODSECAO,
-             SECAO           = temp_rec.SECAO,
-             CODCATEGORIA    = temp_rec.CODCATEGORIA,
-             CATEGORIA       = temp_rec.CATEGORIA,
-             CODLINHA        = temp_rec.CODLINHA,
-             LINHA           = temp_rec.LINHA,
-             PRODUTOFILHO    = temp_rec.PRODUTOFILHO,
-             CODFORNEC       = temp_rec.CODFORNEC,
-             CODMARCA        = temp_rec.CODMARCA,
-             MARCA           = temp_rec.MARCA,
-             TIPOCOMISSAO    = temp_rec.TIPOCOMISSAO,
-             CODFAB          = temp_rec.CODFAB,
-             CODBARRAS       = temp_rec.CODBARRAS,
-             CODBARRASMASTER = temp_rec.CODBARRASMASTER,
-             PESO            = temp_rec.PESO,
-             LARGURA         = temp_rec.LARGURA,
-             ALTURA          = temp_rec.ALTURA,
-             COMPRIMENTO     = temp_rec.COMPRIMENTO,
-             VOLUME          = temp_rec.VOLUME,
-             QTCXMASTER      = temp_rec.QTCXMASTER,
-             IMPORTADO       = temp_rec.IMPORTADO,
-             REVENDA         = temp_rec.REVENDA,
-             NCM             = temp_rec.NCM,
-             NCMEX           = temp_rec.NCMEX,
-             TIPOMERCADORIA  = temp_rec.TIPOMERCADORIA,
-             FORALINHA       = temp_rec.FORALINHA,
-             CERTIFICACAO    = temp_rec.CERTIFICACAO,
+         SET PRODUTO         = r.PRODUTO,
+             CODPRODMASTER   = r.CODPRODMASTER,
+             PRODUTOMASTER   = r.PRODUTOMASTER,
+             CODDEPTO        = r.CODDEPTO,
+             DEPARTAMENTO    = r.DEPARTAMENTO,
+             CODSECAO        = r.CODSECAO,
+             SECAO           = r.SECAO,
+             CODCATEGORIA    = r.CODCATEGORIA,
+             CATEGORIA       = r.CATEGORIA,
+             CODLINHA        = r.CODLINHA,
+             LINHA           = r.LINHA,
+             PRODUTOFILHO    = r.PRODUTOFILHO,
+             CODFORNEC       = r.CODFORNEC,
+             CODMARCA        = r.CODMARCA,
+             MARCA           = r.MARCA,
+             TIPOCOMISSAO    = r.TIPOCOMISSAO,
+             CODFAB          = r.CODFAB,
+             CODBARRAS       = r.CODBARRAS,
+             CODBARRASMASTER = r.CODBARRASMASTER,
+             PESO            = r.PESO,
+             LARGURA         = r.LARGURA,
+             ALTURA          = r.ALTURA,
+             COMPRIMENTO     = r.COMPRIMENTO,
+             VOLUME          = r.VOLUME,
+             QTCXMASTER      = r.QTCXMASTER,
+             IMPORTADO       = r.IMPORTADO,
+             REVENDA         = r.REVENDA,
+             ENVIAFV         = r.ENVIAFV,
+             NCM             = r.NCM,
+             NCMEX           = r.NCMEX,
+             TIPOMERCADORIA  = r.TIPOMERCADORIA,
+             FORALINHA       = r.FORALINHA,
+             CERTIFICACAO    = r.CERTIFICACAO,
              DT_UPDATE       = SYSDATE
-       WHERE CODPROD = temp_rec.CODPROD;
+       WHERE CODPROD = r.CODPROD;
     
       IF SQL%NOTFOUND THEN
         INSERT INTO BI_SINC_PRODUTO
@@ -178,6 +181,7 @@ FOR temp_rec IN (
            QTCXMASTER,
            IMPORTADO,
            REVENDA,
+           ENVIAFV,
            NCM,
            NCMEX,
            TIPOMERCADORIA,
@@ -185,39 +189,40 @@ FOR temp_rec IN (
            CERTIFICACAO,
            DT_UPDATE)
         VALUES
-          (temp_rec.CODPROD,
-           temp_rec.PRODUTO,
-           temp_rec.CODPRODMASTER,
-           temp_rec.PRODUTOMASTER,
-           temp_rec.CODDEPTO,
-           temp_rec.DEPARTAMENTO,
-           temp_rec.CODSECAO,
-           temp_rec.SECAO,
-           temp_rec.CODCATEGORIA,
-           temp_rec.CATEGORIA,
-           temp_rec.CODLINHA,
-           temp_rec.LINHA,
-           temp_rec.PRODUTOFILHO,
-           temp_rec.CODFORNEC,
-           temp_rec.CODMARCA,
-           temp_rec.MARCA,
-           temp_rec.TIPOCOMISSAO,
-           temp_rec.CODFAB,
-           temp_rec.CODBARRAS,
-           temp_rec.CODBARRASMASTER,
-           temp_rec.PESO,
-           temp_rec.LARGURA,
-           temp_rec.ALTURA,
-           temp_rec.COMPRIMENTO,
-           temp_rec.VOLUME,
-           temp_rec.QTCXMASTER,
-           temp_rec.IMPORTADO,
-           temp_rec.REVENDA,
-           temp_rec.NCM,
-           temp_rec.NCMEX,
-           temp_rec.TIPOMERCADORIA,
-           temp_rec.FORALINHA,
-           temp_rec.CERTIFICACAO,
+          (r.CODPROD,
+           r.PRODUTO,
+           r.CODPRODMASTER,
+           r.PRODUTOMASTER,
+           r.CODDEPTO,
+           r.DEPARTAMENTO,
+           r.CODSECAO,
+           r.SECAO,
+           r.CODCATEGORIA,
+           r.CATEGORIA,
+           r.CODLINHA,
+           r.LINHA,
+           r.PRODUTOFILHO,
+           r.CODFORNEC,
+           r.CODMARCA,
+           r.MARCA,
+           r.TIPOCOMISSAO,
+           r.CODFAB,
+           r.CODBARRAS,
+           r.CODBARRASMASTER,
+           r.PESO,
+           r.LARGURA,
+           r.ALTURA,
+           r.COMPRIMENTO,
+           r.VOLUME,
+           r.QTCXMASTER,
+           r.IMPORTADO,
+           r.REVENDA,
+           r.ENVIAFV,
+           r.NCM,
+           r.NCMEX,
+           r.TIPOMERCADORIA,
+           r.FORALINHA,
+           r.CERTIFICACAO,
            SYSDATE);
       END IF;
     EXCEPTION
