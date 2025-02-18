@@ -74,16 +74,16 @@ BEGIN
                       C.DIA_UTIL_FINANCEIRO DTVENCUTIL,
                       (CASE
                         WHEN V.CODAREA = 1 THEN
-                         'DISTRIBUICAO'
+                         5
                         WHEN V.CODAREA = 2 THEN
-                         'CORPORATIVO'
+                         8
                         WHEN CODGERENTE = 3 THEN
-                         'LOJAS'
+                         6
                         WHEN CODGERENTE = 4 THEN
-                         'ECOMMERCE'
+                         7
                         ELSE
-                         'OUTROS'
-                      END) TIPO,
+                         9
+                      END) CODFLUXO,
                       (CASE
                         WHEN DTPAG IS NULL THEN
                          (TRUNC(SYSDATE) - C.DIA_UTIL_FINANCEIRO)
@@ -163,7 +163,8 @@ BEGIN
                                         AND COB.PREST = P.PREST
                 WHERE (P.DTEMISSAO >= vDATA_MOV_INCREMENTAL OR P.DTPAG IS NULL)
                   AND (M.DTESTORNO IS NULL OR (M.DTESTORNO IS NOT NULL AND M.ESTORNO = 'N'))
-                  AND P.DTCANCEL IS NULL)
+                  AND P.DTCANCEL IS NULL
+                  AND P.CODCOB NOT IN ('BNF'))
               
               SELECT P.*
                 FROM BASE_RECEBER P
@@ -177,7 +178,7 @@ BEGIN
                   OR NVL(S.DTESTORNO, '01/01/1899') <> P.DTESTORNO
                   OR NVL(S.DTVENCIMENTO, '01/01/1899') <> P.DTVENCIMENTO
                   OR NVL(S.DTVENCUTIL, '01/01/1899') <> P.DTVENCUTIL
-                  OR S.TIPO <> P.TIPO
+                  OR S.CODFLUXO <> P.CODFLUXO
                   OR NVL(S.DIASVENCIDOS, 0) <> NVL(P.DIASVENCIDOS, 0)
                   OR NVL(S.CODINADIMPLENCIA, 0) <> NVL(P.CODINADIMPLENCIA, 0)
                   OR NVL(S.HISTORICO, '0') <> NVL(P.HISTORICO, '0')
@@ -213,7 +214,7 @@ BEGIN
              DTESTORNO        = r.DTESTORNO,
              DTVENCIMENTO     = r.DTVENCIMENTO,
              DTVENCUTIL       = r.DTVENCUTIL,
-             TIPO             = r.TIPO,
+             CODFLUXO             = r.CODFLUXO,
              DIASVENCIDOS     = r.DIASVENCIDOS,
              CODINADIMPLENCIA = r.CODINADIMPLENCIA,
              HISTORICO        = r.HISTORICO,
@@ -249,7 +250,7 @@ BEGIN
            DTESTORNO,
            DTVENCIMENTO,
            DTVENCUTIL,
-           TIPO,
+           CODFLUXO,
            DIASVENCIDOS,
            CODINADIMPLENCIA,
            HISTORICO,
@@ -283,7 +284,7 @@ BEGIN
            r.DTESTORNO,
            r.DTVENCIMENTO,
            r.DTVENCUTIL,
-           r.TIPO,
+           r.CODFLUXO,
            r.DIASVENCIDOS,
            r.CODINADIMPLENCIA,
            r.HISTORICO,
