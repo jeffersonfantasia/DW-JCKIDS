@@ -19,7 +19,7 @@ BEGIN
                  FROM PCLOGCOBMAG L
                  JOIN PCOCORBC B ON L.CODOCORRENCIA = B.CODOCORRENCIA
                 WHERE B.NUMBANCO = 341),
-
+              
               OCORRENCIAS AS
                (SELECT L.DATA,
                       L.CODOCORRENCIA,
@@ -28,34 +28,34 @@ BEGIN
                       L.PREST
                  FROM RATREIO_OCORRENCIAS L
                 WHERE L.RN = 1),
-
-              RASTREIO_COBRANCA AS
+              
+              RASTREIO_HISTORICO AS
                (SELECT B.DATA,
                       I.NUMTRANSVENDA,
                       I.PREST,
                       C.CODSTATUSCOB,
-                      COALESCE(B.OBS3, C.STATUSCOB, B.OBS2, B.OBS1) OBSERVACAO,
+                      COALESCE(B.OBS3, C.STATUSCOB, B.OBS2, B.OBS1) HISTORICO,
                       ROW_NUMBER() OVER (PARTITION BY I.NUMTRANSVENDA, I.PREST ORDER BY B.DATA DESC) AS RN
                  FROM PCHISTCOB B
                  JOIN PCHISTCOBI I ON B.NUMREGCOB = I.NUMREGCOB
                  LEFT JOIN PCSTATUSCOBCLI C ON I.CODSTATUSCOB = C.CODSTATUSCOB
                 WHERE C.CODSTATUSCOB IS NOT NULL),
-
-              COBRANCA AS
+              
+              HISTORICO AS
                (SELECT L.DATA,
                       L.CODSTATUSCOB,
-                      L.OBSERVACAO,
+                      L.HISTORICO,
                       L.NUMTRANSVENDA,
                       L.PREST
-                 FROM RASTREIO_COBRANCA L
+                 FROM RASTREIO_HISTORICO L
                 WHERE L.RN = 1),
-
+              
               BANCO AS
                (SELECT B.CODBANCO,
                       C.CODCONTA
                  FROM PCBANCO B
                  LEFT JOIN PCCONTA C ON B.CODBANCO = C.CODCONTAMASTER),
-
+              
               CLIENTE AS
                (SELECT C.CODCLI,
                       T.CODCONTA
@@ -63,7 +63,7 @@ BEGIN
                  JOIN PCCONTA T ON C.CODCLI = T.CODCONTAMASTER
                 WHERE T.GRUPOCONTA = 110
                   AND T.CODCONTA > vCONTA_CLIENTE_NACIONAL),
-
+              
               BASE_RECEBER AS
                (SELECT F.CODEMPRESA,
                       P.CODFILIAL,
@@ -92,80 +92,43 @@ BEGIN
                       END) DIASVENCIDOS,
                       (CASE
                         WHEN P.DTPAG IS NOT NULL THEN
-                         0
+                         14 -- 14-TITULO PAGO
                         WHEN COB.CODSTATUSCOB = 42 THEN
-                         11
+                         11 -- 11-TITULO COM O JURÍDICO
                         WHEN COB.CODSTATUSCOB = 41 THEN
-                         10
+                         10 --10-TITULO ENVIADO PARA COBRANÇA EXTERNA
                         WHEN COB.CODSTATUSCOB = 43 THEN
-                         9
+                         9 -- 09-TITULO NEGOCIADO COM DATA PARA RECEBIMENTO
                         WHEN (TRUNC(SYSDATE) - C.DIA_UTIL_FINANCEIRO) > 30
                              AND P.CODCOB = 'JUR' THEN
-                         13
+                         13 -- 13- JUROS PENDENTE
                         WHEN (TRUNC(SYSDATE) - C.DIA_UTIL_FINANCEIRO) > 720
                              AND P.CODCOB <> 'JUR' THEN
-                         12
+                         12 -- 12-VERIFICAR BAIXA COMO PERDA E BLOQUEAR DEFINITIVO CLIENTE
                         WHEN O.CODOCORRENCIA = '21' THEN
-                         3
+                         3 -- 03-NEGOCIAR COM CLIENTE - TIT. NAO PROTESTADO
                         WHEN O.CODOCORRENCIA = '32'
                              AND P.CODCOB <> 'JUR' THEN
-                         6
+                         6 -- 06-NEGOCIAR COM CLIENTE APOS PROTESTO
                         WHEN (TRUNC(SYSDATE) - C.DIA_UTIL_FINANCEIRO) > 75
                              AND P.CODCOB <> 'JUR' THEN
-                         8
+                         8 -- 08-VERIFICAR ENVIO AREA JURIDICA
                         WHEN (TRUNC(SYSDATE) - C.DIA_UTIL_FINANCEIRO) > 45
                              AND P.CODCOB <> 'JUR' THEN
-                         7
+                         7 -- 07-VERIFICAR ENVIO PARA COBRANÇA EXTERNA
                         WHEN NVL(P.PROTESTO, 'N') = 'S' THEN
-                         5
+                         5 -- 05-TITULO PROTESTADO
                         WHEN NVL(P.CARTORIO, 'N') = 'S' THEN
-                         4
+                         4 -- 04-TITULO EM CARTÓRIO
                         WHEN (TRUNC(SYSDATE) - C.DIA_UTIL_FINANCEIRO) > 5
                              AND P.CODCOB = 'BK' THEN
-                         2
+                         2 -- 02-PRESTES A ENTRAR EM CARTORIO
                         WHEN ((TRUNC(SYSDATE) - C.DIA_UTIL_FINANCEIRO) > 0 OR P.CODCOB = 'C') THEN
-                         1
+                         1 -- 01-ENTRAR EM CONTATO COM CLIENTE
                         ELSE
-                         99
-                      END) CODCOBRANCA,
-                      (CASE
-                        WHEN P.DTPAG IS NOT NULL THEN
-                         'TITULO PAGO'
-                        WHEN COB.CODSTATUSCOB = 42 THEN
-                         '11-TITULO COM O JURÍDICO'
-                        WHEN COB.CODSTATUSCOB = 41 THEN
-                         '10-TITULO ENVIADO PARA COBRANÇA EXTERNA'
-                        WHEN COB.CODSTATUSCOB = 43 THEN
-                         '09-TITULO NEGOCIADO COM DATA PARA RECEBIMENTO'
-                        WHEN (TRUNC(SYSDATE) - C.DIA_UTIL_FINANCEIRO) > 30
-                             AND P.CODCOB = 'JUR' THEN
-                         '13- JUROS PENDENTE'
-                        WHEN (TRUNC(SYSDATE) - C.DIA_UTIL_FINANCEIRO) > 720
-                             AND P.CODCOB <> 'JUR' THEN
-                         '12-VERIFICAR BAIXA COMO PERDA E BLOQUEAR DEFINITIVO CLIENTE'
-                        WHEN O.CODOCORRENCIA = '21' THEN
-                         '03-NEGOCIAR COM CLIENTE - TIT. NAO PROTESTADO'
-                        WHEN O.CODOCORRENCIA = '32'
-                             AND P.CODCOB <> 'JUR' THEN
-                         '06-NEGOCIAR COM CLIENTE APOS PROTESTO'
-                        WHEN (TRUNC(SYSDATE) - C.DIA_UTIL_FINANCEIRO) > 75
-                             AND P.CODCOB <> 'JUR' THEN
-                         '08-VERIFICAR ENVIO AREA JURIDICA'
-                        WHEN (TRUNC(SYSDATE) - C.DIA_UTIL_FINANCEIRO) > 45
-                             AND P.CODCOB <> 'JUR' THEN
-                         '07-VERIFICAR ENVIO PARA COBRANÇA EXTERNA'
-                        WHEN NVL(P.PROTESTO, 'N') = 'S' THEN
-                         '05-TITULO PROTESTADO'
-                        WHEN NVL(P.CARTORIO, 'N') = 'S' THEN
-                         '04-TITULO EM CARTÓRIO'
-                        WHEN (TRUNC(SYSDATE) - C.DIA_UTIL_FINANCEIRO) > 5
-                             AND P.CODCOB = 'BK' THEN
-                         '02-PRESTES A ENTRAR EM CARTORIO'
-                        WHEN ((TRUNC(SYSDATE) - C.DIA_UTIL_FINANCEIRO) > 0 OR P.CODCOB = 'C') THEN
-                         '01-ENTRAR EM CONTATO COM CLIENTE'
-                        ELSE
-                         '99-FALTA PARAMETRIZAR'
-                      END) COBRANCA,
+                         99 -- 99-FALTA PARAMETRIZAR
+                      END) CODINADIMPLENCIA,
+                      COB.HISTORICO,
                       P.CODCLI,
                       NVL(T.CODCONTA, vCONTA_CLIENTE_NACIONAL) CONTACLIENTE,
                       NVL(P.CODCOBORIG, P.CODCOB) CODCOBORIG,
@@ -196,12 +159,12 @@ BEGIN
                  LEFT JOIN BI_SINC_VENDEDOR V ON V.CODUSUR = P.CODUSUR
                  LEFT JOIN OCORRENCIAS O ON O.NUMTRANSVENDA = P.NUMTRANSVENDA
                                         AND O.PREST = P.PREST
-                 LEFT JOIN COBRANCA COB ON COB.NUMTRANSVENDA = P.NUMTRANSVENDA
-                                       AND COB.PREST = P.PREST
+                 LEFT JOIN HISTORICO COB ON COB.NUMTRANSVENDA = P.NUMTRANSVENDA
+                                        AND COB.PREST = P.PREST
                 WHERE (P.DTEMISSAO >= vDATA_MOV_INCREMENTAL OR P.DTPAG IS NULL)
                   AND (M.DTESTORNO IS NULL OR (M.DTESTORNO IS NOT NULL AND M.ESTORNO = 'N'))
                   AND P.DTCANCEL IS NULL)
-
+              
               SELECT P.*
                 FROM BASE_RECEBER P
                 LEFT JOIN BI_SINC_LANC_RECEBER_BASE S ON S.NUMTRANSVENDA = P.NUMTRANSVENDA
@@ -216,8 +179,8 @@ BEGIN
                   OR NVL(S.DTVENCUTIL, '01/01/1899') <> P.DTVENCUTIL
                   OR S.TIPO <> P.TIPO
                   OR NVL(S.DIASVENCIDOS, 0) <> NVL(P.DIASVENCIDOS, 0)
-                  OR NVL(S.CODCOBRANCA, 0) <> NVL(P.CODCOBRANCA, 0)
-                  OR NVL(S.COBRANCA, '0') <> NVL(P.COBRANCA, '0')
+                  OR NVL(S.CODINADIMPLENCIA, 0) <> NVL(P.CODINADIMPLENCIA, 0)
+                  OR NVL(S.HISTORICO, '0') <> NVL(P.HISTORICO, '0')
                   OR NVL(S.CODCLI, 0) <> NVL(P.CODCLI, 0)
                   OR NVL(S.CONTACLIENTE, 0) <> NVL(P.CONTACLIENTE, 0)
                   OR NVL(S.CODCOBORIG, '0') <> NVL(P.CODCOBORIG, '0')
@@ -237,9 +200,9 @@ BEGIN
                   OR NVL(S.DTCOMPENSACAO, '01/01/1899') <> P.DTCOMPENSACAO
                   OR NVL(S.CODBANCO, 0) <> NVL(P.CODBANCO, 0)
                   OR NVL(S.CONTABANCO, 0) <> NVL(P.CONTABANCO, 0))
-
+  
   -- Atualiza ou insere os resultados na tabela BI_SINC conforme as condições mencionadas
-
+  
   LOOP
     BEGIN
       UPDATE BI_SINC_LANC_RECEBER_BASE
@@ -252,8 +215,8 @@ BEGIN
              DTVENCUTIL       = r.DTVENCUTIL,
              TIPO             = r.TIPO,
              DIASVENCIDOS     = r.DIASVENCIDOS,
-             CODCOBRANCA      = r.CODCOBRANCA,
-             COBRANCA         = r.COBRANCA,
+             CODINADIMPLENCIA = r.CODINADIMPLENCIA,
+             HISTORICO        = r.HISTORICO,
              CODCLI           = r.CODCLI,
              CONTACLIENTE     = r.CONTACLIENTE,
              CODCOBORIG       = r.CODCOBORIG,
@@ -276,7 +239,7 @@ BEGIN
              DT_UPDATE        = SYSDATE
        WHERE NUMTRANSVENDA = r.NUMTRANSVENDA
          AND PREST = r.PREST;
-
+    
       IF SQL%NOTFOUND THEN
         INSERT INTO BI_SINC_LANC_RECEBER_BASE
           (CODEMPRESA,
@@ -288,8 +251,8 @@ BEGIN
            DTVENCUTIL,
            TIPO,
            DIASVENCIDOS,
-           CODCOBRANCA,
-           COBRANCA,
+           CODINADIMPLENCIA,
+           HISTORICO,
            CODCLI,
            CONTACLIENTE,
            CODCOBORIG,
@@ -322,8 +285,8 @@ BEGIN
            r.DTVENCUTIL,
            r.TIPO,
            r.DIASVENCIDOS,
-           r.CODCOBRANCA,
-           r.COBRANCA,
+           r.CODINADIMPLENCIA,
+           r.HISTORICO,
            r.CODCLI,
            r.CONTACLIENTE,
            r.CODCOBORIG,
