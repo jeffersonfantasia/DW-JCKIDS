@@ -5,11 +5,11 @@ CREATE OR REPLACE VIEW VIEW_BI_SINC_LANCAMENTOS AS
                   L.DTVENCIMENTO,
                   L.DTVENCUTIL,
                   NVL(L.DTCOMPENSACAO, L.DTPAGAMENTO) DTCOMPENSACAO,
-                  L.TIPO,
-                  (L.VALOR - L.VLDESCONTO - L.VLDEVOLUCAO) VALOR,
+                  L.CODFLUXO,
+                  L.CODCONTA,
+                  ((L.VALOR - L.VLDESCONTO - L.VLDEVOLUCAO) * -1) VALOR,
                   DECODE(L.TIPOPARCEIRO, 'F', L.CODFORNEC, 0) CODFORNEC,
                   DECODE(L.TIPOPARCEIRO, 'C', L.CODFORNEC, 0) CODCLI,
-                  L.CODCONTA,
                   L.NUMNOTA,
                   'D' CODCOB,
                   0 CODUSUR,
@@ -21,15 +21,22 @@ CREATE OR REPLACE VIEW VIEW_BI_SINC_LANCAMENTOS AS
                      'Nº Lanc: ' || L.RECNUM
                   END) HISTORICO
     FROM BI_SINC_LANC_PAGAR_BASE L
+		WHERE L.GRUPOCONTA NOT IN (110,200,900)
+		AND L.CODCONTA NOT IN (37, 2100)
   UNION ALL
   SELECT 'R' MOVIMENTO,
          R.CODFILIAL,
          R.DTVENCIMENTO,
          R.DTVENCUTIL,
          NVL(R.DTCOMPENSACAO, R.DTPAGAMENTO) DTCOMPENSACAO,
-         R.TIPO,
+         R.CODFLUXO,
          0 CODCONTA,
-         NVL(R.VLRECEBIDO, R.VALORLIQ) VALOR,
+         (CASE
+           WHEN R.VLRECEBIDO > 0 THEN
+            R.VLRECEBIDO
+           ELSE
+            R.VALORLIQ
+         END) VALOR,
          0 CODFORNEC,
          R.CODCLI,
          R.NUMNOTA,
@@ -44,4 +51,5 @@ CREATE OR REPLACE VIEW VIEW_BI_SINC_LANCAMENTOS AS
          END) HISTORICO
     FROM BI_SINC_LANC_RECEBER_BASE R
    WHERE R.DTDESD IS NULL
-     AND R.DTESTORNO IS NULL;
+     AND R.DTESTORNO IS NULL
+		 AND R.CODCOB NOT IN ('CRED');
