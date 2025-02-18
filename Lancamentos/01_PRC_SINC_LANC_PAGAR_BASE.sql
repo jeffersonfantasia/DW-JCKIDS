@@ -26,14 +26,14 @@ BEGIN
                       C.DIA_UTIL_FINANCEIRO DTVENCUTIL,
                       (CASE
                         WHEN INSTR(L.HISTORICO2, 'RISCO') > 0 THEN
-                         'RISCO SACADO'
+                         1
                         WHEN L.CODCONTA = vCONTA_COMPRA_MERCADORIA THEN
-                         'MERCADORIA'
+                         2
                         WHEN L.TIPOLANC = 'C' THEN
-                         'CONFIRMADO'
+                         3
                         ELSE
-                         'PROVISIONADO'
-                      END) TIPO,
+                         4
+                      END) CODFLUXO,
                       NVL(R.CODIGOCENTROCUSTO, 0) CODCC,
                       NVL(R.PERCRATEIO, 0) PERCRATEIO,
                       R.VALOR VLRATEIO,
@@ -96,7 +96,7 @@ BEGIN
                       L.DTCOMPETENCIA,
                       L.DTVENCIMENTO,
                       L.DTVENCUTIL,
-                      L.TIPO,
+                      L.CODFLUXO,
                       L.CODCC,
                       L.PERCRATEIO,
                       NVL(L.VLRATEIO, L.VALOR) VLRATEIO,
@@ -133,7 +133,7 @@ BEGIN
                   OR NVL(S.DTCOMPETENCIA, '01/01/1899') <> L.DTCOMPETENCIA
                   OR NVL(S.DTVENCIMENTO, '01/01/1899') <> L.DTVENCIMENTO
                   OR NVL(S.DTVENCUTIL, '01/01/1899') <> L.DTVENCUTIL
-                  OR S.TIPO <> L.TIPO
+                  OR S.CODFLUXO <> L.CODFLUXO
                   OR NVL(S.PERCRATEIO, 0) <> NVL(L.PERCRATEIO, 0)
                   OR S.VLRATEIO <> L.VLRATEIO
                   OR S.VALOR <> L.VALOR
@@ -167,7 +167,7 @@ BEGIN
              DTCOMPETENCIA   = r.DTCOMPETENCIA,
              DTVENCIMENTO    = r.DTVENCIMENTO,
              DTVENCUTIL      = r.DTVENCUTIL,
-             TIPO            = r.TIPO,
+             CODFLUXO        = r.CODFLUXO,
              PERCRATEIO      = r.PERCRATEIO,
              VLRATEIO        = r.VLRATEIO,
              VALOR           = r.VALOR,
@@ -202,7 +202,7 @@ BEGIN
            DTCOMPETENCIA,
            DTVENCIMENTO,
            DTVENCUTIL,
-           TIPO,
+           CODFLUXO,
            CODCC,
            PERCRATEIO,
            VLRATEIO,
@@ -234,7 +234,7 @@ BEGIN
            r.DTCOMPETENCIA,
            r.DTVENCIMENTO,
            r.DTVENCUTIL,
-           r.TIPO,
+           r.CODFLUXO,
            r.CODCC,
            r.PERCRATEIO,
            r.VLRATEIO,
