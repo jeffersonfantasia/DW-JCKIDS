@@ -1,7 +1,23 @@
 CREATE OR REPLACE PROCEDURE PRC_SINC_SALDO_BANCO AS
+
+   -----------------------DATAS DE ATUALIZACAO
+   vDATA_MOV_INCREMENTAL DATE := TRUNC(SYSDATE) - 365;
+   --vDATA_MOV_INCREMENTAL DATE := TO_DATE('01/01/2020', 'DD/MM/YYYY'); 
+
 BEGIN
 
-  FOR r IN (WITH ULTIMO_SALDO AS
+  FOR r IN (WITH CALENDARIO AS
+               (SELECT C.DATA,
+                      B.CODBANCO,
+                      B.CODFILIAL
+                 FROM BI_SINC_CALENDARIO C
+                CROSS JOIN (SELECT CODBANCO,
+                                  CODFILIAL
+                             FROM PCBANCO) B
+                WHERE C.DATA >= vDATA_MOV_INCREMENTAL
+                  AND C.DATA <= TRUNC(SYSDATE)),
+              
+              ULTIMO_SALDO AS
                (SELECT *
                  FROM (SELECT M.CODBANCO,
                               M.DATA,
@@ -30,17 +46,22 @@ BEGIN
                 WHERE RN = 1),
               
               BANCOS AS
-               (SELECT B.CODFILIAL,
-                      M.CODBANCO,
-                      M.DATA,
-                      M.DATACOMPLETA,
-                      M.VLSALDO,
-                      D.DTCONCIL,
-                      D.VLSALDOCONCIL
-                 FROM ULTIMO_SALDO M
-                 LEFT JOIN ULTIMO_SALDO_CONCILIADO D ON M.CODBANCO = D.CODBANCO
-                                                    AND M.DATA = TO_DATE(D.DTCONCIL, 'DD/MM/YYYY')
-                 LEFT JOIN BI_SINC_BANCO B ON B.CODBANCO = M.CODBANCO)
+               (SELECT C.CODFILIAL,
+                      C.CODBANCO,
+                      C.DATA,
+                      COALESCE(M.DATACOMPLETA,
+                               LAG(M.DATACOMPLETA IGNORE NULLS) OVER(PARTITION BY C.CODBANCO ORDER BY C.DATA)) DATACOMPLETA,
+                      COALESCE(M.VLSALDO, LAG(M.VLSALDO IGNORE NULLS) OVER(PARTITION BY C.CODBANCO ORDER BY C.DATA)) VLSALDO,
+                      COALESCE(D.DTCONCIL, LAG(D.DTCONCIL IGNORE NULLS) OVER(PARTITION BY C.CODBANCO ORDER BY C.DATA)) AS DTCONCIL,
+                      COALESCE(D.VLSALDOCONCIL,
+                               LAG(D.VLSALDOCONCIL IGNORE NULLS) OVER(PARTITION BY C.CODBANCO ORDER BY C.DATA)) VLSALDOCONCIL
+                 FROM CALENDARIO C
+                 LEFT JOIN ULTIMO_SALDO M ON M.DATA = C.DATA
+                                         AND M.CODBANCO = C.CODBANCO
+                 LEFT JOIN ULTIMO_SALDO_CONCILIADO D ON D.CODBANCO = C.CODBANCO
+                                                    AND C.DATA = TO_DATE(D.DTCONCIL, 'DD/MM/YYYY')
+                 LEFT JOIN BI_SINC_BANCO B ON B.CODBANCO = M.CODBANCO
+								 WHERE C.DATA >= vDATA_MOV_INCREMENTAL)
               
               SELECT B.*
                 FROM BANCOS B
@@ -53,7 +74,7 @@ BEGIN
                   OR NVL(S.VLSALDO, 0) <> NVL(B.VLSALDO, 0)
                   OR NVL(S.DTCONCIL, TO_DATE('01/01/1889', 'DD/MM/YYYY')) <>
                      NVL(B.DTCONCIL, TO_DATE('01/01/1889', 'DD/MM/YYYY'))
-                  OR NVL(S.VLSALDO, 0) <> NVL(B.VLSALDO, 0))
+                  OR NVL(S.VLSALDOCONCIL, 0) <> NVL(B.VLSALDOCONCIL, 0))
   
   -- Atualiza ou insere os resultados na tabela BI_SINC conforme as condições mencionada
   
