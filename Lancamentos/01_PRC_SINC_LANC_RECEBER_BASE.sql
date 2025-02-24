@@ -85,22 +85,24 @@ BEGIN
                          9
                       END) CODFLUXO,
                       (CASE
-                        WHEN DTPAG IS NULL THEN
+                        WHEN DTPAG IS NULL
+                             AND C.DIA_UTIL_FINANCEIRO < TRUNC(SYSDATE) THEN
                          (TRUNC(SYSDATE) - C.DIA_UTIL_FINANCEIRO)
                         ELSE
                          0
                       END) DIASVENCIDOS,
                       (CASE
                         WHEN P.DTPAG IS NOT NULL THEN
-                         14 -- 14-TITULO PAGO
+                         15 -- 15-TITULO PAGO
+                        WHEN C.DIA_UTIL_FINANCEIRO >= TRUNC(SYSDATE) THEN
+                         14 --14-TITULO A VENCER
                         WHEN COB.CODSTATUSCOB = 42 THEN
                          11 -- 11-TITULO COM O JURÍDICO
                         WHEN COB.CODSTATUSCOB = 41 THEN
                          10 --10-TITULO ENVIADO PARA COBRANÇA EXTERNA
                         WHEN COB.CODSTATUSCOB = 43 THEN
                          9 -- 09-TITULO NEGOCIADO COM DATA PARA RECEBIMENTO
-                        WHEN (TRUNC(SYSDATE) - C.DIA_UTIL_FINANCEIRO) > 30
-                             AND P.CODCOB = 'JUR' THEN
+                        WHEN P.CODCOB = 'JUR' THEN
                          13 -- 13- JUROS PENDENTE
                         WHEN (TRUNC(SYSDATE) - C.DIA_UTIL_FINANCEIRO) > 720
                              AND P.CODCOB <> 'JUR' THEN
@@ -214,7 +216,7 @@ BEGIN
              DTESTORNO        = r.DTESTORNO,
              DTVENCIMENTO     = r.DTVENCIMENTO,
              DTVENCUTIL       = r.DTVENCUTIL,
-             CODFLUXO             = r.CODFLUXO,
+             CODFLUXO         = r.CODFLUXO,
              DIASVENCIDOS     = r.DIASVENCIDOS,
              CODINADIMPLENCIA = r.CODINADIMPLENCIA,
              HISTORICO        = r.HISTORICO,
