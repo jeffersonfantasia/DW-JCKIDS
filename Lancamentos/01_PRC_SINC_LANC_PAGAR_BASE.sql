@@ -18,6 +18,7 @@ BEGIN
               BASE AS
                (SELECT F.CODEMPRESA,
                       L.CODFILIAL,
+                      L.DTLANC,
                       L.RECNUM,
                       NVL(L.ADIANTAMENTO, 'N') ADIANTAMENTO,
                       EXTRACT(YEAR FROM L.DTCOMPETENCIA) ANO_COMPETENCIA,
@@ -90,6 +91,7 @@ BEGIN
               LANCAMENTOS AS
                (SELECT L.CODEMPRESA,
                       L.CODFILIAL,
+                      L.DTLANC,
                       L.RECNUM,
                       L.ADIANTAMENTO,
                       L.ANO_COMPETENCIA,
@@ -128,6 +130,7 @@ BEGIN
                WHERE S.DT_UPDATE IS NULL
                   OR S.CODEMPRESA <> L.CODEMPRESA
                   OR S.CODFILIAL <> L.CODFILIAL
+                  OR NVL(S.DTLANC, '01/01/1899') <> L.DTLANC
                   OR S.ADIANTAMENTO <> L.ADIANTAMENTO
                   OR S.ANO_COMPETENCIA <> L.ANO_COMPETENCIA
                   OR NVL(S.DTCOMPETENCIA, '01/01/1899') <> L.DTCOMPETENCIA
@@ -162,6 +165,7 @@ BEGIN
       UPDATE BI_SINC_LANC_PAGAR_BASE
          SET CODEMPRESA      = r.CODEMPRESA,
              CODFILIAL       = r.CODFILIAL,
+             DTLANC          = r.DTLANC,
              ADIANTAMENTO    = r.ADIANTAMENTO,
              ANO_COMPETENCIA = r.ANO_COMPETENCIA,
              DTCOMPETENCIA   = r.DTCOMPETENCIA,
@@ -196,6 +200,7 @@ BEGIN
         INSERT INTO BI_SINC_LANC_PAGAR_BASE
           (CODEMPRESA,
            CODFILIAL,
+           DTLANC,
            RECNUM,
            ADIANTAMENTO,
            ANO_COMPETENCIA,
@@ -228,6 +233,7 @@ BEGIN
         VALUES
           (r.CODEMPRESA,
            r.CODFILIAL,
+           r.DTLANC,
            r.RECNUM,
            r.ADIANTAMENTO,
            r.ANO_COMPETENCIA,
