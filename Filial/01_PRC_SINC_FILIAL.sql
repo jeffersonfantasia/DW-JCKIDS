@@ -8,10 +8,19 @@ BEGIN
                       TO_NUMBER(F.CODIGO) ORDEM,
                       F.CODGRUPOFILIAL CODEMPRESA,
                       NVL(F.CODFORNEC, 1) CODFORNEC,
-                      NVL(F.CODCLI, 4) CODCLI
+                      NVL(F.CODCLI, 4) CODCLI,
+                      (CASE
+                        WHEN (INSTR(F.FANTASIA, 'LOJA') > 0 OR INSTR(F.FANTASIA, 'ECOMMERCE') > 0) THEN
+                         'VAREJO'
+                        WHEN INSTR(F.FANTASIA, 'DISTRIBUICAO') > 0 THEN
+                         'DISTRIBUICAO'
+                        WHEN INSTR(F.FANTASIA, 'ESTOQUE') > 0 THEN
+                         'CORPORATIVO'
+                        ELSE
+                         'OUTROS'
+                      END) TIPOFILIAL
                  FROM PCFILIAL F
-                 LEFT JOIN PCGRUPOFILIAL G ON G.CODGRUPOFILIAL =
-                                              F.CODGRUPOFILIAL)
+                 LEFT JOIN PCGRUPOFILIAL G ON G.CODGRUPOFILIAL = F.CODGRUPOFILIAL)
               
               SELECT F.*
                 FROM FILIAIS F
@@ -21,7 +30,8 @@ BEGIN
                   OR NVL(S.FILIAL, '0') <> F.FILIAL
                   OR NVL(S.CODEMPRESA, '0') <> F.CODEMPRESA
                   OR NVL(S.CODFORNEC, 0) <> F.CODFORNEC
-                  OR NVL(S.CODCLI, 0) <> F.CODCLI)
+                  OR NVL(S.CODCLI, 0) <> F.CODCLI
+                  OR NVL(S.TIPOFILIAL, '0') <> F.TIPOFILIAL)
   
   -- Atualiza ou insere os resultados na tabela BI_SINC conforme as condições mencionada
   
@@ -34,6 +44,7 @@ BEGIN
              CODEMPRESA = r.CODEMPRESA,
              CODFORNEC  = r.CODFORNEC,
              CODCLI     = r.CODCLI,
+             TIPOFILIAL = r.TIPOFILIAL,
              DT_UPDATE  = SYSDATE
        WHERE CODFILIAL = r.CODFILIAL;
     
@@ -46,6 +57,7 @@ BEGIN
            CODEMPRESA,
            CODFORNEC,
            CODCLI,
+           TIPOFILIAL,
            DT_UPDATE)
         VALUES
           (r.CODFILIAL,
@@ -55,14 +67,13 @@ BEGIN
            r.CODEMPRESA,
            r.CODFORNEC,
            r.CODCLI,
+           r.TIPOFILIAL,
            SYSDATE);
       END IF;
     EXCEPTION
       WHEN OTHERS THEN
         DBMS_OUTPUT.PUT_LINE('Erro encontrado: ' || SQLERRM);
-        RAISE_APPLICATION_ERROR(-20000,
-                                'Erro durante a insercao na tabela: ' ||
-                                SQLERRM);
+        RAISE_APPLICATION_ERROR(-20000, 'Erro durante a insercao na tabela: ' || SQLERRM);
     END;
   END LOOP;
 
