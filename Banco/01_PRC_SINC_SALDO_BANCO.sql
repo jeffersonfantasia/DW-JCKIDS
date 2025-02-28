@@ -23,12 +23,13 @@ BEGIN
                               M.DATA,
                               M.DATACOMPLETA,
                               M.VLSALDO,
-                              ROW_NUMBER() OVER (PARTITION BY M.CODBANCO, M.DATA ORDER BY M.DATACOMPLETA DESC) AS RN
+                              ROW_NUMBER() OVER (PARTITION BY M.CODBANCO, M.DATA ORDER BY M.DATACOMPLETA DESC, M.NUMTRANS DESC) AS RN
                          FROM PCMOVCR M
                         WHERE M.CODCOB = 'D'
                           AND M.DTESTORNO IS NULL
                         ORDER BY M.CODBANCO,
-                                 M.DATACOMPLETA DESC)
+                                 M.DATACOMPLETA DESC,
+                                 M.NUMTRANS DESC)
                 WHERE RN = 1),
               
               ULTIMO_SALDO_CONCILIADO AS
@@ -61,7 +62,7 @@ BEGIN
                  LEFT JOIN ULTIMO_SALDO_CONCILIADO D ON D.CODBANCO = C.CODBANCO
                                                     AND C.DATA = TO_DATE(D.DTCONCIL, 'DD/MM/YYYY')
                  LEFT JOIN BI_SINC_BANCO B ON B.CODBANCO = M.CODBANCO
-								 WHERE C.DATA >= vDATA_MOV_INCREMENTAL)
+                 WHERE C.DATA >= vDATA_MOV_INCREMENTAL)
               
               SELECT B.*
                 FROM BANCOS B
