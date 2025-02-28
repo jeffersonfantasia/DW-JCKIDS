@@ -146,6 +146,7 @@ BEGIN
                       DECODE(NVL(P.CARTORIO, 'N'), 'S', 'SIM', 'NÃO') CARTORIO,
                       DECODE(NVL(P.PROTESTO, 'N'), 'S', 'SIM', 'NÃO') PROTESTO,
                       P.DTINCLUSAOMANUAL,
+                      P.VALORESTORNO VLESTORNO,
                       P.VPAGO VLRECEBIDO,
                       P.DTPAG DTPAGAMENTO,
                       P.NUMTRANS,
@@ -197,6 +198,7 @@ BEGIN
                   OR NVL(S.CARTORIO, '0') <> NVL(P.CARTORIO, '0')
                   OR NVL(S.PROTESTO, '0') <> NVL(P.PROTESTO, '0')
                   OR NVL(S.DTINCLUSAOMANUAL, '01/01/1899') <> NVL(P.DTINCLUSAOMANUAL, '01/01/1899')
+                  OR NVL(S.VLESTORNO, 0) <> NVL(P.VLESTORNO, 0)
                   OR NVL(S.VLRECEBIDO, 0) <> NVL(P.VLRECEBIDO, 0)
                   OR NVL(S.DTPAGAMENTO, '01/01/1899') <> P.DTPAGAMENTO
                   OR NVL(S.NUMTRANS, 0) <> P.NUMTRANS
@@ -233,6 +235,7 @@ BEGIN
              CARTORIO         = r.CARTORIO,
              PROTESTO         = r.PROTESTO,
              DTINCLUSAOMANUAL = r.DTINCLUSAOMANUAL,
+             VLESTORNO        = r.VLESTORNO,
              VLRECEBIDO       = r.VLRECEBIDO,
              DTPAGAMENTO      = r.DTPAGAMENTO,
              NUMTRANS         = r.NUMTRANS,
@@ -271,6 +274,7 @@ BEGIN
            CARTORIO,
            PROTESTO,
            DTINCLUSAOMANUAL,
+           VLESTORNO,
            VLRECEBIDO,
            DTPAGAMENTO,
            NUMTRANS,
@@ -305,6 +309,7 @@ BEGIN
            r.CARTORIO,
            r.PROTESTO,
            r.DTINCLUSAOMANUAL,
+           r.VLESTORNO,
            r.VLRECEBIDO,
            r.DTPAGAMENTO,
            r.NUMTRANS,
