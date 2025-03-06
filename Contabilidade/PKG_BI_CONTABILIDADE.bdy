@@ -57,8 +57,11 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   vDIFAL_EQUIPAMENTO             NUMBER := 3653;
   vOUTROSESTOQUES                NUMBER := 200159;
   ----------------------------------------------
+
+  vADIANTAMENTO_CLIENTE      NUMBER := 2202;
   vTAXA_CARTAO               NUMBER := 3203;
   vJUROS_RECEBIDOS           NUMBER := 4003;
+  vCREDITOS_NAO_UTILIZADOS   NUMBER := 4004;
   vDESCONTOS_OBTIDOS         NUMBER := 4005;
   vDESCONTOS_CONCEDIDOS      NUMBER := 4107;
   vPREJUIZO_CLIENTE          NUMBER := 4108;
@@ -2883,7 +2886,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                    JOIN PCCONTA C ON C.CODCONTAMASTER = B.CODCLICC
                   WHERE B.CARTAO = 'S')
                 
-                SELECT ('R01') CODLANC,
+                SELECT ('R01' || '.P_' || P.PREST) CODLANC,
                        P.CODEMPRESA,
                        P.DTDESD DATA,
                        
@@ -2959,7 +2962,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     PIPELINED IS
   
   BEGIN
-    FOR r IN (SELECT ('R02') CODLANC,
+    FOR r IN (SELECT ('R02' || '.P_' || P.PREST) CODLANC,
                      P.CODEMPRESA,
                      P.DTCOMPENSACAO DATA,
                      
@@ -3037,7 +3040,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     PIPELINED IS
   
   BEGIN
-    FOR r IN (SELECT ('R03') CODLANC,
+    FOR r IN (SELECT ('R03' || '.P_' || P.PREST) CODLANC,
                      P.CODEMPRESA,
                      P.DTCOMPENSACAO DATA,
                      
@@ -3116,7 +3119,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     PIPELINED IS
   
   BEGIN
-    FOR r IN (SELECT ('R04') CODLANC,
+    FOR r IN (SELECT ('R04' || '.P_' || P.PREST) CODLANC,
                      P.CODEMPRESA,
                      P.DTCOMPENSACAO DATA,
                      
@@ -3195,55 +3198,105 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     PIPELINED IS
   
   BEGIN
-    FOR r IN (SELECT ('R05') CODLANC,
-                     P.CODEMPRESA,
-                     P.DTCOMPENSACAO DATA,
-                     
-                     ----------TIPO LANCAMENTO
-                     3 TIPOLANCAMENTO,
-                     
-                     P.NUMTRANSVENDA IDENTIFICADOR,
-                     P.NUMNOTA DOCUMENTO,
-                     
-                     ----------CONTA_DEBITO
-                     vPREJUIZO_CLIENTE CONTADEBITO,
-                     
-                     ----------CONTA_CREDITO
-                     P.CONTACLIENTE CONTACREDITO,
-                     
-                     ----------CODCC_DEBITO
-                     NVL(V.CODCC, F.CODCC) CODCC_DEBITO,
-                     
-                     ----------CODCC_CREDITO
-                     NULL CODCC_CREDITO,
-                     
-                     ----------ATIVIDADE
-                     ('PERDA DUPLIC. - F' || LPAD(P.CODFILIAL, 2, 0) || ' - Nº MOV: ' || P.NUMTRANS ||
-                     ' - Nº TRANSACAO: ' || P.NUMTRANSVENDA || '-' || LPAD(P.PREST, 2, 0)) ATIVIDADE,
-                     
-                     ----------HISTORICO
-                     ('PERDA NF ' || P.NUMNOTA || ' - ' || 'PREST: ' || P.PREST || ' - ' || T.CLIENTE || ' - Cód. ' ||
-                     T.CODCLI) HISTORICO,
-                     
-                     ROUND(P.VLRECEBIDO, 2) VALOR,
-                     
-                     ('RECEB_BAIXA_DUP_PERDA') ORIGEM,
-                     
-                     ----------ENVIAR_CONTABIL
-                     'S' ENVIAR_CONTABIL,
-                     
-                     TO_DATE(NULL, 'DD/MM/YYYY') DTCANCEL
-                FROM BI_SINC_LANC_RECEBER_BASE P
-                LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_FILIAL()) F ON F.CODFILIAL = P.CODFILIAL
-                LEFT JOIN BI_SINC_VENDEDOR S ON S.CODUSUR = P.CODUSUR
-                LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_VENDEDOR()) V ON V.CODSUPERVISOR = S.CODSUPERVISOR
-                LEFT JOIN BI_SINC_CLIENTE T ON T.CODCLI = P.CODCLI
-               WHERE 1 = 1
-                 AND P.DTCOMPENSACAO >= vDATA_MOV_INCREMENTAL
-                 AND P.DTCOMPENSACAO IS NOT NULL
-                 AND P.DTINCLUSAOMANUAL IS NULL
-                 AND P.CODCOB = 'PERD'
-                 AND P.CODBANCO NOT IN (SELECT CODBANCO FROM TABLE(PKG_BI_CONTABILIDADE.FN_BANCOS_DESCONSIDERAR())))
+    FOR r IN (WITH ANALISE_ESTORNO AS --QUANDO TEMOS 2 REGISTROS O ESTORNO É DE CODCOB = 'PERD'
+                 (SELECT M.NUMTRANS,
+                        COUNT(M.NUMTRANS) REGISTROS
+                   FROM PCMOVCR M
+                   JOIN PCPREST P ON P.NUMTRANS = M.NUMTRANS
+                  WHERE P.CODCOB = 'ESTR'
+                    AND (M.DTESTORNO IS NULL OR (M.DTESTORNO IS NOT NULL AND M.ESTORNO = 'N'))
+                  GROUP BY M.NUMTRANS,
+                           M.CODBANCO
+                 HAVING COUNT(M.NUMTRANS) = 2)
+                
+                SELECT ('R05' || '.P_' || P.PREST) CODLANC,
+                       P.CODEMPRESA,
+                       P.DTCOMPENSACAO DATA,
+                       
+                       ----------TIPO LANCAMENTO
+                       3 TIPOLANCAMENTO,
+                       
+                       P.NUMTRANSVENDA IDENTIFICADOR,
+                       P.NUMNOTA DOCUMENTO,
+                       
+                       ----------CONTA_DEBITO
+                       (CASE
+                         WHEN CODCOB = 'PERD' THEN
+                          vPREJUIZO_CLIENTE
+                         ELSE
+                          P.CONTACLIENTE
+                       END) CONTADEBITO,
+                       
+                       ----------CONTA_CREDITO
+                       (CASE
+                         WHEN CODCOB = 'PERD' THEN
+                          P.CONTACLIENTE
+                         ELSE
+                          vPREJUIZO_CLIENTE
+                       END) CONTACREDITO,
+                       
+                       ----------CODCC_DEBITO
+                       (CASE
+                         WHEN CODCOB = 'PERD' THEN
+                          NVL(V.CODCC, F.CODCC)
+                         ELSE
+                          NULL
+                       END) CODCC_DEBITO,
+                       
+                       ----------CODCC_CREDITO
+                       (CASE
+                         WHEN CODCOB = 'PERD' THEN
+                          NULL
+                         ELSE
+                          NVL(V.CODCC, F.CODCC)
+                       END) CODCC_CREDITO,
+                       
+                       ----------ATIVIDADE
+                       (CASE
+                         WHEN CODCOB = 'PERD' THEN
+                          ('PERDA DUPLIC. - F' || LPAD(P.CODFILIAL, 2, 0) || ' - Nº MOV: ' || P.NUMTRANS ||
+                          ' - Nº TRANSACAO: ' || P.NUMTRANSVENDA || '-' || LPAD(P.PREST, 2, 0))
+                         ELSE
+                          ('ESTORNO PERDA DUPLIC. - F' || LPAD(P.CODFILIAL, 2, 0) || ' - Nº MOV: ' || P.NUMTRANS ||
+                          ' - Nº TRANSACAO: ' || P.NUMTRANSVENDA || '-' || LPAD(P.PREST, 2, 0))
+                       END) ATIVIDADE,
+                       
+                       ----------HISTORICO
+                       
+                       (CASE
+                         WHEN CODCOB = 'PERD' THEN
+                          ('PERDA NF ' || P.NUMNOTA || ' - ' || 'PREST: ' || P.PREST || ' - ' || T.CLIENTE || ' - Cód. ' ||
+                          T.CODCLI)
+                         ELSE
+                          ('ESTORNO PERDA NF ' || P.NUMNOTA || ' - ' || 'PREST: ' || P.PREST || ' - ' || T.CLIENTE ||
+                          ' - Cód. ' || T.CODCLI)
+                       END) HISTORICO,
+                       
+                       ----------VALOR
+                       (CASE
+                         WHEN P.CONTACLIENTE = vCLIENTES_NACIONAIS THEN
+                          ROUND(P.VLRECEBIDO, 2)
+                         ELSE
+                          P.VALOR
+                       END) VALOR,
+                       
+                       ('RECEB_BAIXA_DUP_PERDA') ORIGEM,
+                       
+                       ----------ENVIAR_CONTABIL
+                       'S' ENVIAR_CONTABIL,
+                       
+                       TO_DATE(NULL, 'DD/MM/YYYY') DTCANCEL
+                  FROM BI_SINC_LANC_RECEBER_BASE P
+                  LEFT JOIN TABLE (PKG_BI_CONTABILIDADE.FN_CC_FILIAL()) F ON F.CODFILIAL = P.CODFILIAL
+                  LEFT JOIN BI_SINC_VENDEDOR S ON S.CODUSUR = P.CODUSUR
+                  LEFT JOIN TABLE (PKG_BI_CONTABILIDADE.FN_CC_VENDEDOR()) V ON V.CODSUPERVISOR = S.CODSUPERVISOR
+                  LEFT JOIN BI_SINC_CLIENTE T ON T.CODCLI = P.CODCLI
+                  LEFT JOIN ANALISE_ESTORNO E ON E.NUMTRANS = P.NUMTRANS
+                 WHERE 1 = 1
+                   AND P.DTCOMPENSACAO >= vDATA_MOV_INCREMENTAL
+                   AND P.DTCOMPENSACAO IS NOT NULL
+                   AND P.DTINCLUSAOMANUAL IS NULL
+                   AND (P.CODCOB = 'PERD' OR (P.CODCOB = 'ESTR' AND E.REGISTROS > 0)))
     
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
@@ -3272,7 +3325,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     PIPELINED IS
   
   BEGIN
-    FOR r IN (SELECT ('R06') CODLANC,
+    FOR r IN (SELECT ('R06' || '.P_' || P.PREST) CODLANC,
                      P.CODEMPRESA,
                      P.DTCOMPENSACAO DATA,
                      
@@ -3382,93 +3435,89 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     PIPELINED IS
   
   BEGIN
-    FOR r IN (WITH COBRANCAS_CARTAO_MKT AS
-                 (SELECT CODCOB FROM PCCOB WHERE CODCLICC IS NOT NULL)
-                
-                SELECT ('R07') CODLANC,
-                       P.CODEMPRESA,
-                       P.DTCOMPENSACAO DATA,
-                       
-                       ----------TIPO LANCAMENTO
-                       3 TIPOLANCAMENTO,
-                       
-                       P.NUMTRANSVENDA IDENTIFICADOR,
-                       P.NUMNOTA DOCUMENTO,
-                       
-                       ----------CONTA_DEBITO
-                       (CASE
-                         WHEN P.VLDESCONTO > 0 THEN
-                          vDESCONTOS_CONCEDIDOS
-                         ELSE
-                          P.CONTACLIENTE
-                       END) CONTADEBITO,
-                       
-                       ----------CONTA_CREDITO
-                       (CASE
-                         WHEN P.VLDESCONTO > 0 THEN
-                          P.CONTACLIENTE
-                         ELSE
-                          vDESCONTOS_CONCEDIDOS
-                       END) CONTACREDITO,
-                       
-                       ----------CODCC_DEBITO
-                       (CASE
-                         WHEN P.VLDESCONTO > 0 THEN
-                          NVL(V.CODCC, F.CODCC)
-                         ELSE
-                          NULL
-                       END) CODCC_DEBITO,
-                       
-                       ----------CODCC_CREDITO
-                       (CASE
-                         WHEN P.VLDESCONTO > 0 THEN
-                          NULL
-                         ELSE
-                          NVL(V.CODCC, F.CODCC)
-                       END) CODCC_CREDITO,
-                       
-                       ----------ATIVIDADE
-                       (CASE
-                         WHEN P.VLDESCONTO > 0 THEN
-                          ('DESCONTO DUPLIC. - F' || LPAD(P.CODFILIAL, 2, 0) || ' - Nº MOV: ' || P.NUMTRANS ||
-                          ' - Nº TRANSACAO: ' || P.NUMTRANSVENDA || '-' || LPAD(P.PREST, 2, 0))
-                         ELSE
-                          ('ESTORNO DESCONTO DUPLIC. - F' || LPAD(P.CODFILIAL, 2, 0) || ' - Nº MOV: ' || P.NUMTRANS ||
-                          ' - Nº TRANSACAO: ' || P.NUMTRANSVENDA || '-' || LPAD(P.PREST, 2, 0))
-                       END) ATIVIDADE,
-                       
-                       ----------HISTORICO
-                       (CASE
-                         WHEN P.VLDESCONTO > 0 THEN
-                          ('DESCONTO NF ' || P.NUMNOTA || ' - ' || 'PREST: ' || P.PREST || ' - ' || T.CLIENTE ||
-                          ' - Cód. ' || T.CODCLI)
-                         ELSE
-                          ('ESTORNO DESCONTO NF ' || P.NUMNOTA || ' - ' || 'PREST: ' || P.PREST || ' - ' || T.CLIENTE ||
-                          ' - Cód. ' || T.CODCLI)
-                       END) HISTORICO,
-                       
-                       ROUND(P.VLDESCONTO, 2) VALOR,
-                       
-                       ('RECEB_DESC_CONCEDIDO') ORIGEM,
-                       
-                       ----------ENVIAR_CONTABIL
-                       'S' ENVIAR_CONTABIL,
-                       
-                       TO_DATE(NULL, 'DD/MM/YYYY') DTCANCEL
-                  FROM BI_SINC_LANC_RECEBER_BASE P
-                  LEFT JOIN TABLE (PKG_BI_CONTABILIDADE.FN_CC_FILIAL()) F ON F.CODFILIAL = P.CODFILIAL
-                  LEFT JOIN BI_SINC_VENDEDOR S ON S.CODUSUR = P.CODUSUR
-                  LEFT JOIN TABLE (PKG_BI_CONTABILIDADE.FN_CC_VENDEDOR()) V ON V.CODSUPERVISOR = S.CODSUPERVISOR
-                  LEFT JOIN BI_SINC_CLIENTE T ON T.CODCLI = P.CODCLI
-                  LEFT JOIN COBRANCAS_CARTAO_MKT C ON C.CODCOB = P.CODCOB
-                 WHERE 1 = 1
-                   AND P.DTCOMPENSACAO >= vDATA_MOV_INCREMENTAL
-                   AND P.DTCOMPENSACAO IS NOT NULL
-                   AND P.DTINCLUSAOMANUAL IS NULL
-                   AND P.CODBANCO NOT IN (SELECT CODBANCO FROM TABLE(PKG_BI_CONTABILIDADE.FN_BANCOS_DESCONSIDERAR()))
-                   AND P.VLDESCONTO <> 0
-                   AND P.CODCOB NOT IN ('CARC', 'CADB', 'JUR')
-                   AND C.CODCOB IS NULL)
+    FOR r IN (SELECT ('R07' || '.P_' || P.PREST) CODLANC,
+                     P.CODEMPRESA,
+                     P.DTCOMPENSACAO DATA,
+                     
+                     ----------TIPO LANCAMENTO
+                     3 TIPOLANCAMENTO,
+                     
+                     P.NUMTRANSVENDA IDENTIFICADOR,
+                     P.NUMNOTA DOCUMENTO,
+                     
+                     ----------CONTA_DEBITO
+                     (CASE
+                       WHEN P.VLDESCONTO > 0 THEN
+                        vDESCONTOS_CONCEDIDOS
+                       ELSE
+                        P.CONTACLIENTE
+                     END) CONTADEBITO,
+                     
+                     ----------CONTA_CREDITO
+                     (CASE
+                       WHEN P.VLDESCONTO > 0 THEN
+                        P.CONTACLIENTE
+                       ELSE
+                        vDESCONTOS_CONCEDIDOS
+                     END) CONTACREDITO,
+                     
+                     ----------CODCC_DEBITO
+                     (CASE
+                       WHEN P.VLDESCONTO > 0 THEN
+                        NVL(V.CODCC, F.CODCC)
+                       ELSE
+                        NULL
+                     END) CODCC_DEBITO,
+                     
+                     ----------CODCC_CREDITO
+                     (CASE
+                       WHEN P.VLDESCONTO > 0 THEN
+                        NULL
+                       ELSE
+                        NVL(V.CODCC, F.CODCC)
+                     END) CODCC_CREDITO,
+                     
+                     ----------ATIVIDADE
+                     (CASE
+                       WHEN P.VLDESCONTO > 0 THEN
+                        ('DESCONTO DUPLIC. - F' || LPAD(P.CODFILIAL, 2, 0) || ' - Nº MOV: ' || P.NUMTRANS ||
+                        ' - Nº TRANSACAO: ' || P.NUMTRANSVENDA || '-' || LPAD(P.PREST, 2, 0))
+                       ELSE
+                        ('ESTORNO DESCONTO DUPLIC. - F' || LPAD(P.CODFILIAL, 2, 0) || ' - Nº MOV: ' || P.NUMTRANS ||
+                        ' - Nº TRANSACAO: ' || P.NUMTRANSVENDA || '-' || LPAD(P.PREST, 2, 0))
+                     END) ATIVIDADE,
+                     
+                     ----------HISTORICO
+                     (CASE
+                       WHEN P.VLDESCONTO > 0 THEN
+                        ('DESCONTO NF ' || P.NUMNOTA || ' - ' || 'PREST: ' || P.PREST || ' - ' || T.CLIENTE || ' - Cód. ' ||
+                        T.CODCLI)
+                       ELSE
+                        ('ESTORNO DESCONTO NF ' || P.NUMNOTA || ' - ' || 'PREST: ' || P.PREST || ' - ' || T.CLIENTE ||
+                        ' - Cód. ' || T.CODCLI)
+                     END) HISTORICO,
+                     
+                     ROUND(P.VLDESCONTO, 2) VALOR,
+                     
+                     ('RECEB_DESC_CONCEDIDO') ORIGEM,
+                     
+                     ----------ENVIAR_CONTABIL
+                     'S' ENVIAR_CONTABIL,
+                     
+                     TO_DATE(NULL, 'DD/MM/YYYY') DTCANCEL
+                FROM BI_SINC_LANC_RECEBER_BASE P
+                LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_FILIAL()) F ON F.CODFILIAL = P.CODFILIAL
+                LEFT JOIN BI_SINC_VENDEDOR S ON S.CODUSUR = P.CODUSUR
+                LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_VENDEDOR()) V ON V.CODSUPERVISOR = S.CODSUPERVISOR
+                LEFT JOIN BI_SINC_CLIENTE T ON T.CODCLI = P.CODCLI
+               WHERE 1 = 1
+                 AND P.DTCOMPENSACAO >= vDATA_MOV_INCREMENTAL
+                 AND P.DTCOMPENSACAO IS NOT NULL
+                 AND P.DTINCLUSAOMANUAL IS NULL
+                 AND P.CONTACLIENTE = vCLIENTES_NACIONAIS
+                 AND P.CODBANCO NOT IN (SELECT CODBANCO FROM TABLE(PKG_BI_CONTABILIDADE.FN_BANCOS_DESCONSIDERAR()))
+                 AND P.VLDESCONTO <> 0
+                 AND P.CODCOB NOT IN ('CARC', 'CADB', 'JUR'))
     
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
@@ -3499,7 +3548,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   BEGIN
     FOR r IN (
               
-              SELECT ('R08') CODLANC,
+              SELECT ('R08' || '.P_' || P.PREST) CODLANC,
                       P.CODEMPRESA,
                       P.DTCOMPENSACAO DATA,
                       
@@ -3610,16 +3659,17 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   
   BEGIN
     FOR r IN (WITH ANALISE_ESTORNO AS --QUANDO TEMOS 2 REGISTROS O ESTORNO É DE CODCOB = 'PERD'
-                 (SELECT NUMTRANS,
-                        COUNT(NUMTRANS) REGISTROS
+                 (SELECT M.NUMTRANS,
+                        COUNT(M.NUMTRANS) REGISTROS
                    FROM PCMOVCR M
-                  WHERE M.CODCOB = 'D'
+                   JOIN PCPREST P ON P.NUMTRANS = M.NUMTRANS
+                  WHERE P.CODCOB = 'ESTR'
                     AND (M.DTESTORNO IS NULL OR (M.DTESTORNO IS NOT NULL AND M.ESTORNO = 'N'))
                   GROUP BY M.NUMTRANS,
                            M.CODBANCO
-                 HAVING COUNT(NUMTRANS) > 0)
+                 HAVING COUNT(M.NUMTRANS) > 0)
                 
-                SELECT ('R09') CODLANC,
+                SELECT ('R09' || '.P_' || P.PREST) CODLANC,
                        P.CODEMPRESA,
                        P.DTCOMPENSACAO DATA,
                        
@@ -3633,16 +3683,14 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                        (CASE
                          WHEN ((P.CODCOB = 'ESTR' AND P.CODCOBORIG = 'JUR') OR (P.CODCOB = 'JUR')) THEN
                           vJUROS_RECEBIDOS --ESTORNO JUROS
-                         WHEN (P.CODCOB = 'ESTR' AND E.REGISTROS > 0) THEN
-                          P.CONTACLIENTE --ESTORNO PERDAS E ESTORNOS GERAIS
+                         WHEN (P.CODCOB = 'ESTR') THEN
+                          P.CONTACLIENTE --ESTORNOS GERAIS
                          ELSE
                           P.CONTABANCO
                        END) CONTADEBITO,
                        
                        ----------CONTA_CREDITO
                        (CASE
-                         WHEN (P.CODCOB = 'ESTR' AND E.REGISTROS = 2) THEN
-                          vPREJUIZO_CLIENTE --ESTORNO PERDAS
                          WHEN (P.CODCOB = 'ESTR') THEN
                           P.CONTABANCO --ESTORNO JUROS E ESTORNOS GERAIS
                          ELSE
@@ -3658,18 +3706,10 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                        END) CODCC_DEBITO,
                        
                        ----------CODCC_CREDITO
-                       (CASE
-                         WHEN (P.CODCOB = 'ESTR' AND E.REGISTROS = 2) THEN
-                          NVL(V.CODCC, F.CODCC)
-                         ELSE
-                          NULL
-                       END) CODCC_CREDITO,
+                       NULL CODCC_CREDITO,
                        
                        ----------ATIVIDADE
                        (CASE
-                         WHEN (P.CODCOB = 'ESTR' AND E.REGISTROS = 2) THEN
-                          ('ESTORNO PERDA DUPLIC. - F' || LPAD(P.CODFILIAL, 2, 0) || ' - Nº MOV: ' || P.NUMTRANS ||
-                          ' - Nº TRANSACAO: ' || P.NUMTRANSVENDA || '-' || LPAD(P.PREST, 2, 0))
                          WHEN (P.CODCOB = 'ESTR' AND P.CODCOBORIG = 'JUR') THEN
                           ('ESTORNO JUR DUPLIC. - F' || LPAD(P.CODFILIAL, 2, 0) || ' - Nº MOV: ' || P.NUMTRANS ||
                           ' - Nº TRANSACAO: ' || P.NUMTRANSVENDA || '-' || LPAD(P.PREST, 2, 0))
@@ -3686,9 +3726,6 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                        
                        ----------HISTORICO
                        (CASE
-                         WHEN (P.CODCOB = 'ESTR' AND E.REGISTROS = 2) THEN
-                          ('ESTORNO PERDA NF ' || P.NUMNOTA || ' - ' || 'PREST: ' || P.PREST || ' - ' || T.CLIENTE ||
-                          ' - Cód. ' || T.CODCLI)
                          WHEN (P.CODCOB = 'ESTR' AND P.CODCOBORIG = 'JUR') THEN
                           ('ESTORNO JUR NF ' || P.NUMNOTA || ' - ' || 'PREST: ' || P.PREST || ' - ' || T.CLIENTE ||
                           ' - Cód. ' || T.CODCLI)
@@ -3706,9 +3743,11 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                        ----------VALOR
                        (CASE
                          WHEN ((P.CODCOB = 'ESTR' AND P.CODCOBORIG = 'JUR') OR (P.CODCOB = 'JUR')) THEN
-                          ROUND(P.VLRECEBIDO, 2)
-                         WHEN (P.VLRECEBIDO > P.VALOR) THEN
-                          ROUND(P.VALORLIQ, 2)
+                          ROUND(P.VLRECEBIDO, 2) --BAIXA E ESTORNO DE JUROS
+                         WHEN P.VLJUROS <> 0 THEN
+                          ROUND(P.VLRECEBIDO, 2) - ROUND(P.VLJUROS, 2) --BAIXA E ESTORNO DE DUPLICATAS COM VLJUROS
+                         WHEN (P.CODCOB = 'ESTR' AND P.VLDESCONTO <> 0 AND P.CONTACLIENTE = vCLIENTES_NACIONAIS) THEN
+                          ROUND(P.VLRECEBIDO, 2) + ROUND(P.VLDESCONTO, 2) --ESTORNO DE DUPLICATA COM DESCONTO SEM SER MKT
                          ELSE
                           ROUND(P.VLRECEBIDO, 2)
                        END) VALOR,
@@ -3729,6 +3768,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                    AND P.DTCOMPENSACAO >= vDATA_MOV_INCREMENTAL
                    AND P.DTCOMPENSACAO IS NOT NULL
                    AND P.DTINCLUSAOMANUAL IS NULL
+                   AND P.CODCOB NOT IN ('PERD')
+                   AND NOT (P.CODCOB = 'ESTR' AND E.REGISTROS > 1)
                    AND P.CODBANCO NOT IN (SELECT CODBANCO FROM TABLE(PKG_BI_CONTABILIDADE.FN_BANCOS_DESCONSIDERAR()))
                    AND NVL(P.VLRECEBIDO, 0) <> 0)
     
@@ -3753,6 +3794,919 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     END LOOP;
   
   END FN_RECEB_BAIXA_DUPLICATAS;
+
+  ----LANCAMENTOS RECEBIMENTO - DEV. CLIENTE COM ABATIMENTO DIRETO NA DUPLICATA
+  FUNCTION FN_RECEB_DEV_CLI_DUPLICATA RETURN T_CONTABIL_TABLE
+    PIPELINED IS
+  
+  BEGIN
+    FOR r IN (SELECT ('R10' || '.P_' || P.PREST) CODLANC,
+                     P.CODEMPRESA,
+                     P.DTPAGAMENTO DATA,
+                     
+                     ----------TIPO LANCAMENTO
+                     3 TIPOLANCAMENTO,
+                     
+                     P.NUMTRANSVENDA IDENTIFICADOR,
+                     P.NUMNOTA DOCUMENTO,
+                     
+                     ----------CONTA_DEBITO
+                     vDEVOLUCAO_CLIENTE CONTADEBITO,
+                     
+                     ----------CONTA_CREDITO
+                     P.CONTACLIENTE CONTACREDITO,
+                     
+                     ----------CODCC_DEBITO
+                     NULL CODCC_DEBITO,
+                     
+                     ----------CODCC_CREDITO
+                     NULL CODCC_CREDITO,
+                     
+                     ----------ATIVIDADE
+                     ('ABAT. DEV. CLIENTE DUPLIC. - F' || LPAD(P.CODFILIAL, 2, 0) || ' - Nº MOV: ' || P.NUMTRANS ||
+                     ' - Nº TRANSACAO: ' || P.NUMTRANSVENDA || '-' || LPAD(P.PREST, 2, 0)) ATIVIDADE,
+                     
+                     ----------HISTORICO
+                     ('ABAT. DEV. CLIENTE NF ' || P.NUMNOTA || ' - ' || 'PREST: ' || P.PREST || ' - ' || T.CLIENTE ||
+                     ' - Cód. ' || T.CODCLI) HISTORICO,
+                     
+                     ----------VALOR
+                     ROUND(P.VLRECEBIDO, 2) VALOR,
+                     
+                     ('RECEB_DEV_CLI_DUPLICATA') ORIGEM,
+                     
+                     ----------ENVIAR_CONTABIL
+                     'S' ENVIAR_CONTABIL,
+                     
+                     TO_DATE(NULL, 'DD/MM/YYYY') DTCANCEL
+                FROM BI_SINC_LANC_RECEBER_BASE P
+                LEFT JOIN BI_SINC_CLIENTE T ON T.CODCLI = P.CODCLI
+               WHERE 1 = 1
+                 AND P.DTPAGAMENTO >= vDATA_MOV_INCREMENTAL
+                 AND P.DTPAGAMENTO IS NOT NULL
+                 AND P.DTINCLUSAOMANUAL IS NULL
+                 AND P.CODCOB IN ('DEVP', 'DEVT')
+                 AND NVL(P.VLRECEBIDO, 0) > 0)
+    
+    LOOP
+      PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
+                                 r.CODEMPRESA,
+                                 r.DATA,
+                                 r.TIPOLANCAMENTO,
+                                 r.IDENTIFICADOR,
+                                 r.DOCUMENTO,
+                                 r.CONTADEBITO,
+                                 r.CONTACREDITO,
+                                 r.CODCC_DEBITO,
+                                 r.CODCC_CREDITO,
+                                 r.ATIVIDADE,
+                                 r.HISTORICO,
+                                 r.VALOR,
+                                 r.ORIGEM,
+                                 r.ENVIAR_CONTABIL,
+                                 r.DTCANCEL));
+    
+    END LOOP;
+  
+  END FN_RECEB_DEV_CLI_DUPLICATA;
+
+  ----CREDITOS DE CLIENTES - ADIANTAMENTO DE CLIENTE RECEBIDO
+  FUNCTION FN_CRED_ADIANT_CLIENTE RETURN T_CONTABIL_TABLE
+    PIPELINED IS
+  
+  BEGIN
+    FOR r IN (SELECT ('C01' || '.' || C.CODIGO) CODLANC,
+                     C.CODEMPRESA,
+                     C.DTCOMPENSACAO DATA,
+                     
+                     ----------TIPO LANCAMENTO
+                     3 TIPOLANCAMENTO,
+                     
+                     C.CODIGO IDENTIFICADOR,
+                     C.NUMTRANS DOCUMENTO,
+                     
+                     ----------CONTA_DEBITO
+                     C.CONTABANCO CONTADEBITO,
+                     
+                     ----------CONTA_CREDITO
+                     vADIANTAMENTO_CLIENTE CONTACREDITO,
+                     
+                     ----------CODCC_DEBITO
+                     NULL CODCC_DEBITO,
+                     
+                     ----------CODCC_CREDITO
+                     NULL CODCC_CREDITO,
+                     
+                     ----------ATIVIDADE
+                     ('ADIANTAMENTO CLIENTE - F' || LPAD(C.CODFILIAL, 2, 0) || ' - Nº MOV: ' || C.NUMTRANS ||
+                     ' - CÓDIGO: ' || C.CODIGO) ATIVIDADE,
+                     
+                     ----------HISTORICO
+                     ('ADIANTAMENTO CLIENTE - Nº MOV: ' || C.NUMTRANS || ' - ' || T.CLIENTE || ' - Cód. ' || T.CODCLI) HISTORICO,
+                     
+                     ----------VALOR
+                     ROUND(C.VALOR, 2) VALOR,
+                     
+                     ('CRED_ADIANT_CLIENTE') ORIGEM,
+                     
+                     ----------ENVIAR_CONTABIL
+                     'S' ENVIAR_CONTABIL,
+                     
+                     TO_DATE(NULL, 'DD/MM/YYYY') DTCANCEL
+                FROM BI_SINC_CREDITO_CLIENTE C
+                LEFT JOIN BI_SINC_CLIENTE T ON T.CODCLI = C.CODCLI
+               WHERE 1 = 1
+                 AND C.DTCOMPENSACAO >= vDATA_MOV_INCREMENTAL
+                 AND C.DTCOMPENSACAO IS NOT NULL
+                 AND NVL(C.NUMTRANS, 0) > 0
+                 AND C.CODROTINA = 618
+                 AND C.VALOR > 0)
+    
+    LOOP
+      PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
+                                 r.CODEMPRESA,
+                                 r.DATA,
+                                 r.TIPOLANCAMENTO,
+                                 r.IDENTIFICADOR,
+                                 r.DOCUMENTO,
+                                 r.CONTADEBITO,
+                                 r.CONTACREDITO,
+                                 r.CODCC_DEBITO,
+                                 r.CODCC_CREDITO,
+                                 r.ATIVIDADE,
+                                 r.HISTORICO,
+                                 r.VALOR,
+                                 r.ORIGEM,
+                                 r.ENVIAR_CONTABIL,
+                                 r.DTCANCEL));
+    
+    END LOOP;
+  
+  END FN_CRED_ADIANT_CLIENTE;
+
+  ----CREDITOS DE CLIENTES - ADIANTAMENTO DE CLIENTE ESTORNADOS
+  FUNCTION FN_CRED_ADIANT_CLIENTE_ESTORNO RETURN T_CONTABIL_TABLE
+    PIPELINED IS
+  
+  BEGIN
+    FOR r IN (SELECT ('C02' || '.' || C.CODIGO) CODLANC,
+                     C.CODEMPRESA,
+                     C.DTCOMPENSACAO DATA,
+                     
+                     ----------TIPO LANCAMENTO
+                     3 TIPOLANCAMENTO,
+                     
+                     C.CODIGO IDENTIFICADOR,
+                     C.NUMTRANSBAIXA DOCUMENTO,
+                     
+                     ----------CONTA_DEBITO
+                     vADIANTAMENTO_CLIENTE CONTADEBITO,
+                     
+                     ----------CONTA_CREDITO
+                     C.CONTABANCO CONTACREDITO,
+                     
+                     ----------CODCC_DEBITO
+                     NULL CODCC_DEBITO,
+                     
+                     ----------CODCC_CREDITO
+                     NULL CODCC_CREDITO,
+                     
+                     ----------ATIVIDADE
+                     ('ESTORNO ADIANTAMENTO CLIENTE - F' || LPAD(C.CODFILIAL, 2, 0) || ' - Nº MOV: ' || C.NUMTRANSBAIXA ||
+                     ' - Nº CRED: ' || C.NUMCRED || ' - Cód: ' || C.CODIGO) ATIVIDADE,
+                     
+                     ----------HISTORICO
+                     ('ESTORNO ADIANTAMENTO CLIENTE - Nº MOV: ' || C.NUMTRANSBAIXA || ' - ' || T.CLIENTE || ' - Cód. ' ||
+                     T.CODCLI) HISTORICO,
+                     
+                     ----------VALOR
+                     ROUND(ABS(C.VALOR), 2) VALOR,
+                     
+                     ('CRED_ADIANT_CLIENTE_ESTORNO') ORIGEM,
+                     
+                     ----------ENVIAR_CONTABIL
+                     'S' ENVIAR_CONTABIL,
+                     
+                     TO_DATE(NULL, 'DD/MM/YYYY') DTCANCEL
+                FROM BI_SINC_CREDITO_CLIENTE C
+                LEFT JOIN BI_SINC_CLIENTE T ON T.CODCLI = C.CODCLI
+               WHERE 1 = 1
+                 AND C.DTCOMPENSACAO >= vDATA_MOV_INCREMENTAL
+                 AND C.DTCOMPENSACAO IS NOT NULL
+                 AND NVL(C.NUMTRANSBAIXA, 0) > 0
+                 AND C.CODROTINA = 619
+                 AND C.VALOR < 0
+                 AND NVL(C.NUMTRANS_MN, 0) > 0
+                 AND C.VALOR = C.VLMOVCR)
+    
+    LOOP
+      PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
+                                 r.CODEMPRESA,
+                                 r.DATA,
+                                 r.TIPOLANCAMENTO,
+                                 r.IDENTIFICADOR,
+                                 r.DOCUMENTO,
+                                 r.CONTADEBITO,
+                                 r.CONTACREDITO,
+                                 r.CODCC_DEBITO,
+                                 r.CODCC_CREDITO,
+                                 r.ATIVIDADE,
+                                 r.HISTORICO,
+                                 r.VALOR,
+                                 r.ORIGEM,
+                                 r.ENVIAR_CONTABIL,
+                                 r.DTCANCEL));
+    
+    END LOOP;
+  
+  END FN_CRED_ADIANT_CLIENTE_ESTORNO;
+
+  ----CREDITOS DE CLIENTES - ADIANTAMENTO DE CLIENTE BAIXADOS COMO RECEITA
+  FUNCTION FN_CRED_ADIANT_CLIENTE_RECEITA RETURN T_CONTABIL_TABLE
+    PIPELINED IS
+  
+  BEGIN
+    FOR r IN (SELECT ('C03' || '.' || C.CODIGO) CODLANC,
+                     C.CODEMPRESA,
+                     C.DTDESCONTO DATA,
+                     
+                     ----------TIPO LANCAMENTO
+                     3 TIPOLANCAMENTO,
+                     
+                     C.CODIGO IDENTIFICADOR,
+                     C.NUMLANCBAIXA DOCUMENTO,
+                     
+                     ----------CONTA_DEBITO
+                     vADIANTAMENTO_CLIENTE CONTADEBITO,
+                     
+                     ----------CONTA_CREDITO
+                     vCREDITOS_NAO_UTILIZADOS CONTACREDITO,
+                     
+                     ----------CODCC_DEBITO
+                     NULL CODCC_DEBITO,
+                     
+                     ----------CODCC_CREDITO
+                     F.CODCC CODCC_CREDITO,
+                     
+                     ----------ATIVIDADE
+                     ('RECEITA ADIANT. CLIENTE - F' || LPAD(C.CODFILIAL, 2, 0) || ' - Nº LANC: ' || C.NUMLANCBAIXA ||
+                     ' - Nº CRED: ' || C.NUMCRED || ' - Cód: ' || C.CODIGO) ATIVIDADE,
+                     
+                     ----------HISTORICO
+                     ('RECEITA ADIANT. CLIENTE - Nº LANC: ' || C.NUMLANCBAIXA || ' - ' || T.CLIENTE || ' - Cód. ' ||
+                     T.CODCLI) HISTORICO,
+                     
+                     ----------VALOR
+                     ROUND(ABS(C.VALOR), 2) VALOR,
+                     
+                     ('CRED_ADIANT_CLIENTE_RECEITA') ORIGEM,
+                     
+                     ----------ENVIAR_CONTABIL
+                     'S' ENVIAR_CONTABIL,
+                     
+                     TO_DATE(NULL, 'DD/MM/YYYY') DTCANCEL
+                FROM BI_SINC_CREDITO_CLIENTE C
+                LEFT JOIN BI_SINC_CLIENTE T ON T.CODCLI = C.CODCLI
+                LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_FILIAL()) F ON F.CODFILIAL = C.CODFILIAL
+               WHERE 1 = 1
+                 AND C.DTDESCONTO >= vDATA_MOV_INCREMENTAL
+                 AND C.DTDESCONTO IS NOT NULL
+                 AND NVL(C.NUMLANCBAIXA, 0) > 0
+                 AND C.CODROTINA = 619
+                 AND C.VALOR < 0
+                 AND NVL(C.NUMTRANS_MN, 0) > 0)
+    
+    LOOP
+      PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
+                                 r.CODEMPRESA,
+                                 r.DATA,
+                                 r.TIPOLANCAMENTO,
+                                 r.IDENTIFICADOR,
+                                 r.DOCUMENTO,
+                                 r.CONTADEBITO,
+                                 r.CONTACREDITO,
+                                 r.CODCC_DEBITO,
+                                 r.CODCC_CREDITO,
+                                 r.ATIVIDADE,
+                                 r.HISTORICO,
+                                 r.VALOR,
+                                 r.ORIGEM,
+                                 r.ENVIAR_CONTABIL,
+                                 r.DTCANCEL));
+    
+    END LOOP;
+  
+  END FN_CRED_ADIANT_CLIENTE_RECEITA;
+
+  ----CREDITOS DE CLIENTES - ADIANTAMENTO DE CLIENTE BAIXADOS EM DUPLICATAS
+  FUNCTION FN_CRED_ADIANT_CLIENTE_BAIXA_DUP RETURN T_CONTABIL_TABLE
+    PIPELINED IS
+  
+  BEGIN
+    FOR r IN (SELECT ('C04' || '.' || C.CODIGO) CODLANC,
+                     C.CODEMPRESA,
+                     C.DTDESCONTO DATA,
+                     
+                     ----------TIPO LANCAMENTO
+                     3 TIPOLANCAMENTO,
+                     
+                     C.CODIGO IDENTIFICADOR,
+                     C.DUPLIC DOCUMENTO,
+                     
+                     ----------CONTA_DEBITO
+                     vADIANTAMENTO_CLIENTE CONTADEBITO,
+                     
+                     ----------CONTA_CREDITO
+                     C.CONTACLIENTE CONTACREDITO,
+                     
+                     ----------CODCC_DEBITO
+                     NULL CODCC_DEBITO,
+                     
+                     ----------CODCC_CREDITO
+                     NULL CODCC_CREDITO,
+                     
+                     ----------ATIVIDADE
+                     ('BAIXA DUP ADIANT. CLIENTE - F' || LPAD(C.CODFILIAL, 2, 0) || ' - Nº NOTA: ' || C.DUPLIC ||
+                     ' - Nº CRED: ' || C.NUMCRED || ' - Cód: ' || C.CODIGO) ATIVIDADE,
+                     
+                     ----------HISTORICO
+                     ('BAIXA DUP ADIANT. CLIENTE - Nº NOTA: ' || C.DUPLIC || ' - ' || T.CLIENTE || ' - Cód. ' ||
+                     T.CODCLI) HISTORICO,
+                     
+                     ----------VALOR
+                     ROUND(C.VALOR, 2) VALOR,
+                     
+                     ('CRED_ADIANT_CLIENTE_BAIXA_DUP') ORIGEM,
+                     
+                     ----------ENVIAR_CONTABIL
+                     'S' ENVIAR_CONTABIL,
+                     
+                     TO_DATE(NULL, 'DD/MM/YYYY') DTCANCEL
+                FROM BI_SINC_CREDITO_CLIENTE C
+                LEFT JOIN BI_SINC_CLIENTE T ON T.CODCLI = C.CODCLI
+               WHERE 1 = 1
+                 AND C.DTDESCONTO >= vDATA_MOV_INCREMENTAL
+                 AND C.DTDESCONTO IS NOT NULL
+                 AND NVL(C.NUMTRANS, 0) > 0
+                 AND NVL(C.NUMTRANSVENDADESC, 0) > 0
+                 AND C.VALOR > 0)
+    
+    LOOP
+      PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
+                                 r.CODEMPRESA,
+                                 r.DATA,
+                                 r.TIPOLANCAMENTO,
+                                 r.IDENTIFICADOR,
+                                 r.DOCUMENTO,
+                                 r.CONTADEBITO,
+                                 r.CONTACREDITO,
+                                 r.CODCC_DEBITO,
+                                 r.CODCC_CREDITO,
+                                 r.ATIVIDADE,
+                                 r.HISTORICO,
+                                 r.VALOR,
+                                 r.ORIGEM,
+                                 r.ENVIAR_CONTABIL,
+                                 r.DTCANCEL));
+    
+    END LOOP;
+  
+  END FN_CRED_ADIANT_CLIENTE_BAIXA_DUP;
+
+  ----CREDITOS DE CLIENTES - ADIANTAMENTO DE CLIENTE ESTORNADOS APÓS BAIXA EM DUPLICATAS
+  FUNCTION FN_CRED_ADIANT_CLIENTE_DUP_ESTORNO RETURN T_CONTABIL_TABLE
+    PIPELINED IS
+  
+  BEGIN
+    FOR r IN (SELECT ('C05' || '.' || C.CODIGO) CODLANC,
+                     C.CODEMPRESA,
+                     C.DTESTORNO DATA,
+                     
+                     ----------TIPO LANCAMENTO
+                     3 TIPOLANCAMENTO,
+                     
+                     C.CODIGO IDENTIFICADOR,
+                     C.DUPLIC DOCUMENTO,
+                     
+                     ----------CONTA_DEBITO
+                     C.CONTACLIENTE CONTADEBITO,
+                     
+                     ----------CONTA_CREDITO
+                     vADIANTAMENTO_CLIENTE CONTACREDITO,
+                     
+                     ----------CODCC_DEBITO
+                     NULL CODCC_DEBITO,
+                     
+                     ----------CODCC_CREDITO
+                     NULL CODCC_CREDITO,
+                     
+                     ----------ATIVIDADE
+                     ('ESTORNO BAIXA DUP ADIANT. CLIENTE - F' || LPAD(C.CODFILIAL, 2, 0) || ' - Nº NOTA: ' || C.DUPLIC ||
+                     ' - Nº CRED: ' || C.NUMCRED || ' - Cód: ' || C.CODIGO) ATIVIDADE,
+                     
+                     ----------HISTORICO
+                     ('ESTORNO BAIXA DUP ADIANT. CLIENTE - Nº NOTA: ' || C.DUPLIC || ' - ' || T.CLIENTE || ' - Cód. ' ||
+                     T.CODCLI) HISTORICO,
+                     
+                     ----------VALOR
+                     ROUND(ABS(C.VALOR), 2) VALOR,
+                     
+                     ('CRED_ADIANT_CLIENTE_DUP_ESTORNO') ORIGEM,
+                     
+                     ----------ENVIAR_CONTABIL
+                     'S' ENVIAR_CONTABIL,
+                     
+                     TO_DATE(NULL, 'DD/MM/YYYY') DTCANCEL
+                FROM BI_SINC_CREDITO_CLIENTE C
+                LEFT JOIN BI_SINC_CLIENTE T ON T.CODCLI = C.CODCLI
+               WHERE 1 = 1
+                 AND C.DTESTORNO >= vDATA_MOV_INCREMENTAL
+                 AND C.DTESTORNO IS NOT NULL
+                 AND NVL(C.NUMTRANS, 0) > 0
+                 AND NVL(C.NUMTRANSVENDADESC, 0) > 0
+                 AND C.VALOR < 0
+                 AND NVL(C.NUMERARIO, '0') = '0')
+    
+    LOOP
+      PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
+                                 r.CODEMPRESA,
+                                 r.DATA,
+                                 r.TIPOLANCAMENTO,
+                                 r.IDENTIFICADOR,
+                                 r.DOCUMENTO,
+                                 r.CONTADEBITO,
+                                 r.CONTACREDITO,
+                                 r.CODCC_DEBITO,
+                                 r.CODCC_CREDITO,
+                                 r.ATIVIDADE,
+                                 r.HISTORICO,
+                                 r.VALOR,
+                                 r.ORIGEM,
+                                 r.ENVIAR_CONTABIL,
+                                 r.DTCANCEL));
+    
+    END LOOP;
+  
+  END FN_CRED_ADIANT_CLIENTE_DUP_ESTORNO;
+
+  ----CREDITOS DE CLIENTES - DEVOLUCAO DE CLIENTE BAIXADOS COMO RECEITA
+  FUNCTION FN_CRED_DEV_CLIENTE_RECEITA RETURN T_CONTABIL_TABLE
+    PIPELINED IS
+  
+  BEGIN
+    FOR r IN (SELECT ('C06' || '.' || C.CODIGO) CODLANC,
+                     C.CODEMPRESA,
+                     C.DTDESCONTO DATA,
+                     
+                     ----------TIPO LANCAMENTO
+                     3 TIPOLANCAMENTO,
+                     
+                     C.CODIGO IDENTIFICADOR,
+                     C.NUMNOTADEV DOCUMENTO,
+                     
+                     ----------CONTA_DEBITO
+                     vDEVOLUCAO_CLIENTE CONTADEBITO,
+                     
+                     ----------CONTA_CREDITO
+                     vCREDITOS_NAO_UTILIZADOS CONTACREDITO,
+                     
+                     ----------CODCC_DEBITO
+                     NULL CODCC_DEBITO,
+                     
+                     ----------CODCC_CREDITO
+                     F.CODCC CODCC_CREDITO,
+                     
+                     ----------ATIVIDADE
+                     ('RECEITA DEV. CLIENTE - F' || LPAD(C.CODFILIAL, 2, 0) || ' - NOTA DEV: ' || C.NUMNOTADEV ||
+                     ' - CLI. DEV.: ' || C.CODCLIDEV || ' - Nº LANC: ' || C.NUMLANCBAIXA || ' - Nº CRED: ' || C.NUMCRED ||
+                     ' - Cód: ' || C.CODIGO) ATIVIDADE,
+                     
+                     ----------HISTORICO
+                     ('RECEITA DEV. CLIENTE - Nº NOTA DEV: ' || C.NUMNOTADEV || ' - ' || T.CLIENTE || ' - Cód. ' ||
+                     T.CODCLI) HISTORICO,
+                     
+                     ----------VALOR
+                     ROUND(ABS(C.VALOR), 2) VALOR,
+                     
+                     ('CRED_DEV_CLIENTE_RECEITA') ORIGEM,
+                     
+                     ----------ENVIAR_CONTABIL
+                     'S' ENVIAR_CONTABIL,
+                     
+                     TO_DATE(NULL, 'DD/MM/YYYY') DTCANCEL
+                FROM BI_SINC_CREDITO_CLIENTE C
+                LEFT JOIN BI_SINC_CLIENTE T ON T.CODCLI = C.CODCLI
+                LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_FILIAL()) F ON F.CODFILIAL = C.CODFILIAL
+               WHERE 1 = 1
+                 AND C.DTDESCONTO >= vDATA_MOV_INCREMENTAL
+                 AND C.DTDESCONTO IS NOT NULL
+                 AND NVL(C.NUMTRANSENTDEVCLI, 0) > 0
+                 AND NVL(C.NUMLANCBAIXA, 0) > 0
+                 AND C.VALOR < 0)
+    
+    LOOP
+      PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
+                                 r.CODEMPRESA,
+                                 r.DATA,
+                                 r.TIPOLANCAMENTO,
+                                 r.IDENTIFICADOR,
+                                 r.DOCUMENTO,
+                                 r.CONTADEBITO,
+                                 r.CONTACREDITO,
+                                 r.CODCC_DEBITO,
+                                 r.CODCC_CREDITO,
+                                 r.ATIVIDADE,
+                                 r.HISTORICO,
+                                 r.VALOR,
+                                 r.ORIGEM,
+                                 r.ENVIAR_CONTABIL,
+                                 r.DTCANCEL));
+    
+    END LOOP;
+  
+  END FN_CRED_DEV_CLIENTE_RECEITA;
+
+  ----CREDITOS DE CLIENTES - DEVOLUCAO DE CLIENTE BAIXADOS EM DUPLICATAS
+  FUNCTION FN_CRED_DEV_CLIENTE_BAIXA_DUP RETURN T_CONTABIL_TABLE
+    PIPELINED IS
+  
+  BEGIN
+    FOR r IN (SELECT ('C07' || '.' || C.CODIGO) CODLANC,
+                     C.CODEMPRESA,
+                     C.DTDESCONTO DATA,
+                     
+                     ----------TIPO LANCAMENTO
+                     3 TIPOLANCAMENTO,
+                     
+                     C.CODIGO IDENTIFICADOR,
+                     C.DUPLIC DOCUMENTO,
+                     
+                     ----------CONTA_DEBITO
+                     vDEVOLUCAO_CLIENTE CONTADEBITO,
+                     
+                     ----------CONTA_CREDITO
+                     C.CONTACLIENTE CONTACREDITO,
+                     
+                     ----------CODCC_DEBITO
+                     NULL CODCC_DEBITO,
+                     
+                     ----------CODCC_CREDITO
+                     NULL CODCC_CREDITO,
+                     
+                     ----------ATIVIDADE
+                     ('BAIXA DUP. DEV. CLIENTE - F' || LPAD(C.CODFILIAL, 2, 0) || ' - NOTA DEV: ' || C.NUMNOTADEV ||
+                     ' - CLI. DEV.: ' || C.CODCLIDEV || ' - DUPLIC: ' || C.DUPLIC || ' - Nº CRED: ' || C.NUMCRED ||
+                     ' - Cód: ' || C.CODIGO) ATIVIDADE,
+                     
+                     ----------HISTORICO
+                     ('BAIXA DUP. DEV. CLIENTE - DUPLIC ' || C.DUPLIC || ' - Nº NOTA DEV: ' || C.NUMNOTADEV || ' - ' ||
+                     T.CLIENTE || ' - Cód. ' || T.CODCLI) HISTORICO,
+                     
+                     ----------VALOR
+                     ROUND(C.VALOR, 2) VALOR,
+                     
+                     ('CRED_DEV_CLIENTE_BAIXA_DUP') ORIGEM,
+                     
+                     ----------ENVIAR_CONTABIL
+                     'S' ENVIAR_CONTABIL,
+                     
+                     TO_DATE(NULL, 'DD/MM/YYYY') DTCANCEL
+                FROM BI_SINC_CREDITO_CLIENTE C
+                LEFT JOIN BI_SINC_CLIENTE T ON T.CODCLI = C.CODCLI
+               WHERE 1 = 1
+                 AND C.DTDESCONTO >= vDATA_MOV_INCREMENTAL
+                 AND C.DTDESCONTO IS NOT NULL
+                 AND NVL(C.NUMTRANSENTDEVCLI, 0) > 0
+                 AND NVL(C.NUMTRANSVENDADESC, 0) > 0
+                 AND C.VALOR > 0)
+    
+    LOOP
+      PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
+                                 r.CODEMPRESA,
+                                 r.DATA,
+                                 r.TIPOLANCAMENTO,
+                                 r.IDENTIFICADOR,
+                                 r.DOCUMENTO,
+                                 r.CONTADEBITO,
+                                 r.CONTACREDITO,
+                                 r.CODCC_DEBITO,
+                                 r.CODCC_CREDITO,
+                                 r.ATIVIDADE,
+                                 r.HISTORICO,
+                                 r.VALOR,
+                                 r.ORIGEM,
+                                 r.ENVIAR_CONTABIL,
+                                 r.DTCANCEL));
+    
+    END LOOP;
+  
+  END FN_CRED_DEV_CLIENTE_BAIXA_DUP;
+
+  ----CREDITOS DE CLIENTES - DEVOLUCAO DE CLIENTE ESTORNO DA BAIXA EM DUPLICATAS
+  FUNCTION FN_CRED_DEV_CLIENTE_DUP_ESTORNO RETURN T_CONTABIL_TABLE
+    PIPELINED IS
+  
+  BEGIN
+    FOR r IN (SELECT ('C08' || '.' || C.CODIGO) CODLANC,
+                     C.CODEMPRESA,
+                     C.DTESTORNO DATA,
+                     
+                     ----------TIPO LANCAMENTO
+                     3 TIPOLANCAMENTO,
+                     
+                     C.CODIGO IDENTIFICADOR,
+                     C.DUPLIC DOCUMENTO,
+                     
+                     ----------CONTA_DEBITO
+                     C.CONTACLIENTE CONTADEBITO,
+                     
+                     ----------CONTA_CREDITO
+                     vDEVOLUCAO_CLIENTE CONTACREDITO,
+                     
+                     ----------CODCC_DEBITO
+                     NULL CODCC_DEBITO,
+                     
+                     ----------CODCC_CREDITO
+                     NULL CODCC_CREDITO,
+                     
+                     ----------ATIVIDADE
+                     ('ESTORNO BAIXA DUP. DEV. CLIENTE - F' || LPAD(C.CODFILIAL, 2, 0) || ' - NOTA DEV: ' ||
+                     C.NUMNOTADEV || ' - CLI. DEV.: ' || C.CODCLIDEV || ' - DUPLIC: ' || C.DUPLIC || ' - Nº CRED: ' ||
+                     C.NUMCRED || ' - Cód: ' || C.CODIGO) ATIVIDADE,
+                     
+                     ----------HISTORICO
+                     ('ESTORNO BAIXA DEV. CLIENTE - DUPLIC ' || C.DUPLIC || ' - Nº NOTA DEV: ' || C.NUMNOTADEV || ' - ' ||
+                     T.CLIENTE || ' - Cód. ' || T.CODCLI) HISTORICO,
+                     
+                     ----------VALOR
+                     ROUND(ABS(C.VALOR), 2) VALOR,
+                     
+                     ('CRED_DEV_CLIENTE_DUP_ESTORNO') ORIGEM,
+                     
+                     ----------ENVIAR_CONTABIL
+                     'S' ENVIAR_CONTABIL,
+                     
+                     TO_DATE(NULL, 'DD/MM/YYYY') DTCANCEL
+                FROM BI_SINC_CREDITO_CLIENTE C
+                LEFT JOIN BI_SINC_CLIENTE T ON T.CODCLI = C.CODCLI
+               WHERE 1 = 1
+                 AND C.DTESTORNO >= vDATA_MOV_INCREMENTAL
+                 AND C.DTESTORNO IS NOT NULL
+                 AND NVL(C.NUMTRANSENTDEVCLI, 0) > 0
+                 AND NVL(C.NUMTRANSVENDADESC, 0) > 0
+                 AND C.VALOR < 0)
+    
+    LOOP
+      PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
+                                 r.CODEMPRESA,
+                                 r.DATA,
+                                 r.TIPOLANCAMENTO,
+                                 r.IDENTIFICADOR,
+                                 r.DOCUMENTO,
+                                 r.CONTADEBITO,
+                                 r.CONTACREDITO,
+                                 r.CODCC_DEBITO,
+                                 r.CODCC_CREDITO,
+                                 r.ATIVIDADE,
+                                 r.HISTORICO,
+                                 r.VALOR,
+                                 r.ORIGEM,
+                                 r.ENVIAR_CONTABIL,
+                                 r.DTCANCEL));
+    
+    END LOOP;
+  
+  END FN_CRED_DEV_CLIENTE_DUP_ESTORNO;
+
+  ----CREDITOS DE CLIENTES - DEVOLUCAO DE CLIENTE MOVIMENTANDO BANCO (DEV)
+  FUNCTION FN_CRED_DEV_CLIENTE_MOV_BANCO RETURN T_CONTABIL_TABLE
+    PIPELINED IS
+  
+  BEGIN
+    FOR r IN (SELECT ('C09' || '.' || C.CODIGO) CODLANC,
+                     C.CODEMPRESA,
+                     C.DTCOMPENSACAO DATA,
+                     
+                     ----------TIPO LANCAMENTO
+                     3 TIPOLANCAMENTO,
+                     
+                     C.CODIGO IDENTIFICADOR,
+                     C.NUMTRANSBAIXA DOCUMENTO,
+                     
+                     ----------CONTA_DEBITO
+                     vDEVOLUCAO_CLIENTE CONTADEBITO,
+                     
+                     ----------CONTA_CREDITO
+                     C.CONTABANCO CONTACREDITO,
+                     
+                     ----------CODCC_DEBITO
+                     NULL CODCC_DEBITO,
+                     
+                     ----------CODCC_CREDITO
+                     NULL CODCC_CREDITO,
+                     
+                     ----------ATIVIDADE
+                     ('MOV. BANCO DEV. CLIENTE - F' || LPAD(C.CODFILIAL, 2, 0) || ' - NOTA DEV: ' || C.NUMNOTADEV ||
+                     ' - CLI. DEV.: ' || C.CODCLIDEV || ' - Nº MOV: ' || C.NUMTRANSBAIXA || ' - Nº CRED: ' || C.NUMCRED ||
+                     ' - Cód: ' || C.CODIGO) ATIVIDADE,
+                     
+                     ----------HISTORICO
+                     ('MOV. BANCO DEV. CLIENTE - Nº MOV ' || C.NUMTRANSBAIXA || ' - Nº NOTA DEV: ' || C.NUMNOTADEV ||
+                     ' - ' || T.CLIENTE || ' - Cód. ' || T.CODCLI) HISTORICO,
+                     
+                     ----------VALOR
+                     ROUND(ABS(C.VALOR), 2) VALOR,
+                     
+                     ('CRED_DEV_CLIENTE_MOV_BANCO') ORIGEM,
+                     
+                     ----------ENVIAR_CONTABIL
+                     'S' ENVIAR_CONTABIL,
+                     
+                     TO_DATE(NULL, 'DD/MM/YYYY') DTCANCEL
+                FROM BI_SINC_CREDITO_CLIENTE C
+                LEFT JOIN BI_SINC_CLIENTE T ON T.CODCLI = C.CODCLI
+               WHERE 1 = 1
+                 AND C.DTCOMPENSACAO >= vDATA_MOV_INCREMENTAL
+                 AND C.DTCOMPENSACAO IS NOT NULL
+                 AND NVL(C.NUMTRANSENTDEVCLI, 0) > 0
+                 AND NVL(C.NUMTRANSBAIXA, 0) > 0
+                 AND C.CODROTINA = 619
+                 AND C.VALOR < 0)
+    
+    LOOP
+      PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
+                                 r.CODEMPRESA,
+                                 r.DATA,
+                                 r.TIPOLANCAMENTO,
+                                 r.IDENTIFICADOR,
+                                 r.DOCUMENTO,
+                                 r.CONTADEBITO,
+                                 r.CONTACREDITO,
+                                 r.CODCC_DEBITO,
+                                 r.CODCC_CREDITO,
+                                 r.ATIVIDADE,
+                                 r.HISTORICO,
+                                 r.VALOR,
+                                 r.ORIGEM,
+                                 r.ENVIAR_CONTABIL,
+                                 r.DTCANCEL));
+    
+    END LOOP;
+  
+  END FN_CRED_DEV_CLIENTE_MOV_BANCO;
+
+  ----CREDITOS DE CLIENTES - GERADOS EM CONTA GERENCIAL E USADOS NA BAIXA DUPLICATA
+  FUNCTION FN_CRED_CONTA_GER_BAIXA_DUP RETURN T_CONTABIL_TABLE
+    PIPELINED IS
+  
+  BEGIN
+    FOR r IN (SELECT ('C10' || '.' || C.CODIGO) CODLANC,
+                     C.CODEMPRESA,
+                     C.DTDESCONTO DATA,
+                     
+                     ----------TIPO LANCAMENTO
+                     3 TIPOLANCAMENTO,
+                     
+                     C.CODIGO IDENTIFICADOR,
+                     C.DUPLIC DOCUMENTO,
+                     
+                     ----------CONTA_DEBITO
+                     vDESCONTOS_CONCEDIDOS CONTADEBITO,
+                     
+                     ----------CONTA_CREDITO
+                     C.CONTACLIENTE CONTACREDITO,
+                     
+                     ----------CODCC_DEBITO
+                     F.CODCC CODCC_DEBITO,
+                     
+                     ----------CODCC_CREDITO
+                     NULL CODCC_CREDITO,
+                     
+                     ----------ATIVIDADE
+                     ('DESC DUPLIC. CREDITO MANUAL - F' || LPAD(C.CODFILIAL, 2, 0) || ' - Nº NOTA: ' || C.DUPLIC ||
+                     ' - Nº LANC: ' || C.NUMLANC || ' - Nº CRED: ' || C.NUMCRED || ' - Cód: ' || C.CODIGO) ATIVIDADE,
+                     
+                     ----------HISTORICO
+                     ('DESC DUPLIC. CREDITO MANUAL - Nº NOTA: ' || C.DUPLIC || ' - ' || T.CLIENTE || ' - Cód. ' ||
+                     T.CODCLI) HISTORICO,
+                     
+                     ----------VALOR
+                     ROUND(C.VALOR, 2) VALOR,
+                     
+                     ('CRED_MANUAL_BAIXA_DUP') ORIGEM,
+                     
+                     ----------ENVIAR_CONTABIL
+                     'S' ENVIAR_CONTABIL,
+                     
+                     TO_DATE(NULL, 'DD/MM/YYYY') DTCANCEL
+                FROM BI_SINC_CREDITO_CLIENTE C
+                LEFT JOIN BI_SINC_CLIENTE T ON T.CODCLI = C.CODCLI
+                LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_FILIAL()) F ON F.CODFILIAL = C.CODFILIAL
+               WHERE 1 = 1
+                 AND C.DTDESCONTO >= vDATA_MOV_INCREMENTAL
+                 AND C.DTDESCONTO IS NOT NULL
+                 AND NVL(C.NUMLANC, 0) > 0
+                 AND NVL(C.NUMTRANSVENDADESC, 0) > 0
+                 AND C.VALOR > 0)
+    
+    LOOP
+      PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
+                                 r.CODEMPRESA,
+                                 r.DATA,
+                                 r.TIPOLANCAMENTO,
+                                 r.IDENTIFICADOR,
+                                 r.DOCUMENTO,
+                                 r.CONTADEBITO,
+                                 r.CONTACREDITO,
+                                 r.CODCC_DEBITO,
+                                 r.CODCC_CREDITO,
+                                 r.ATIVIDADE,
+                                 r.HISTORICO,
+                                 r.VALOR,
+                                 r.ORIGEM,
+                                 r.ENVIAR_CONTABIL,
+                                 r.DTCANCEL));
+    
+    END LOOP;
+  
+  END FN_CRED_CONTA_GER_BAIXA_DUP;
+
+  ----CREDITOS DE CLIENTES - GERADOS EM CONTA GERENCIAL - ESTORNO DA BAIXA DUPLICATA
+  FUNCTION FN_CRED_CONTA_GER_DUP_ESTORNO RETURN T_CONTABIL_TABLE
+    PIPELINED IS
+  
+  BEGIN
+    FOR r IN (SELECT ('C11' || '.' || C.CODIGO) CODLANC,
+                     C.CODEMPRESA,
+                     C.DTESTORNO DATA,
+                     
+                     ----------TIPO LANCAMENTO
+                     3 TIPOLANCAMENTO,
+                     
+                     C.CODIGO IDENTIFICADOR,
+                     C.DUPLIC DOCUMENTO,
+                     
+                     ----------CONTA_DEBITO
+                     C.CONTACLIENTE CONTADEBITO,
+                     
+                     ----------CONTA_CREDITO
+                     vDESCONTOS_CONCEDIDOS CONTACREDITO,
+                     
+                     ----------CODCC_DEBITO
+                     NULL CODCC_DEBITO,
+                     
+                     ----------CODCC_CREDITO
+                     F.CODCC CODCC_CREDITO,
+                     
+                     ----------ATIVIDADE
+                     ('ESTORNO DESC DUPLIC. CREDITO MANUAL - F' || LPAD(C.CODFILIAL, 2, 0) || ' - Nº NOTA: ' || C.DUPLIC ||
+                     ' - Nº LANC: ' || C.NUMLANC || ' - Nº CRED: ' || C.NUMCRED || ' - Cód: ' || C.CODIGO) ATIVIDADE,
+                     
+                     ----------HISTORICO
+                     ('ESTORNO DESC DUPLIC. CREDITO MANUAL - Nº NOTA: ' || C.DUPLIC || ' - ' || T.CLIENTE || ' - Cód. ' ||
+                     T.CODCLI) HISTORICO,
+                     
+                     ----------VALOR
+                     ROUND(ABS(C.VALOR), 2) VALOR,
+                     
+                     ('CRED_MANUAL_DUP_ESTORNO') ORIGEM,
+                     
+                     ----------ENVIAR_CONTABIL
+                     'S' ENVIAR_CONTABIL,
+                     
+                     TO_DATE(NULL, 'DD/MM/YYYY') DTCANCEL
+                FROM BI_SINC_CREDITO_CLIENTE C
+                LEFT JOIN BI_SINC_CLIENTE T ON T.CODCLI = C.CODCLI
+                LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_FILIAL()) F ON F.CODFILIAL = C.CODFILIAL
+               WHERE 1 = 1
+                 AND C.DTESTORNO >= vDATA_MOV_INCREMENTAL
+                 AND C.DTESTORNO IS NOT NULL
+                 AND NVL(C.NUMLANC, 0) > 0
+                 AND NVL(C.NUMTRANSVENDADESC, 0) > 0
+                 AND C.VALOR < 0
+                 AND NVL(C.NUMERARIO, '0') = '0')
+    
+    LOOP
+      PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
+                                 r.CODEMPRESA,
+                                 r.DATA,
+                                 r.TIPOLANCAMENTO,
+                                 r.IDENTIFICADOR,
+                                 r.DOCUMENTO,
+                                 r.CONTADEBITO,
+                                 r.CONTACREDITO,
+                                 r.CODCC_DEBITO,
+                                 r.CODCC_CREDITO,
+                                 r.ATIVIDADE,
+                                 r.HISTORICO,
+                                 r.VALOR,
+                                 r.ORIGEM,
+                                 r.ENVIAR_CONTABIL,
+                                 r.DTCANCEL));
+    
+    END LOOP;
+  
+  END FN_CRED_CONTA_GER_DUP_ESTORNO;
 
 END PKG_BI_CONTABILIDADE;
 /
