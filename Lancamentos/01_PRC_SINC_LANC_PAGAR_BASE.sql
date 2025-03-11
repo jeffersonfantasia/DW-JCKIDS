@@ -3,9 +3,9 @@ CREATE OR REPLACE PROCEDURE PRC_SINC_LANC_PAGAR_BASE AS
   -----------------------DATAS DE ATUALIZACAO
   --vDATA_MOV_INCREMENTAL DATE := TRUNC(SYSDATE) - 120;
   vDATA_MOV_INCREMENTAL DATE := TO_DATE('01/01/2020', 'DD/MM/YYYY');
-	
-	------------------------CONTAS
-	vCONTA_COMPRA_MERCADORIA NUMBER := 100001;
+
+  ------------------------CONTAS
+  vCONTA_COMPRA_MERCADORIA NUMBER := 100001;
 
 BEGIN
 
@@ -57,6 +57,7 @@ BEGIN
                       C.GRUPOCONTA,
                       L.CODFORNEC,
                       L.TIPOPARCEIRO,
+                      L.NUMNOTADEV,
                       L.NUMNOTA,
                       NVL(L.DUPLIC, '1') DUPLICATA,
                       (CASE
@@ -111,6 +112,7 @@ BEGIN
                       L.GRUPOCONTA,
                       L.CODFORNEC,
                       L.TIPOPARCEIRO,
+                      L.NUMNOTADEV,
                       L.NUMNOTA,
                       L.DUPLICATA,
                       L.HISTORICO,
@@ -148,7 +150,8 @@ BEGIN
                   OR S.GRUPOCONTA <> L.GRUPOCONTA
                   OR NVL(S.CODFORNEC, 0) <> NVL(L.CODFORNEC, 0)
                   OR S.TIPOPARCEIRO <> L.TIPOPARCEIRO
-                  OR S.NUMNOTA <> L.NUMNOTA
+                  OR NVL(S.NUMNOTADEV, 0) <> NVL(L.NUMNOTADEV, 0)
+                  OR NVL(S.NUMNOTA, 0) <> NVL(L.NUMNOTA, 0)
                   OR S.HISTORICO <> L.HISTORICO
                   OR S.NUMTRANS <> L.NUMTRANS
                   OR NVL(S.DTPAGAMENTO, '01/01/1899') <> L.DTPAGAMENTO
@@ -183,6 +186,7 @@ BEGIN
              GRUPOCONTA      = r.GRUPOCONTA,
              CODFORNEC       = r.CODFORNEC,
              TIPOPARCEIRO    = r.TIPOPARCEIRO,
+             NUMNOTADEV      = r.NUMNOTADEV,
              NUMNOTA         = r.NUMNOTA,
              HISTORICO       = r.HISTORICO,
              NUMTRANS        = r.NUMTRANS,
@@ -220,6 +224,7 @@ BEGIN
            GRUPOCONTA,
            CODFORNEC,
            TIPOPARCEIRO,
+           NUMNOTADEV,
            NUMNOTA,
            HISTORICO,
            NUMTRANS,
@@ -253,6 +258,7 @@ BEGIN
            r.GRUPOCONTA,
            r.CODFORNEC,
            r.TIPOPARCEIRO,
+           r.NUMNOTADEV,
            r.NUMNOTA,
            r.HISTORICO,
            r.NUMTRANS,
