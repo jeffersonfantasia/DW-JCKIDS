@@ -7,15 +7,15 @@ BEGIN
                       M.DATA,
                       M.TIPOLANCAMENTO,
                       M.IDENTIFICADOR,
-                      M.DOCUMENTO, 
+                      M.DOCUMENTO,
                       M.CONTADEBITO,
                       M.CODCC_DEBITO,
                       M.CONTACREDITO,
                       M.CODCC_CREDITO,
                       M.ATIVIDADE,
                       M.HISTORICO,
-                      (M.VALOR * -1) VALOR_DEBITO,
-                      (M.VALOR) VALOR_CREDITO,
+                      ABS(M.VALOR) VALOR_DEBITO,
+                      ABS(M.VALOR) VALOR_CREDITO,
                       M.ORIGEM,
                       M.ENVIAR_CONTABIL
                  FROM VIEW_BI_SINC_MOV_CONTABIL M
@@ -37,7 +37,8 @@ BEGIN
                       M.VALOR_DEBITO VALOR,
                       M.ORIGEM,
                       M.ENVIAR_CONTABIL
-                 FROM LANC_MOV M),
+                 FROM LANC_MOV M
+                WHERE M.CONTADEBITO IS NOT NULL),
               
               CONTA_CREDITO AS
                (SELECT M.CODLANC,
@@ -51,10 +52,11 @@ BEGIN
                       M.CODCC_CREDITO CODCC,
                       M.ATIVIDADE,
                       M.HISTORICO,
-                      VALOR_CREDITO VALOR,
+                      (VALOR_CREDITO * -1) VALOR,
                       M.ORIGEM,
                       M.ENVIAR_CONTABIL
-                 FROM LANC_MOV M),
+                 FROM LANC_MOV M
+                WHERE M.CONTACREDITO IS NOT NULL),
               
               MOVIMENTO_CONTABIL AS
                (SELECT * FROM CONTA_DEBITO UNION ALL SELECT * FROM CONTA_CREDITO),
@@ -173,7 +175,7 @@ BEGIN
   COMMIT;
 
   BEGIN
-     EXECUTE IMMEDIATE 'DELETE FROM BI_SINC_CONTABILIDADE
+    EXECUTE IMMEDIATE 'DELETE FROM BI_SINC_CONTABILIDADE
   WHERE (CODLANC, IDENTIFICADOR) IN
         (SELECT S.CODLANC,
                 S.IDENTIFICADOR
@@ -182,8 +184,8 @@ BEGIN
                                                AND M.IDENTIFICADOR =
                                                S.IDENTIFICADOR
           WHERE M.CODLANC IS NULL)';
-   END;
-  
-   COMMIT;
+  END;
+
+  COMMIT;
 
 END;
