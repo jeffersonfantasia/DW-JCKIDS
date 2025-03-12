@@ -967,6 +967,7 @@ CODFORNEC, ESPECIE, CFOP, CST_ICMS, CST_PISCOFINS )';
      DATA           DATE,
      DTCOMPENSACAO  DATE,
      CODCOB         VARCHAR2(4),
+     CODBANCO       NUMBER(4),
      CONTABANCO     NUMBER(6),
      TIPO           VARCHAR2(1),
      VALOR          NUMBER(14, 2),
