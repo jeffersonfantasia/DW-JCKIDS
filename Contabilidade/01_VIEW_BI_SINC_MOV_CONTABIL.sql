@@ -177,6 +177,26 @@ CREATE OR REPLACE VIEW VIEW_BI_SINC_MOV_CONTABIL AS
       UNION ALL
       SELECT *
         FROM TABLE(PKG_BI_CONTABILIDADE.FN_MOV_BANCO_SAIDA())
+      UNION ALL
+      ---- MOVIMENTACAO FOLHA
+      SELECT M.CODLANC,
+             M.CODEMPRESA,
+             M.DATA,
+             M.TIPOLANCAMENTO,
+             M.IDENTIFICADOR,
+             M.DOCUMENTO,
+             M.CONTADEBITO,
+             M.CONTACREDITO,
+             NVL(M.CODCC_DEBITO, '0') CODCC_DEBITO,
+             NVL(M.CODCC_CREDITO, '0') CODCC_CREDITO,
+             M.ATIVIDADE,
+             M.HISTORICO,
+             M.VALOR,
+             M.ORIGEM,
+             M.ENVIAR_CONTABIL,
+             M.DTCANCEL
+        FROM BI_SINC_MOV_FOLHA M
+      
       ---- FIM ---- TRATAMENTO ----
       )
     
