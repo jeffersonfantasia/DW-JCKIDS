@@ -1,0 +1,48 @@
+CREATE OR REPLACE VIEW VIEW_BI_SINC_PLANO_CONTAS_JC AS
+
+    WITH EMPRESA AS
+     (SELECT F.CODEMPRESA FROM BI_SINC_FILIAL F GROUP BY F.CODEMPRESA),
+    
+    PLANO_JC_EMPRESAS AS
+     (SELECT E.CODEMPRESA,
+             C.CODCLASSIFICA,
+             C.CONTA,
+             C.NIVEL,
+             C.TIPOCONTA,
+             C.CODGERENCIAL,
+             C.CODCONTABIL,
+             C.CODBALANCO,
+             C.CODDRE,
+             C.CODEBTIDA,
+             C.CONTAN1,
+             C.CONTAN2,
+             C.CONTAN3,
+             C.CONTAN4,
+             C.CONTAN5
+        FROM BI_SINC_PLANO_CONTAS_JC C
+       CROSS JOIN EMPRESA E
+       ORDER BY C.CODCLASSIFICA,
+                E.CODEMPRESA),
+    
+    PLANO_UNIFICADO AS
+     (
+      
+      SELECT * FROM VIEW_BI_SINC_FORNEC_PLANO_CONTAS UNION ALL SELECT * FROM PLANO_JC_EMPRESAS)
+    
+    SELECT (C.CODGERENCIAL || '-' || C.CODEMPRESA) IDGERENCIAL,
+           C.CODCLASSIFICA,
+           C.CONTA,
+           C.NIVEL,
+           C.TIPOCONTA,
+           C.CODGERENCIAL,
+           C.CODCONTABIL,
+           C.CODBALANCO,
+           C.CODDRE,
+           C.CODEBTIDA,
+           C.CONTAN1,
+           C.CONTAN2,
+           C.CONTAN3,
+           C.CONTAN4,
+           C.CONTAN5
+      FROM PLANO_UNIFICADO C
+     ORDER BY CODCLASSIFICA;
