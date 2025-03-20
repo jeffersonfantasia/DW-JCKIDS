@@ -28,6 +28,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   vICMS_RECOLHER_ES              NUMBER := 2261;
   vPIS_RECOLHER                  NUMBER := 2254;
   vCOFINS_RECOLHER               NUMBER := 2255;
+  vIRRF_RECOLHER                 NUMBER := 2256;
+  vCSRF_RECOLHER                 NUMBER := 2257;
   vST_RECOLHER                   NUMBER := 2260;
   vDIFAL_RECOLHER                NUMBER := 2252;
   vESTOQUE_RECEBIDO_CONSIGNADO   NUMBER := 1176;
@@ -56,6 +58,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   vDIFAL_MATERIAL_OPERACAO       NUMBER := 3555;
   vDIFAL_EQUIPAMENTO             NUMBER := 3653;
   vOUTROSESTOQUES                NUMBER := 200159;
+  vOUTROS_MOVESTOQUES            NUMBER := 100023;
   ----------------------------------------------
 
   vADIANTAMENTO_FORNECEDOR   NUMBER := 1177;
@@ -175,7 +178,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   FUNCTION FN_GRUPO_LANC_TIPO_FORNEC_CONSIDERA_CONTA RETURN T_GRUPO_TABLE
     PIPELINED IS
   BEGIN
-    FOR r IN (SELECT CODGRUPO FROM PCGRUPO WHERE CODGRUPO IN (110, 210, 225, 230, 240, 245))
+    FOR r IN (SELECT CODGRUPO FROM PCGRUPO WHERE CODGRUPO IN (110, 210, 225, 230, 240, 245, 260))
     LOOP
       PIPE ROW(T_GRUPO_RECORD(r.CODGRUPO));
     END LOOP;
@@ -1392,7 +1395,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     FOR r IN (WITH vENT_BONIFICADA AS
                  (SELECT CODFISCAL FROM PCCFO F WHERE F.CODFISCAL IN (1910, 2910, 1911)),
                 vENT_REM_ENTREGA_FUTURA AS
-                 (SELECT CODFISCAL FROM PCCFO F WHERE F.CODFISCAL IN (1116, 1117, 2116, 2117))
+                 (SELECT CODFISCAL FROM PCCFO F WHERE F.CODFISCAL IN (1116, 1117, 2116, 2117)),
+                vENT_REMESSA AS
+                 (SELECT CODFISCAL FROM PCCFO F WHERE F.CODFISCAL IN (1908, 1949, 2949, 1923, 2923))
                 
                 SELECT ('D01' || '.CC_' || DECODE(E.CODCC, '0', L.CODCC, E.CODCC)) CODLANC,
                        E.CODEMPRESA,
@@ -1413,7 +1418,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                        
                        ----------CONTA_DEBITO
                        (CASE
-                         WHEN E.CODCONTA = vOUTROSESTOQUES THEN
+                         WHEN E.CODCONTA IN (vOUTROSESTOQUES, vOUTROS_MOVESTOQUES) THEN
                           NULL
                          ELSE
                           E.CODCONTA
@@ -1421,7 +1426,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                        
                        ----------CONTA_CREDITO
                        (CASE
-                         WHEN E.CODCONTA = vOUTROSESTOQUES
+                         WHEN E.CODCONTA IN (vOUTROSESTOQUES, vOUTROS_MOVESTOQUES)
                               AND E.CFOP IN (SELECT CODFISCAL FROM vENT_BONIFICADA) THEN
                           vENTRADA_BONIFICADA
                          WHEN E.VLIMPOSTO > 0 THEN
@@ -1434,7 +1439,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                        
                        ----------CODCC_DEBITO
                        (CASE
-                         WHEN E.CODCONTA = vOUTROSESTOQUES THEN
+                         WHEN E.CODCONTA IN (vOUTROSESTOQUES, vOUTROS_MOVESTOQUES) THEN
                           NULL
                          WHEN E.CODCONTA = vFRETE
                               AND E.CODCC = '0' THEN
@@ -1457,7 +1462,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                        
                        ----------CODCC_CREDITO
                        (CASE
-                         WHEN E.CODCONTA = vOUTROSESTOQUES
+                         WHEN E.CODCONTA IN (vOUTROSESTOQUES, vOUTROS_MOVESTOQUES)
                               AND E.CFOP IN (SELECT CODFISCAL FROM vENT_BONIFICADA) THEN
                           L.CODCC
                          ELSE
@@ -1494,7 +1499,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                   LEFT JOIN TABLE (PKG_BI_CONTABILIDADE.FN_CC_VENDEDOR()) V ON V.CODSUPERVISOR = E.CODSUPERVISOR
                  WHERE 1 = 1
                    AND E.DATA >= vDATA_MOV_INCREMENTAL
-                   AND E.CODCONTA NOT IN (200159))
+                   AND NOT (E.CFOP IN (SELECT CODFISCAL FROM vENT_REMESSA)))
     
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
@@ -1526,7 +1531,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     FOR r IN (WITH vENT_BONIFICADA AS
                  (SELECT CODFISCAL FROM PCCFO F WHERE F.CODFISCAL IN (1910, 2910, 1911))
                 
-                SELECT DISTINCT ('D02' || '.CC_' || E.CODCC) CODLANC,
+                SELECT DISTINCT ('D02') CODLANC,
                                 E.CODEMPRESA,
                                 E.DATA,
                                 
@@ -1656,9 +1661,10 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                        
                        ----------CONTA_CREDITO
                        (CASE
-                         WHEN (E.CODCONTA = vOUTROSESTOQUES AND E.CFOP IN (SELECT CODFISCAL FROM vENT_SIMPLES_REMESSA)) THEN
+                         WHEN (E.CODCONTA IN (vOUTROSESTOQUES) AND E.CFOP IN (SELECT CODFISCAL FROM vENT_SIMPLES_REMESSA)) THEN
                           vESTOQUE
-                         WHEN (E.CODCONTA = vOUTROSESTOQUES AND E.CFOP IN (SELECT CODFISCAL FROM vENT_BONIFICADA)) THEN
+                         WHEN (E.CODCONTA IN (vOUTROSESTOQUES, vOUTROS_MOVESTOQUES) AND
+                              E.CFOP IN (SELECT CODFISCAL FROM vENT_BONIFICADA)) THEN
                           NULL
                          ELSE
                           E.CODCONTA
@@ -1681,7 +1687,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                             ELSE
                              L.CODCC
                           END)
-                         WHEN (E.CODCC = '0' OR E.CODCONTA = vOUTROSESTOQUES) THEN
+                         WHEN (E.CODCC = '0' OR E.CODCONTA IN (vOUTROSESTOQUES, vOUTROS_MOVESTOQUES)) THEN
                           NULL
                          ELSE
                           E.CODCC
@@ -2066,7 +2072,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      ----------HISTORICO
                      ('FATURA Nº ' || L.NUMNOTA || ' - ' || F.CNPJ || ' - ' || F.FORNECEDOR || ' - Cód: ' || L.CODFORNEC) HISTORICO,
                      
-                     ROUND(L.VLRATEIO, 2) VALOR,
+                     ROUND(ABS(L.VLRATEIO), 2) VALOR,
                      
                      ('DESP_GERENCIAL_FORNEC') ORIGEM,
                      
@@ -2121,6 +2127,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      
                      ----------TIPO LANCAMENTO
                      (CASE
+                       WHEN L.CODCONTA = vCSRF_RECOLHER THEN
+                        3
                        WHEN C.CODCONTACONTRAPARTIDA IS NULL THEN
                         2
                        ELSE
@@ -2131,7 +2139,12 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      L.NUMNOTA DOCUMENTO,
                      
                      ----------CONTA_DEBITO
-                     C.CODCONTACONTRAPARTIDA CONTADEBITO,
+                     (CASE
+                       WHEN L.CODCONTA = vCSRF_RECOLHER THEN
+                        L.CODFORNEC
+                       ELSE
+                        C.CODCONTACONTRAPARTIDA
+                     END) CONTADEBITO,
                      
                      ----------CONTA_CREDITO
                      L.CODCONTA CONTACREDITO,
@@ -2155,7 +2168,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      ('IMPOSTO NS ' || L.NUMNOTA || ' - ' || F.CNPJ || ' - ' || F.FORNECEDOR || ' - Cód: ' ||
                      L.CODFORNEC) HISTORICO,
                      
-                     ROUND(L.VLRATEIO, 2) VALOR,
+                     ROUND(ABS(L.VLRATEIO), 2) VALOR,
                      
                      ('DESP_GERENCIAL_IMPOSTO') ORIGEM,
                      
@@ -2171,7 +2184,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                  AND L.DTCOMPETENCIA >= vDATA_MOV_INCREMENTAL
                  AND L.CODCONTA IN (SELECT CODCONTA FROM TABLE(PKG_BI_CONTABILIDADE.FN_CONTA_IMPOSTO_DESP_GER()))
                  AND L.CODFLUXO = 3 --'CONFIRMADO'
-                 AND L.VLRATEIO > 0)
+                 AND L.VLRATEIO > 0
+                 AND NOT (L.CODCONTA = vIRRF_RECOLHER AND L.CODFORNEC IN (9177)))
     
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
@@ -2258,12 +2272,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      END) HISTORICO,
                      
                      ----------VALOR
-                     (CASE
-                       WHEN L.GRUPOCONTA IN (SELECT CODGRUPO FROM TABLE(PKG_BI_CONTABILIDADE.FN_GRUPO_LANC_RECEITA())) THEN
-                        ROUND(L.VLRATEIO, 2) * -1
-                       ELSE
-                        ROUND(L.VLRATEIO, 2)
-                     END) VALOR,
+                     ROUND(ABS(L.VLRATEIO), 2) VALOR,
                      
                      ('LANC_PAG_OUTROS') ORIGEM,
                      
@@ -2440,12 +2449,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      END) HISTORICO,
                      
                      ----------VALOR
-                     (CASE
-                       WHEN L.GRUPOCONTA IN (SELECT CODGRUPO FROM TABLE(PKG_BI_CONTABILIDADE.FN_GRUPO_LANC_RECEITA())) THEN
-                        ROUND(L.VLRATEIO, 2) * -1
-                       ELSE
-                        ROUND(L.VLRATEIO, 2)
-                     END) VALOR,
+                     ROUND(ABS(L.VLRATEIO), 2) VALOR,
                      
                      ('LANC_PAG_FORNECEDOR') ORIGEM,
                      
@@ -2557,7 +2561,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                         UPPER(L.HISTORICO)
                      END) HISTORICO,
                      
-                     ROUND(L.VLRATEIO, 2) VALOR,
+                     ROUND(ABS(L.VLRATEIO), 2) VALOR,
                      
                      ('LANC_JUROS_PAGOS') ORIGEM,
                      
@@ -2659,7 +2663,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                         UPPER(L.HISTORICO)
                      END) HISTORICO,
                      
-                     (ROUND(L.VLRATEIO, 2) * -1) VALOR,
+                     ROUND(ABS(L.VLRATEIO), 2) VALOR,
                      
                      ('LANC_DESCONTO_OBTIDO') ORIGEM,
                      
@@ -2744,7 +2748,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      ('PAG NF ' || L.NUMNOTA || ' - ' || L.HISTORICO || ' - ' || F.CNPJ || ' - ' || F.FORNECEDOR ||
                      ' - Cód: ' || L.CODFORNEC) HISTORICO,
                      
-                     ROUND(L.VLRATEIO, 2) VALOR,
+                     ROUND(ABS(L.VLRATEIO), 2) VALOR,
                      
                      ('LANC_CX_CARTAO_FORNEC') ORIGEM,
                      
@@ -2845,7 +2849,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      ----------HISTORICO
                      ('PAG NF ' || L.NUMNOTA || ' - ' || L.HISTORICO) HISTORICO,
                      
-                     ROUND(L.VLRATEIO, 2) VALOR,
+                     ROUND(ABS(L.VLRATEIO), 2) VALOR,
                      
                      ('LANC_CX_CARTAO_OUTROS') ORIGEM,
                      
@@ -3195,7 +3199,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      ('BAIXA DEV. FORNEC. NF ' || L.NUMNOTA || ' - ' || F.FORNECEDOR || ' - CNPJ: ' || F.CNPJ ||
                      ' - Cod. ' || L.CODFORNEC) HISTORICO,
                      
-                     ROUND(L.VLDESCONTO, 2) VALOR,
+                     ROUND(ABS(L.VLDESCONTO), 2) VALOR,
                      
                      ('LANC_DEV_FORNEC_BAIXA_DUPLIC') ORIGEM,
                      
@@ -3276,7 +3280,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                        ('DESDOBRE NF ' || P.NUMNOTA || ' - ' || 'PREST: ' || P.PREST || ' - ' || T.CLIENTE || ' - Cód. ' ||
                        T.CODCLI) HISTORICO,
                        
-                       ROUND(P.VALOR, 2) VALOR,
+                       ROUND(ABS(P.VALOR), 2) VALOR,
                        
                        ('RECEB_DESDOBRE_CARTAO') ORIGEM,
                        
@@ -3352,7 +3356,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      ('INCLUSAO NF ' || P.NUMNOTA || ' - ' || 'PREST: ' || P.PREST || ' - ' || T.CLIENTE || ' - Cód. ' ||
                      T.CODCLI) HISTORICO,
                      
-                     ROUND(P.VLRECEBIDO, 2) VALOR,
+                     ROUND(ABS(P.VLRECEBIDO), 2) VALOR,
                      
                      ('RECEB_INCLUSAO_DUP_BANCO') ORIGEM,
                      
@@ -3430,7 +3434,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      ('PAG INCLUSAO NF ' || P.NUMNOTA || ' - ' || 'PREST: ' || P.PREST || ' - ' || T.CLIENTE ||
                      ' - Cód. ' || T.CODCLI) HISTORICO,
                      
-                     ROUND(P.VLRECEBIDO, 2) VALOR,
+                     ROUND(ABS(P.VLRECEBIDO), 2) VALOR,
                      
                      ('RECEB_PAG_INCLUSAO_DUP_BANCO') ORIGEM,
                      
@@ -3509,7 +3513,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      ('BAIXA INCLUSAO NF ' || P.NUMNOTA || ' - ' || 'PREST: ' || P.PREST || ' - ' || T.CLIENTE ||
                      ' - Cód. ' || T.CODCLI) HISTORICO,
                      
-                     ROUND(P.VLRECEBIDO, 2) VALOR,
+                     ROUND(ABS(P.VLRECEBIDO), 2) VALOR,
                      
                      ('RECEB_INCLUSAO_DUP_RECEITA') ORIGEM,
                      
@@ -3635,9 +3639,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                        ----------VALOR
                        (CASE
                          WHEN P.CONTACLIENTE = vCLIENTES_NACIONAIS THEN
-                          ROUND(P.VLRECEBIDO, 2)
+                          ROUND(ABS(P.VLRECEBIDO), 2)
                          ELSE
-                          P.VALOR
+                          ROUND(ABS(P.VALOR), 2)
                        END) VALOR,
                        
                        ('RECEB_BAIXA_DUP_PERDA') ORIGEM,
@@ -3747,7 +3751,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                         ' - Cód. ' || T.CODCLI)
                      END) HISTORICO,
                      
-                     ROUND(P.VLDESCONTO, 2) VALOR,
+                     ROUND(ABS(P.VLDESCONTO), 2) VALOR,
                      
                      ('RECEB_TAXA_CARTAO_LOJA') ORIGEM,
                      
@@ -3857,7 +3861,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                         ' - Cód. ' || T.CODCLI)
                      END) HISTORICO,
                      
-                     ROUND(P.VLDESCONTO, 2) VALOR,
+                     ROUND(ABS(P.VLDESCONTO), 2) VALOR,
                      
                      ('RECEB_DESC_CONCEDIDO') ORIGEM,
                      
@@ -3970,7 +3974,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                          ' - Cód. ' || T.CODCLI)
                       END) HISTORICO,
                       
-                      ROUND(P.VLDESCONTO, 2) VALOR,
+                      ROUND(ABS(P.VLJUROS), 2) VALOR,
                       
                       ('RECEB_JUROS') ORIGEM,
                       
@@ -4103,13 +4107,13 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                        ----------VALOR
                        (CASE
                          WHEN ((P.CODCOB = 'ESTR' AND P.CODCOBORIG = 'JUR') OR (P.CODCOB = 'JUR')) THEN
-                          ROUND(P.VLRECEBIDO, 2) --BAIXA E ESTORNO DE JUROS
+                          ROUND(ABS(P.VLRECEBIDO), 2) --BAIXA E ESTORNO DE JUROS
                          WHEN P.VLJUROS <> 0 THEN
-                          ROUND(P.VLRECEBIDO, 2) - ROUND(P.VLJUROS, 2) --BAIXA E ESTORNO DE DUPLICATAS COM VLJUROS
+                          ABS(ROUND(P.VLRECEBIDO, 2) - ROUND(P.VLJUROS, 2)) --BAIXA E ESTORNO DE DUPLICATAS COM VLJUROS
                          WHEN (P.CODCOB = 'ESTR' AND P.VLDESCONTO <> 0 AND P.CONTACLIENTE = vCLIENTES_NACIONAIS) THEN
-                          ROUND(P.VLRECEBIDO, 2) + ROUND(P.VLDESCONTO, 2) --ESTORNO DE DUPLICATA COM DESCONTO SEM SER MKT
+                          ABS(ROUND(P.VLRECEBIDO, 2) + ROUND(P.VLDESCONTO, 2)) --ESTORNO DE DUPLICATA COM DESCONTO SEM SER MKT
                          ELSE
-                          ROUND(P.VLRECEBIDO, 2)
+                          ROUND(ABS(P.VLRECEBIDO), 2)
                        END) VALOR,
                        
                        ('RECEB_BAIXA_DUPLICATAS') ORIGEM,
@@ -4191,7 +4195,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      ' - Cód. ' || T.CODCLI) HISTORICO,
                      
                      ----------VALOR
-                     ROUND(P.VLRECEBIDO, 2) VALOR,
+                     ROUND(ABS(P.VLRECEBIDO), 2) VALOR,
                      
                      ('RECEB_DEV_CLI_DUPLICATA') ORIGEM,
                      
@@ -4265,7 +4269,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      ('ADIANTAMENTO CLIENTE - Nº MOV: ' || C.NUMTRANS || ' - ' || T.CLIENTE || ' - Cód. ' || T.CODCLI) HISTORICO,
                      
                      ----------VALOR
-                     ROUND(C.VALOR, 2) VALOR,
+                     ROUND(ABS(C.VALOR), 2) VALOR,
                      
                      ('CRED_ADIANT_CLIENTE') ORIGEM,
                      
@@ -4494,7 +4498,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      T.CODCLI) HISTORICO,
                      
                      ----------VALOR
-                     ROUND(C.VALOR, 2) VALOR,
+                     ROUND(ABS(C.VALOR), 2) VALOR,
                      
                      ('CRED_ADIANT_CLIENTE_BAIXA_DUP') ORIGEM,
                      
@@ -4723,7 +4727,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      T.CLIENTE || ' - Cód. ' || T.CODCLI) HISTORICO,
                      
                      ----------VALOR
-                     ROUND(C.VALOR, 2) VALOR,
+                     ROUND(ABS(C.VALOR), 2) VALOR,
                      
                      ('CRED_DEV_CLIENTE_BAIXA_DUP') ORIGEM,
                      
@@ -4951,7 +4955,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      T.CODCLI) HISTORICO,
                      
                      ----------VALOR
-                     ROUND(C.VALOR, 2) VALOR,
+                     ROUND(ABS(C.VALOR), 2) VALOR,
                      
                      ('CRED_MANUAL_BAIXA_DUP') ORIGEM,
                      
@@ -5104,7 +5108,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      V.CODFORNEC) HISTORICO,
                      
                      ----------VALOR
-                     ROUND(V.VALOR, 2) VALOR,
+                     ROUND(ABS(V.VALOR), 2) VALOR,
                      
                      ('VERBA_ESTORNO_DEVOLUCAO') ORIGEM,
                      
@@ -5178,7 +5182,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      V.CODFORNEC) HISTORICO,
                      
                      ----------VALOR
-                     ROUND(V.VALOR, 2) VALOR,
+                     ROUND(ABS(V.VALOR), 2) VALOR,
                      
                      ('VERBA_DEV_FORNEC_MOV_BANCO') ORIGEM,
                      
@@ -5252,7 +5256,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      F.FORNECEDOR || ' - Cód. ' || V.CODFORNEC) HISTORICO,
                      
                      ----------VALOR
-                     ROUND(V.VALOR, 2) VALOR,
+                     ROUND(ABS(V.VALOR), 2) VALOR,
                      
                      ('VERBA_DEV_DESC_DUPLIC') ORIGEM,
                      
@@ -5327,7 +5331,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      F.FORNECEDOR || ' - Cód. ' || V.CODFORNEC) HISTORICO,
                      
                      ----------VALOR
-                     ROUND(V.VALOR, 2) VALOR,
+                     ROUND(ABS(V.VALOR), 2) VALOR,
                      
                      ('VERBA_MANUAL_DESC_DUPLIC') ORIGEM,
                      
@@ -5403,7 +5407,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      ' - Cód. ' || V.CODFORNEC) HISTORICO,
                      
                      ----------VALOR
-                     ROUND(V.VALOR, 2) VALOR,
+                     ROUND(ABS(V.VALOR), 2) VALOR,
                      
                      ('VERBA_MANUAL_MOV_BANCO') ORIGEM,
                      
@@ -5489,7 +5493,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      END) HISTORICO,
                      
                      ----------VALOR
-                     ROUND(M.VALOR, 2) VALOR,
+                     ROUND(ABS(M.VALOR), 2) VALOR,
                      
                      ('MOV_BANCO_ENTRADA') ORIGEM,
                      
@@ -5572,7 +5576,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      END) HISTORICO,
                      
                      ----------VALOR
-                     ROUND(M.VALOR, 2) VALOR,
+                     ROUND(ABS(M.VALOR), 2) VALOR,
                      
                      ('MOV_BANCO_SAIDA') ORIGEM,
                      
