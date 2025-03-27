@@ -93,6 +93,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   ----BANCOS
   vCAIXA_CARTAO_LOJA NUMBER := 12;
 
+  ----FORNECEDOR
+  vFORNEC_ESTRELA NUMBER := 9720;
+
   ----CODIGO FORNECEDORES DAS FILIAIS DA JC BROTHERS
   FUNCTION FN_FORNEC_JCBROTHERS RETURN T_FORNEC_TABLE
     PIPELINED IS
@@ -142,13 +145,55 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   BEGIN
     FOR r IN (SELECT CODFORNEC
                 FROM BI_SINC_FORNECEDOR
-               WHERE CODFORNEC IN
-                     (21, 162, 185, 9177, 9158, 9178, 9160, 9421, 9444, 9852, 9870, 9851, 10117, 10535, 10506))
+               WHERE CODFORNEC IN (21,
+                                   162,
+                                   185,
+                                   264,
+                                   7331,
+                                   7793,
+                                   8958,
+                                   8959,
+                                   9177,
+                                   9158,
+                                   9178,
+                                   9160,
+                                   9346,
+                                   9421,
+                                   9444,
+                                   9737,
+                                   9772,
+                                   9776,
+                                   9811,
+                                   9819,
+                                   9851,
+                                   9852,
+                                   9870,
+                                   10070,
+                                   10073,
+                                   10117,
+                                   10156,
+                                   10271,
+                                   10353,
+                                   10506,
+                                   10534,
+                                   10535,
+                                   10580))
     LOOP
       PIPE ROW(T_FORNEC_RECORD(r.CODFORNEC));
     END LOOP;
   
   END FN_FORNECEDOR_LANC_TIPO_FORNEC_CONSIDERA_CONTA;
+
+  ----CODIGO FORNECEDORES ESTRELA DAS VERBAS QUE DEVEMOS CONSIDERAR O PRINCIPAL
+  FUNCTION FN_FORNECEDOR_ESTRELA_VERBA RETURN T_FORNEC_TABLE
+    PIPELINED IS
+  BEGIN
+    FOR r IN (SELECT CODFORNEC FROM BI_SINC_FORNECEDOR WHERE CODFORNEC IN (272))
+    LOOP
+      PIPE ROW(T_FORNEC_RECORD(r.CODFORNEC));
+    END LOOP;
+  
+  END FN_FORNECEDOR_ESTRELA_VERBA;
 
   ----CODIGO CONTA GERENCIAL - DESPESAS IMPOSTOS A RECOLHER 
   FUNCTION FN_CONTA_IMPOSTO_DESP_GER RETURN T_CONTA_TABLE
@@ -200,7 +245,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   FUNCTION FN_CONTA_LANC_TIPO_FORNEC_CONSIDERA_CONTA RETURN T_CONTA_TABLE
     PIPELINED IS
   BEGIN
-    FOR r IN (SELECT CODCONTA FROM PCCONTA WHERE CODCONTA IN (3406, 3451, 3454, 3705, 3706))
+    FOR r IN (SELECT CODCONTA FROM PCCONTA WHERE CODCONTA IN (3406, 3451, 3454, 3705, 3706, 3903))
     LOOP
       PIPE ROW(T_CONTA_RECORD(r.CODCONTA));
     END LOOP;
@@ -1476,6 +1521,10 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                           TRIM(TRANSLATE(TO_CHAR(E.VALOR, '999,999.00'), '.,', ',.')) || ' - RAT: ' ||
                           REPLACE(TO_CHAR(E.PERCRATEIO, '999.00'), '.', ',') || '% - Nº TRANSENT: ' || E.NUMTRANSENT ||
                           ' - RECNUM: ' || E.RECNUM)
+                         WHEN E.CODCONTA IN (vOUTROSESTOQUES, vOUTROS_MOVESTOQUES)
+                              AND E.CFOP IN (SELECT CODFISCAL FROM vENT_BONIFICADA) THEN
+                          ('REMESSA BONIFICADA' || ' - F' || LPAD(E.CODFILIAL, 2, 0) || ' - Nº TRANSENT: ' ||
+                          E.NUMTRANSENT)
                          ELSE
                           (UPPER(C.CONTA) || ' - F' || LPAD(E.CODFILIAL, 2, 0) || ' - Nº TRANSENT: ' || E.NUMTRANSENT)
                        END) ATIVIDADE,
@@ -1499,7 +1548,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                   LEFT JOIN TABLE (PKG_BI_CONTABILIDADE.FN_CC_VENDEDOR()) V ON V.CODSUPERVISOR = E.CODSUPERVISOR
                  WHERE 1 = 1
                    AND E.DATA >= vDATA_MOV_INCREMENTAL
-                   AND NOT (E.CFOP IN (SELECT CODFISCAL FROM vENT_REMESSA)))
+                   AND NOT (E.CFOP IN (SELECT CODFISCAL FROM vENT_REMESSA) AND E.ESPECIE = 'NF'))
     
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
@@ -1700,6 +1749,10 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                           TRIM(TRANSLATE(TO_CHAR(E.VALOR, '999,999.00'), '.,', ',.')) || ' - RAT: ' ||
                           REPLACE(TO_CHAR(E.PERCRATEIO, '999.00'), '.', ',') || '% - Nº TRANSENT: ' || E.NUMTRANSENT ||
                           ' - RECNUM: ' || E.RECNUM)
+                         WHEN E.CODCONTA IN (vOUTROSESTOQUES, vOUTROS_MOVESTOQUES)
+                              AND E.CFOP IN (SELECT CODFISCAL FROM vENT_BONIFICADA) THEN
+                          ('ICMS REMESSA BONIFICADA' || ' - F' || LPAD(E.CODFILIAL, 2, 0) || ' - Nº TRANSENT: ' ||
+                          E.NUMTRANSENT)
                          ELSE
                           (UPPER(C.CONTA) || ' - F' || LPAD(E.CODFILIAL, 2, 0) || ' - Nº TRANSENT: ' || E.NUMTRANSENT)
                        END) ATIVIDADE,
@@ -2618,7 +2671,10 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      
                      ----------CONTA_DEBITO
                      (CASE
-                       WHEN L.VALOR > 0 THEN
+                       WHEN (L.VALOR > 0 OR
+                            L.CODFORNEC IN
+                            (SELECT CODFORNEC
+                                FROM TABLE(PKG_BI_CONTABILIDADE.FN_FORNECEDOR_LANC_TIPO_FORNEC_CONSIDERA_CONTA()))) THEN
                         L.CODCONTA
                        ELSE
                         L.CODFORNEC
@@ -2626,7 +2682,10 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      
                      ----------CONTA_CREDITO
                      (CASE
-                       WHEN L.VALOR < 0 THEN
+                       WHEN (L.VALOR < 0 OR
+                            L.CODFORNEC IN
+                            (SELECT CODFORNEC
+                                FROM TABLE(PKG_BI_CONTABILIDADE.FN_FORNECEDOR_LANC_TIPO_FORNEC_CONSIDERA_CONTA()))) THEN
                         L.CODCONTA
                        ELSE
                         L.CODFORNEC
@@ -5311,7 +5370,13 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      V.NUMVERBA DOCUMENTO,
                      
                      ----------CONTA_DEBITO
-                     V.CODFORNEC CONTADEBITO,
+                     (CASE
+                       WHEN V.CODFORNEC IN
+                            (SELECT CODFORNEC FROM TABLE(PKG_BI_CONTABILIDADE.FN_FORNECEDOR_ESTRELA_VERBA())) THEN
+                        vFORNEC_ESTRELA
+                       ELSE
+                        V.CODFORNEC
+                     END) CONTADEBITO,
                      
                      ----------CONTA_CREDITO
                      vDESCONTOS_OBTIDOS CONTACREDITO,
