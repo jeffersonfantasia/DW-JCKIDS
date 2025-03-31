@@ -20,6 +20,7 @@ BEGIN
                       L.CODFILIAL,
                       L.DTLANC,
                       L.RECNUM,
+                      L.RECNUMPRINC,
                       NVL(L.ADIANTAMENTO, 'N') ADIANTAMENTO,
                       EXTRACT(YEAR FROM L.DTCOMPETENCIA) ANO_COMPETENCIA,
                       L.DTCOMPETENCIA,
@@ -94,6 +95,7 @@ BEGIN
                       L.CODFILIAL,
                       L.DTLANC,
                       L.RECNUM,
+                      L.RECNUMPRINC,
                       L.ADIANTAMENTO,
                       L.ANO_COMPETENCIA,
                       L.DTCOMPETENCIA,
@@ -133,6 +135,7 @@ BEGIN
                   OR S.CODEMPRESA <> L.CODEMPRESA
                   OR S.CODFILIAL <> L.CODFILIAL
                   OR NVL(S.DTLANC, '01/01/1899') <> L.DTLANC
+                  OR NVL(S.RECNUMPRINC, 0) <> NVL(L.RECNUMPRINC, 0)
                   OR S.ADIANTAMENTO <> L.ADIANTAMENTO
                   OR S.ANO_COMPETENCIA <> L.ANO_COMPETENCIA
                   OR NVL(S.DTCOMPETENCIA, '01/01/1899') <> L.DTCOMPETENCIA
@@ -169,6 +172,7 @@ BEGIN
          SET CODEMPRESA      = r.CODEMPRESA,
              CODFILIAL       = r.CODFILIAL,
              DTLANC          = r.DTLANC,
+             RECNUMPRINC     = r.RECNUMPRINC,
              ADIANTAMENTO    = r.ADIANTAMENTO,
              ANO_COMPETENCIA = r.ANO_COMPETENCIA,
              DTCOMPETENCIA   = r.DTCOMPETENCIA,
@@ -206,6 +210,7 @@ BEGIN
            CODFILIAL,
            DTLANC,
            RECNUM,
+           RECNUMPRINC,
            ADIANTAMENTO,
            ANO_COMPETENCIA,
            DTCOMPETENCIA,
@@ -240,6 +245,7 @@ BEGIN
            r.CODFILIAL,
            r.DTLANC,
            r.RECNUM,
+           r.RECNUMPRINC,
            r.ADIANTAMENTO,
            r.ANO_COMPETENCIA,
            r.DTCOMPETENCIA,
