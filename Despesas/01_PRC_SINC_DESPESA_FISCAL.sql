@@ -1,7 +1,7 @@
 CREATE OR REPLACE PROCEDURE PRC_SINC_DESPESA_FISCAL AS
 
   -----------------------DATAS DE ATUALIZACAO
-  --vDATA_MOV_INCREMENTAL DATE := TRUNC(SYSDATE) - 75;
+  --vDATA_MOV_INCREMENTAL DATE := TRUNC(SYSDATE) - 90;
   vDATA_MOV_INCREMENTAL DATE := TO_DATE('01/01/2020', 'DD/MM/YYYY');
 
   -----------------------CONTAS
@@ -15,7 +15,7 @@ BEGIN
               NFBASE AS
                (SELECT B.NUMTRANSENT,
                       B.CODFISCAL,
-                      LPAD(B.SITTRIBUT, 2, 0) CST_ICMS,
+                      LPAD(TRIM(B.SITTRIBUT), 2, 0) CST_ICMS,
                       B.VLBASE VLBASEICMS,
                       B.ALIQUOTA,
                       B.VLICMS
@@ -27,7 +27,7 @@ BEGIN
               NFENTPISCOFINS AS
                (SELECT P.NUMTRANSENT,
                       P.VLBASEPIS VLBASEPISCOFINS,
-                      LPAD(P.CODTRIBPISCOFINS, 2, 0) CST_PISCOFINS,
+                      LPAD(TRIM(P.CODTRIBPISCOFINS), 2, 0) CST_PISCOFINS,
                       P.PERPIS,
                       P.PERCOFINS,
                       P.VLPIS,
