@@ -12,7 +12,7 @@ CREATE OR REPLACE VIEW VIEW_BI_SINC_DESPESA_CONTABIL AS
                WHERE L.TIPOPARCEIRO = 'F'
                  AND L.NUMNOTA > 0
                  AND L.DTESTORNOBAIXA IS NULL
-								 AND NVL(P.CODDRE,0) <> 0)
+                 AND NVL(P.CODDRE, 0) <> 0)
        WHERE RN = 1),
     
     FRETES AS
@@ -25,7 +25,7 @@ CREATE OR REPLACE VIEW VIEW_BI_SINC_DESPESA_CONTABIL AS
        WHERE E.ESPECIE = 'CT'
        GROUP BY E.NUMTRANSENT,
                 V.CODSUPERVISOR)
-
+    
     SELECT E.CODEMPRESA,
            E.CODFILIAL,
            E.DATA,
