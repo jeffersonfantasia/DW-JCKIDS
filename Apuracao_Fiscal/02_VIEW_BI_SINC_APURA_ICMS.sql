@@ -1,0 +1,38 @@
+CREATE OR REPLACE VIEW VIEW_BI_SINC_APURA_ICMS AS
+
+    WITH FISCAL_DATE AS
+     (SELECT F.CODFILIAL,
+             TO_DATE(TRUNC(TO_DATE(F.DATA, 'DD/MM/YYYY'), 'MM')) DATA,
+             (CASE
+               WHEN F.MOVIMENTO = 'E' THEN
+                'VLCREDITO'
+               ELSE
+                'VLDEBITO'
+             END) TIPO,
+             NVL(F.VALORICMS,0) VALOR
+        FROM BI_SINC_FISCAL F
+       WHERE F.CODFILIAL NOT IN ('3', '4', '11', '15')),
+    
+    FISCAL_AGG AS
+     (SELECT F.CODFILIAL,
+             F.DATA,
+             F.TIPO,
+             ROUND(SUM(F.VALOR), 2) VALOR
+        FROM FISCAL_DATE F
+       GROUP BY F.CODFILIAL,
+                F.DATA,
+                F.TIPO),
+    
+    FISCAL_PIVOT AS
+     (SELECT * FROM FISCAL_AGG PIVOT(SUM(VALOR) FOR TIPO IN('VLCREDITO' AS VLCREDITO, 'VLDEBITO' AS VLDEBITO)))
+    
+    SELECT ROW_NUMBER() OVER (PARTITION BY CODFILIAL ORDER BY CODFILIAL, DATA) RN,
+           CODFILIAL,
+           DATA,
+           NVL(VLCREDITO,0) VLCREDITO,
+           NVL(VLDEBITO,0) VLDEBITO,
+           ROUND((NVL(VLCREDITO,0) - NVL(VLDEBITO,0)), 2) VLSALDO
+      FROM FISCAL_PIVOT
+     ORDER BY CODFILIAL,
+              DATA
+ 
