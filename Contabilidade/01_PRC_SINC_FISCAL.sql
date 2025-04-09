@@ -10,21 +10,21 @@ BEGIN
               
               SELECT M.*
                 FROM MOV_FISCAL M
-                LEFT JOIN BI_SINC_FISCAL S ON S.MOVIMENTO = M.MOVIMENTO
-                                          AND S.NUMTRANSACAO = M.NUMTRANSACAO
-                                          AND S.CODPROD = M.CODPROD
-                                          AND S.CFOP = M.CFOP
-                                          AND S.PERCICMS = M.PERCICMS
-                                          AND S.CST_ICMS = M.CST_ICMS
+                LEFT JOIN BI_SINC_FISCAL S ON S.NUMTRANSITEM = M.NUMTRANSITEM
                WHERE S.DT_UPDATE IS NULL
                   OR NVL(S.CODFILIAL, '0') <> NVL(M.CODFILIAL, '0')
                   OR NVL(S.DATA, TO_DATE('01/01/1889', 'DD/MM/YYYY')) <>
                      NVL(M.DATA, TO_DATE('01/01/1889', 'DD/MM/YYYY'))
+                  OR NVL(S.NUMTRANSACAO, 0) <> NVL(M.NUMTRANSACAO, 0)
                   OR NVL(S.NUMNOTA, 0) <> NVL(M.NUMNOTA, 0)
                   OR NVL(S.ESPECIE, '0') <> NVL(M.ESPECIE, '0')
                   OR NVL(S.CODGERENTE, 0) <> NVL(M.CODGERENTE, 0)
+                  OR NVL(S.CODPROD, 0) <> NVL(M.CODPROD, 0)
                   OR NVL(S.PRODUTO, '0') <> NVL(M.PRODUTO, '0')
                   OR NVL(S.RAZAOSOCIAL, '0') <> NVL(M.RAZAOSOCIAL, '0')
+                  OR NVL(S.CFOP, 0) <> NVL(M.CFOP, 0)
+                  OR NVL(S.PERCICMS, 0) <> NVL(M.PERCICMS, 0)
+                  OR NVL(S.CST_ICMS, '0') <> NVL(M.CST_ICMS, '0')
                   OR NVL(S.PERCPIS, 0) <> NVL(M.PERCPIS, 0)
                   OR NVL(S.PERCCOFINS, 0) <> NVL(M.PERCCOFINS, 0)
                   OR NVL(S.CST_PISCOFINS, '0') <> NVL(M.CST_PISCOFINS, '0')
@@ -43,11 +43,17 @@ BEGIN
       UPDATE BI_SINC_FISCAL
          SET CODFILIAL       = r.CODFILIAL,
              DATA            = r.DATA,
+             MOVIMENTO       = r.MOVIMENTO,
+             NUMTRANSACAO    = r.NUMTRANSACAO,
              NUMNOTA         = r.NUMNOTA,
              ESPECIE         = r.ESPECIE,
              CODGERENTE      = r.CODGERENTE,
+             CODPROD         = r.CODPROD,
              PRODUTO         = r.PRODUTO,
              RAZAOSOCIAL     = r.RAZAOSOCIAL,
+             CFOP            = r.CFOP,
+             PERCICMS        = r.PERCICMS,
+             CST_ICMS        = r.CST_ICMS,
              PERCPIS         = r.PERCPIS,
              PERCCOFINS      = r.PERCCOFINS,
              CST_PISCOFINS   = r.CST_PISCOFINS,
@@ -59,18 +65,14 @@ BEGIN
              VALORPIS        = r.VALORPIS,
              VALORCOFINS     = r.VALORCOFINS,
              DT_UPDATE       = SYSDATE
-       WHERE MOVIMENTO = r.MOVIMENTO
-         AND NUMTRANSACAO = r.NUMTRANSACAO
-         AND CODPROD = r.CODPROD
-         AND CFOP = r.CFOP
-         AND PERCICMS = r.PERCICMS
-         AND CST_ICMS = r.CST_ICMS;
+       WHERE NUMTRANSITEM = r.NUMTRANSITEM;
     
       IF SQL%NOTFOUND THEN
         INSERT INTO BI_SINC_FISCAL
           (CODFILIAL,
            DATA,
            MOVIMENTO,
+           NUMTRANSITEM,
            NUMTRANSACAO,
            NUMNOTA,
            ESPECIE,
@@ -96,6 +98,7 @@ BEGIN
           (r.CODFILIAL,
            r.DATA,
            r.MOVIMENTO,
+           r.NUMTRANSITEM,
            r.NUMTRANSACAO,
            r.NUMNOTA,
            r.ESPECIE,
@@ -129,21 +132,11 @@ BEGIN
 
   BEGIN
     EXECUTE IMMEDIATE 'DELETE FROM BI_SINC_FISCAL
-  WHERE (MOVIMENTO, NUMTRANSACAO, CODPROD, CFOP, PERCICMS, CST_ICMS) IN
-        (SELECT S.MOVIMENTO,
-       S.NUMTRANSACAO,
-       S.CODPROD,
-       S.CFOP,
-       S.PERCICMS,
-       S.CST_ICMS
+  WHERE (NUMTRANSITEM) IN
+        (SELECT S.NUMTRANSITEM
   FROM BI_SINC_FISCAL S
-  LEFT JOIN VIEW_BI_SINC_CONTABIL_FISCAL M ON M.MOVIMENTO = S.MOVIMENTO
-                                          AND S.NUMTRANSACAO = M.NUMTRANSACAO
-                                          AND S.CODPROD = M.CODPROD
-                                          AND S.CFOP = M.CFOP
-                                          AND S.PERCICMS = M.PERCICMS
-                                          AND S.CST_ICMS = M.CST_ICMS
-    WHERE M.MOVIMENTO IS NULL)';
+  LEFT JOIN VIEW_BI_SINC_CONTABIL_FISCAL M ON M.NUMTRANSITEM = S.NUMTRANSITEM
+    WHERE M.NUMTRANSITEM IS NULL)';
   END;
 
   COMMIT;
