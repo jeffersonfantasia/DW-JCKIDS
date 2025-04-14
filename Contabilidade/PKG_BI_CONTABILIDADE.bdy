@@ -5729,5 +5729,287 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   
   END FN_MOV_BANCO_SAIDA;
 
+  ----APURACAO IMPOSTOS - ICMS
+  FUNCTION FN_APURA_ICMS RETURN T_CONTABIL_TABLE
+    PIPELINED IS
+  
+  BEGIN
+    FOR r IN (SELECT ('AP01' || '.F' || LPAD(A.CODFILIAL, 2, 0)) CODLANC,
+                     1 CODEMPRESA,
+                     A.DATA,
+                     
+                     ----------TIPO LANCAMENTO
+                     3 TIPOLANCAMENTO,
+                     
+                     TO_NUMBER(TO_CHAR(A.DATA, 'DDMMYYYY')) IDENTIFICADOR,
+                     TO_NUMBER(TO_CHAR(A.DATA, 'DDMMYYYY')) DOCUMENTO,
+                     
+                     ----------CONTA_DEBITO
+                     (CASE
+                       WHEN A.VLPAGAR > 0 THEN
+                        vICMS_RECUPERAR
+                       ELSE
+                        vICMS_RECOLHER
+                     END) CONTADEBITO,
+                     
+                     ----------CONTA_CREDITO
+                     (CASE
+                       WHEN A.VLPAGAR > 0 THEN
+                        vICMS_RECOLHER
+                       ELSE
+                        vICMS_RECUPERAR
+                     END) CONTACREDITO,
+                     
+                     ----------CODCC_DEBITO
+                     NULL CODCC_DEBITO,
+                     
+                     ----------CODCC_CREDITO
+                     NULL CODCC_CREDITO,
+                     
+                     ----------ATIVIDADE
+                     (CASE
+                       WHEN A.VLRECUPERAR > 0 THEN
+                        ('APURACAO ICMS - RECUPERAR - F' || LPAD(A.CODFILIAL, 2, 0))
+                       ELSE
+                        ('APURACAO ICMS - PAGAR - F' || LPAD(A.CODFILIAL, 2, 0))
+                     END) ATIVIDADE,
+                     
+                     ----------HISTORICO
+                     (CASE
+                       WHEN A.VLRECUPERAR > 0 THEN
+                        ('APURACAO ICMS - RECUPERAR - F' || LPAD(A.CODFILIAL, 2, 0))
+                       ELSE
+                        ('APURACAO ICMS - PAGAR - F' || LPAD(A.CODFILIAL, 2, 0))
+                     END) HISTORICO,
+                     
+                     ----------VALOR
+                     (CASE
+                       WHEN A.VLPAGAR > 0 THEN
+                        ROUND(A.VLDEBITO, 2)
+                       ELSE
+                        ROUND(A.VLCREDITO, 2)
+                     END) VALOR,
+                     
+                     ('APURA_ICMS') ORIGEM,
+                     
+                     ----------ENVIAR_CONTABIL
+                     'N' ENVIAR_CONTABIL,
+                     
+                     TO_DATE(NULL, 'DD/MM/YYYY') DTCANCEL
+                FROM BI_SINC_APURACAO_ICMS A
+               WHERE 1 = 1
+                 AND A.DATA >= vDATA_MOV_INCREMENTAL
+                 AND A.DATA IS NOT NULL)
+    
+    LOOP
+      PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
+                                 r.CODEMPRESA,
+                                 r.DATA,
+                                 r.TIPOLANCAMENTO,
+                                 r.IDENTIFICADOR,
+                                 r.DOCUMENTO,
+                                 r.CONTADEBITO,
+                                 r.CONTACREDITO,
+                                 r.CODCC_DEBITO,
+                                 r.CODCC_CREDITO,
+                                 r.ATIVIDADE,
+                                 r.HISTORICO,
+                                 r.VALOR,
+                                 r.ORIGEM,
+                                 r.ENVIAR_CONTABIL,
+                                 r.DTCANCEL));
+    
+    END LOOP;
+  
+  END FN_APURA_ICMS;
+
+  ----APURACAO IMPOSTOS - PIS
+  FUNCTION FN_APURA_PIS RETURN T_CONTABIL_TABLE
+    PIPELINED IS
+  
+  BEGIN
+    FOR r IN (SELECT 'AP02' CODLANC,
+                     1 CODEMPRESA,
+                     A.DATA,
+                     
+                     ----------TIPO LANCAMENTO
+                     3 TIPOLANCAMENTO,
+                     
+                     TO_NUMBER(TO_CHAR(A.DATA, 'DDMMYYYY')) IDENTIFICADOR,
+                     TO_NUMBER(TO_CHAR(A.DATA, 'DDMMYYYY')) DOCUMENTO,
+                     
+                     ----------CONTA_DEBITO
+                     (CASE
+                       WHEN A.VLPAGAR > 0 THEN
+                        vPIS_RECUPERAR
+                       ELSE
+                        vPIS_RECOLHER
+                     END) CONTADEBITO,
+                     
+                     ----------CONTA_CREDITO
+                     (CASE
+                       WHEN A.VLPAGAR > 0 THEN
+                        vPIS_RECOLHER
+                       ELSE
+                        vPIS_RECUPERAR
+                     END) CONTACREDITO,
+                     
+                     ----------CODCC_DEBITO
+                     NULL CODCC_DEBITO,
+                     
+                     ----------CODCC_CREDITO
+                     NULL CODCC_CREDITO,
+                     
+                     ----------ATIVIDADE
+                     (CASE
+                       WHEN A.VLRECUPERAR > 0 THEN
+                        ('APURACAO PIS - RECUPERAR')
+                       ELSE
+                        ('APURACAO PIS - PAGAR')
+                     END) ATIVIDADE,
+                     
+                     ----------HISTORICO
+                     (CASE
+                       WHEN A.VLRECUPERAR > 0 THEN
+                        ('APURACAO PIS - RECUPERAR')
+                       ELSE
+                        ('APURACAO PIS - PAGAR')
+                     END) HISTORICO,
+                     
+                     ----------VALOR
+                     (CASE
+                       WHEN A.VLPAGAR > 0 THEN
+                        ROUND(A.VLDEBITO, 2)
+                       ELSE
+                        ROUND(A.VLCREDITO, 2)
+                     END) VALOR,
+                     
+                     ('APURA_PIS') ORIGEM,
+                     
+                     ----------ENVIAR_CONTABIL
+                     'N' ENVIAR_CONTABIL,
+                     
+                     TO_DATE(NULL, 'DD/MM/YYYY') DTCANCEL
+                FROM BI_SINC_APURACAO_PIS A
+               WHERE 1 = 1
+                 AND A.DATA >= vDATA_MOV_INCREMENTAL
+                 AND A.DATA IS NOT NULL)
+    
+    LOOP
+      PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
+                                 r.CODEMPRESA,
+                                 r.DATA,
+                                 r.TIPOLANCAMENTO,
+                                 r.IDENTIFICADOR,
+                                 r.DOCUMENTO,
+                                 r.CONTADEBITO,
+                                 r.CONTACREDITO,
+                                 r.CODCC_DEBITO,
+                                 r.CODCC_CREDITO,
+                                 r.ATIVIDADE,
+                                 r.HISTORICO,
+                                 r.VALOR,
+                                 r.ORIGEM,
+                                 r.ENVIAR_CONTABIL,
+                                 r.DTCANCEL));
+    
+    END LOOP;
+  
+  END FN_APURA_PIS;
+
+  ----APURACAO IMPOSTOS - COFINS
+  FUNCTION FN_APURA_COFINS RETURN T_CONTABIL_TABLE
+    PIPELINED IS
+  
+  BEGIN
+    FOR r IN (SELECT 'AP03' CODLANC,
+                     1 CODEMPRESA,
+                     A.DATA,
+                     
+                     ----------TIPO LANCAMENTO
+                     3 TIPOLANCAMENTO,
+                     
+                     TO_NUMBER(TO_CHAR(A.DATA, 'DDMMYYYY')) IDENTIFICADOR,
+                     TO_NUMBER(TO_CHAR(A.DATA, 'DDMMYYYY')) DOCUMENTO,
+                     
+                     ----------CONTA_DEBITO
+                     (CASE
+                       WHEN A.VLPAGAR > 0 THEN
+                        vCOFINS_RECUPERAR
+                       ELSE
+                        vCOFINS_RECOLHER
+                     END) CONTADEBITO,
+                     
+                     ----------CONTA_CREDITO
+                     (CASE
+                       WHEN A.VLPAGAR > 0 THEN
+                        vCOFINS_RECOLHER
+                       ELSE
+                        vCOFINS_RECUPERAR
+                     END) CONTACREDITO,
+                     
+                     ----------CODCC_DEBITO
+                     NULL CODCC_DEBITO,
+                     
+                     ----------CODCC_CREDITO
+                     NULL CODCC_CREDITO,
+                     
+                     ----------ATIVIDADE
+                     (CASE
+                       WHEN A.VLRECUPERAR > 0 THEN
+                        ('APURACAO COFINS - RECUPERAR')
+                       ELSE
+                        ('APURACAO COFINS - PAGAR')
+                     END) ATIVIDADE,
+                     
+                     ----------HISTORICO
+                     (CASE
+                       WHEN A.VLRECUPERAR > 0 THEN
+                        ('APURACAO COFINS - RECUPERAR')
+                       ELSE
+                        ('APURACAO COFINS - PAGAR')
+                     END) HISTORICO,
+                     
+                     ----------VALOR
+                     (CASE
+                       WHEN A.VLPAGAR > 0 THEN
+                        ROUND(A.VLDEBITO, 2)
+                       ELSE
+                        ROUND(A.VLCREDITO, 2)
+                     END) VALOR,
+                     
+                     ('APURA_COFINS') ORIGEM,
+                     
+                     ----------ENVIAR_CONTABIL
+                     'N' ENVIAR_CONTABIL,
+                     
+                     TO_DATE(NULL, 'DD/MM/YYYY') DTCANCEL
+                FROM BI_SINC_APURACAO_COFINS A
+               WHERE 1 = 1
+                 AND A.DATA >= vDATA_MOV_INCREMENTAL
+                 AND A.DATA IS NOT NULL)
+    
+    LOOP
+      PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
+                                 r.CODEMPRESA,
+                                 r.DATA,
+                                 r.TIPOLANCAMENTO,
+                                 r.IDENTIFICADOR,
+                                 r.DOCUMENTO,
+                                 r.CONTADEBITO,
+                                 r.CONTACREDITO,
+                                 r.CODCC_DEBITO,
+                                 r.CODCC_CREDITO,
+                                 r.ATIVIDADE,
+                                 r.HISTORICO,
+                                 r.VALOR,
+                                 r.ORIGEM,
+                                 r.ENVIAR_CONTABIL,
+                                 r.DTCANCEL));
+    
+    END LOOP;
+  
+  END FN_APURA_COFINS;
+
 END PKG_BI_CONTABILIDADE;
 /
