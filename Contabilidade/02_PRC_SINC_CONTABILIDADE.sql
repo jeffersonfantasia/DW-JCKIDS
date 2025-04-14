@@ -37,7 +37,7 @@ BEGIN
   LOOP
     BEGIN
       UPDATE BI_SINC_CONTABILIDADE
-         SET CODEMPRESA      = r.CODEMPRESA,
+         SET CODEMPRESA      = r.CODEMPRESA,                       
              DATA            = r.DATA,
              TIPOLANCAMENTO  = r.TIPOLANCAMENTO,
              IDENTIFICADOR   = r.IDENTIFICADOR,
