@@ -1,0 +1,43 @@
+CREATE OR REPLACE VIEW VIEW_BI_SINC_APURA_COMPETE_CC AS
+
+    WITH VENDAS_COMPETE_SUPERVISOR AS
+     (SELECT TO_DATE(TRUNC(TO_DATE(M.DATA, 'DD/MM/YYYY'), 'MM')) DATA,
+             (CASE
+               WHEN M.CODGERENTE IN (1, 8, 9, 10) THEN
+                1
+               WHEN M.CODSUPERVISOR IN (2) THEN
+                2
+               WHEN M.CODSUPERVISOR IN (4) THEN
+                4
+               ELSE
+                1
+             END) CODGERENTE,
+             VALORCONTABIL
+        FROM VIEW_BI_SINC_MOV_PROD_AGG M
+       WHERE M.CODFILIAL = '11'
+         AND M.TIPOMOV = 'SAIDA VENDA'),
+    
+    VENDAS_AGRUPADAS AS
+     (SELECT M.DATA,
+             M.CODGERENTE,
+             SUM(M.VALORCONTABIL) VLCONTABIL
+        FROM VENDAS_COMPETE_SUPERVISOR M
+       GROUP BY M.DATA,
+                M.CODGERENTE
+       ORDER BY M.DATA,
+                M.CODGERENTE),
+    
+    VENDAS_AGRUPADAS_TOTAL AS
+     (SELECT M.DATA,
+             M.CODGERENTE,
+             M.VLCONTABIL,
+             SUM(M.VLCONTABIL) OVER (PARTITION BY M.DATA) VLTOTAL
+        FROM VENDAS_AGRUPADAS M)
+    
+    SELECT DATA,
+           CODGERENTE,
+           VLCONTABIL,
+           VLTOTAL,
+           ROUND(NVL(VLCONTABIL / VLTOTAL, 0), 6) PERC
+      FROM VENDAS_AGRUPADAS_TOTAL;
+
