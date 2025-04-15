@@ -3,6 +3,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   -----------------------DATA PARA ATUALIZACAO INCREMENTAL
   vDATA_MOV_INCREMENTAL DATE := TO_DATE('01/01/2020', 'DD/MM/YYYY');
 
+  -----------------------BENEFICIO FISCAL
+  vDT_INICIO_BENEFICIO_ES DATE := TO_DATE('01/09/2023', 'DD/MM/YYYY');
+
   -----------------------CENTROS DE CUSTO
   vCC_SPMARKET        VARCHAR(3) := '1.1';
   vCC_PARQUE          VARCHAR(3) := '1.2';
@@ -53,6 +56,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   vDEVOLUCAO_PRODUTO             NUMBER := 3102;
   vDEVOLUCAO_CLIENTE             NUMBER := 2201;
   vENTRADA_INVENTARIO            NUMBER := 3116;
+  vSUBVENCAO_FISCAL_ES           NUMBER := 3109;
+	vICMS_BENEFICIO_COMPETE        NUMBER := 3206;
   vAQUISICAOIMOBILIZADO          NUMBER := 1451;
   vFRETE                         NUMBER := 3202;
   vDIFAL_MATERIAL_OPERACAO       NUMBER := 3555;
@@ -201,7 +206,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   BEGIN
     FOR r IN (SELECT CODGERENCIAL CODCONTA
                 FROM BI_SINC_PLANO_CONTAS_JC
-               WHERE CODGERENCIAL IN (2253, 2256, 2257, 2258, 2261, 2262, 2266, 2267))
+               WHERE CODGERENCIAL IN (2253, 2256, 2257, 2258, 2262, 2266, 2267))
     LOOP
       PIPE ROW(T_CONTA_RECORD(r.CODCONTA));
     END LOOP;
@@ -388,6 +393,27 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
       PIPE ROW(T_CC_VENDEDOR_RECORD(r.CODSUPERVISOR, r.CODCC));
     END LOOP;
   END FN_CC_VENDEDOR;
+
+  ----CENTRO DE CUSTO POR GERENTE ES
+  FUNCTION FN_CC_GERENTE_ES RETURN T_CC_GERENTE_TABLE
+    PIPELINED IS
+  BEGIN
+    FOR r IN (SELECT DISTINCT CODGERENTE,
+                              (CASE
+                                WHEN CODGERENTE IN (1, 8, 9, 10) THEN
+                                 vCC_DISTRIBUICAO_ES
+                                WHEN CODGERENTE IN (2) THEN
+                                 vCC_CORPORATIVO_SP
+                                WHEN CODGERENTE IN (4) THEN
+                                 vCC_ECOMMERCE_SP
+                                ELSE
+                                 NULL
+                              END) CODCC
+                FROM BI_SINC_VENDEDOR V)
+    LOOP
+      PIPE ROW(T_CC_GERENTE_RECORD(r.CODGERENTE, r.CODCC));
+    END LOOP;
+  END FN_CC_GERENTE_ES;
 
   -----------------------------------------------------------------------------------
 
@@ -917,19 +943,14 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                                           'ENTRADA TRANSFERENCIA',
                                           'ENTRADA SIMPLES REMESSA',
                                           'ENTRADA REM ENTREGA FUTURA',
-                                          'ENTRADA CONSIGNADO') THEN
+                                          'ENTRADA CONSIGNADO',
+                                          'ENTRADA DEVOLUCAO',
+                                          'ENTRADA DEMONSTRACAO') THEN
                         (CASE
                           WHEN M.CODFILIAL = vCODFILIAL_ES THEN
                            vICMS_RECUPERAR_ES
                           ELSE
                            vICMS_RECUPERAR
-                        END)
-                       WHEN M.TIPOMOV IN ('ENTRADA DEVOLUCAO', 'ENTRADA DEMONSTRACAO') THEN
-                        (CASE
-                          WHEN M.CODFILIAL = vCODFILIAL_ES THEN
-                           vICMS_RECUPERAR_ES
-                          ELSE
-                           vICMS_RECOLHER
                         END)
                        ELSE
                         NULL
@@ -943,20 +964,13 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                                           'SAIDA BONIFICADA',
                                           'SAIDA TRANSFERENCIA',
                                           'SAIDA DEMONSTRACAO',
-                                          'SAIDA DEVOLUCAO CONSIGNADO') THEN
+                                          'SAIDA DEVOLUCAO CONSIGNADO',
+                                          'SAIDA DEVOLUCAO') THEN
                         (CASE
                           WHEN M.CODFILIAL = vCODFILIAL_ES THEN
                            vICMS_RECOLHER_ES
                           ELSE
                            vICMS_RECOLHER
-                        END)
-                     
-                       WHEN M.TIPOMOV IN ('SAIDA DEVOLUCAO') THEN
-                        (CASE
-                          WHEN M.CODFILIAL = vCODFILIAL_ES THEN
-                           vICMS_RECOLHER_ES
-                          ELSE
-                           vICMS_RECUPERAR
                         END)
                        WHEN M.TIPOMOV IN ('ENTRADA DEVOLUCAO', 'ENTRADA DEMONSTRACAO') THEN
                         vICMS_VENDA
@@ -1079,20 +1093,18 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                        WHEN M.TIPOMOV IN ('ENTRADA COMPRA',
                                           'ENTRADA COMPRA CONSIGNADO',
                                           'ENTRADA COMPRA TRIANGULAR',
-                                          'ENTRADA REM ENTREGA FUTURA') THEN
+                                          'ENTRADA REM ENTREGA FUTURA',
+                                          'ENTRADA DEVOLUCAO') THEN
                         vPIS_RECUPERAR
-                       WHEN M.TIPOMOV IN ('ENTRADA DEVOLUCAO') THEN
-                        vPIS_RECOLHER
                        ELSE
                         NULL
                      END) CONTADEBITO,
                      
                      ----------CONTACREDITO
                      (CASE
-                       WHEN M.TIPOMOV IN ('SAIDA VENDA', 'SAIDA FAT CONTA E ORDEM', 'SAIDA REM ENTREGA FUTURA') THEN
+                       WHEN M.TIPOMOV IN
+                            ('SAIDA VENDA', 'SAIDA FAT CONTA E ORDEM', 'SAIDA REM ENTREGA FUTURA', 'SAIDA DEVOLUCAO') THEN
                         vPIS_RECOLHER
-                       WHEN M.TIPOMOV IN ('SAIDA DEVOLUCAO') THEN
-                        vPIS_RECUPERAR
                        WHEN M.TIPOMOV IN ('ENTRADA DEVOLUCAO') THEN
                         vPIS_VENDA
                        ELSE
@@ -1203,20 +1215,18 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                        WHEN M.TIPOMOV IN ('ENTRADA COMPRA',
                                           'ENTRADA COMPRA CONSIGNADO',
                                           'ENTRADA COMPRA TRIANGULAR',
-                                          'ENTRADA REM ENTREGA FUTURA') THEN
+                                          'ENTRADA REM ENTREGA FUTURA',
+                                          'ENTRADA DEVOLUCAO') THEN
                         vCOFINS_RECUPERAR
-                       WHEN M.TIPOMOV IN ('ENTRADA DEVOLUCAO') THEN
-                        vCOFINS_RECOLHER
                        ELSE
                         NULL
                      END) CONTADEBITO,
                      
                      ----------CONTACREDITO
                      (CASE
-                       WHEN M.TIPOMOV IN ('SAIDA VENDA', 'SAIDA FAT CONTA E ORDEM', 'SAIDA REM ENTREGA FUTURA') THEN
+                       WHEN M.TIPOMOV IN
+                            ('SAIDA VENDA', 'SAIDA FAT CONTA E ORDEM', 'SAIDA REM ENTREGA FUTURA', 'SAIDA DEVOLUCAO') THEN
                         vCOFINS_RECOLHER
-                       WHEN M.TIPOMOV IN ('SAIDA DEVOLUCAO') THEN
-                        vCOFINS_RECUPERAR
                        WHEN M.TIPOMOV IN ('ENTRADA DEVOLUCAO') THEN
                         vCOFINS_VENDA
                        ELSE
@@ -5746,7 +5756,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      
                      ----------CONTA_DEBITO
                      (CASE
-                       WHEN A.VLPAGAR > 0 THEN
+                       WHEN A.VLRECUPERAR > 0 THEN
                         vICMS_RECUPERAR
                        ELSE
                         vICMS_RECOLHER
@@ -5754,7 +5764,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      
                      ----------CONTA_CREDITO
                      (CASE
-                       WHEN A.VLPAGAR > 0 THEN
+                       WHEN A.VLRECUPERAR > 0 THEN
                         vICMS_RECOLHER
                        ELSE
                         vICMS_RECUPERAR
@@ -5784,7 +5794,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      
                      ----------VALOR
                      (CASE
-                       WHEN A.VLPAGAR > 0 THEN
+                       WHEN A.VLRECUPERAR > 0 THEN
                         ROUND(A.VLDEBITO, 2)
                        ELSE
                         ROUND(A.VLCREDITO, 2)
@@ -5840,7 +5850,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      
                      ----------CONTA_DEBITO
                      (CASE
-                       WHEN A.VLPAGAR > 0 THEN
+                       WHEN A.VLRECUPERAR > 0 THEN
                         vPIS_RECUPERAR
                        ELSE
                         vPIS_RECOLHER
@@ -5848,7 +5858,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      
                      ----------CONTA_CREDITO
                      (CASE
-                       WHEN A.VLPAGAR > 0 THEN
+                       WHEN A.VLRECUPERAR > 0 THEN
                         vPIS_RECOLHER
                        ELSE
                         vPIS_RECUPERAR
@@ -5878,7 +5888,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      
                      ----------VALOR
                      (CASE
-                       WHEN A.VLPAGAR > 0 THEN
+                       WHEN A.VLRECUPERAR > 0 THEN
                         ROUND(A.VLDEBITO, 2)
                        ELSE
                         ROUND(A.VLCREDITO, 2)
@@ -5934,7 +5944,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      
                      ----------CONTA_DEBITO
                      (CASE
-                       WHEN A.VLPAGAR > 0 THEN
+                       WHEN A.VLRECUPERAR > 0 THEN
                         vCOFINS_RECUPERAR
                        ELSE
                         vCOFINS_RECOLHER
@@ -5942,7 +5952,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      
                      ----------CONTA_CREDITO
                      (CASE
-                       WHEN A.VLPAGAR > 0 THEN
+                       WHEN A.VLRECUPERAR > 0 THEN
                         vCOFINS_RECOLHER
                        ELSE
                         vCOFINS_RECUPERAR
@@ -5972,7 +5982,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      
                      ----------VALOR
                      (CASE
-                       WHEN A.VLPAGAR > 0 THEN
+                       WHEN A.VLRECUPERAR > 0 THEN
                         ROUND(A.VLDEBITO, 2)
                        ELSE
                         ROUND(A.VLCREDITO, 2)
@@ -6010,6 +6020,491 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     END LOOP;
   
   END FN_APURA_COFINS;
+
+  ----APURACAO IMPOSTOS - COMPETE - ESTORNO CREDITO
+  FUNCTION FN_APURA_COMPETE_EST_CREDITO RETURN T_CONTABIL_TABLE
+    PIPELINED IS
+  
+  BEGIN
+    FOR r IN (SELECT 'AC01' CODLANC,
+                     1 CODEMPRESA,
+                     A.DATA,
+                     
+                     ----------TIPO LANCAMENTO
+                     3 TIPOLANCAMENTO,
+                     
+                     TO_NUMBER(TO_CHAR(A.DATA, 'DDMMYYYY')) IDENTIFICADOR,
+                     TO_NUMBER(TO_CHAR(A.DATA, 'DDMMYYYY')) DOCUMENTO,
+                     
+                     ----------CONTA_DEBITO
+                     vESTOQUE CONTADEBITO,
+                     
+                     ----------CONTA_CREDITO
+                     vICMS_RECOLHER_ES CONTACREDITO,
+                     
+                     ----------CODCC_DEBITO
+                     NULL CODCC_DEBITO,
+                     
+                     ----------CODCC_CREDITO
+                     NULL CODCC_CREDITO,
+                     
+                     ----------ATIVIDADE
+                     'APURACAO COMPETE - ESTORNO DE CRÉDITO' ATIVIDADE,
+                     
+                     ----------HISTORICO
+                     'APURACAO COMPETE - ESTORNO DE CRÉDITO' HISTORICO,
+                     
+                     ----------VALOR
+                     ROUND(NVL(A.VLESTCRED_COMPETE, 0), 2) + ROUND(NVL(A.VLESTCRED_RED, 0), 2) VALOR,
+                     
+                     ('APURA_COMPETE_EST_CREDITO') ORIGEM,
+                     
+                     ----------ENVIAR_CONTABIL
+                     'N' ENVIAR_CONTABIL,
+                     
+                     TO_DATE(NULL, 'DD/MM/YYYY') DTCANCEL
+                FROM BI_SINC_APURACAO_COMPETE A
+               WHERE 1 = 1
+                 AND A.DATA >= vDATA_MOV_INCREMENTAL
+                 AND A.DATA >= vDT_INICIO_BENEFICIO_ES
+                 AND A.DATA IS NOT NULL
+                 AND NVL(A.VLESTCRED_COMPETE, 0) + NVL(A.VLESTCRED_RED, 0) > 0)
+    
+    LOOP
+      PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
+                                 r.CODEMPRESA,
+                                 r.DATA,
+                                 r.TIPOLANCAMENTO,
+                                 r.IDENTIFICADOR,
+                                 r.DOCUMENTO,
+                                 r.CONTADEBITO,
+                                 r.CONTACREDITO,
+                                 r.CODCC_DEBITO,
+                                 r.CODCC_CREDITO,
+                                 r.ATIVIDADE,
+                                 r.HISTORICO,
+                                 r.VALOR,
+                                 r.ORIGEM,
+                                 r.ENVIAR_CONTABIL,
+                                 r.DTCANCEL));
+    
+    END LOOP;
+  
+  END FN_APURA_COMPETE_EST_CREDITO;
+
+  ----APURACAO IMPOSTOS - COMPETE - CREDITO LIMITE 7%
+  FUNCTION FN_APURA_COMPETE_CREDITO_LIMITE RETURN T_CONTABIL_TABLE
+    PIPELINED IS
+  
+  BEGIN
+    FOR r IN (WITH RATEIO_COMPETE AS
+                 (SELECT A.DATA,
+                        NVL(C.CODGERENTE, 1) CODGERENTE,
+                        (A.VLCRED_ALIQPERC + A.VLCRED_RED) VLCRED,
+                        NVL(C.PERC, 1) PERC
+                   FROM BI_SINC_APURACAO_COMPETE A
+                   LEFT JOIN VIEW_BI_SINC_APURA_COMPETE_CC C ON C.DATA = A.DATA),
+                
+                VALOR_RATEIO_COMPETE AS
+                 (SELECT DATA,
+                        CODGERENTE,
+                        VLCRED,
+                        PERC,
+                        ROUND((VLCRED * PERC), 2) VALOR
+                   FROM RATEIO_COMPETE)
+                
+                SELECT ('AC02_C.' || G.CODCC) CODLANC,
+                       1 CODEMPRESA,
+                       A.DATA,
+                       
+                       ----------TIPO LANCAMENTO
+                       3 TIPOLANCAMENTO,
+                       
+                       TO_NUMBER(TO_CHAR(A.DATA, 'DDMMYYYY')) IDENTIFICADOR,
+                       TO_NUMBER(TO_CHAR(A.DATA, 'DDMMYYYY')) DOCUMENTO,
+                       
+                       ----------CONTA_DEBITO
+                       vICMS_RECUPERAR_ES CONTADEBITO,
+                       
+                       ----------CONTA_CREDITO
+                       vSUBVENCAO_FISCAL_ES CONTACREDITO,
+                       
+                       ----------CODCC_DEBITO
+                       NULL CODCC_DEBITO,
+                       
+                       ----------CODCC_CREDITO
+                       G.CODCC CODCC_CREDITO,
+                       
+                       ----------ATIVIDADE
+                       ('APURACAO COMPETE - CREDITO LIMITE 7% - RAT: ' || REPLACE(TO_CHAR(A.PERC, '999.00'), '.', ',')) ATIVIDADE,
+                       
+                       ----------HISTORICO
+                       'APURACAO COMPETE - CREDITO LIMITE 7%' HISTORICO,
+                       
+                       ----------VALOR
+                       ROUND(A.VALOR, 2) VALOR,
+                       
+                       ('APURA_COMPETE_CREDITO_LIMITE') ORIGEM,
+                       
+                       ----------ENVIAR_CONTABIL
+                       'N' ENVIAR_CONTABIL,
+                       
+                       TO_DATE(NULL, 'DD/MM/YYYY') DTCANCEL
+                  FROM VALOR_RATEIO_COMPETE A
+                  LEFT JOIN TABLE (PKG_BI_CONTABILIDADE.FN_CC_GERENTE_ES()) G ON G.CODGERENTE = A.CODGERENTE
+                 WHERE 1 = 1
+                   AND A.DATA >= vDATA_MOV_INCREMENTAL
+                   AND A.DATA >= vDT_INICIO_BENEFICIO_ES
+                   AND A.DATA IS NOT NULL
+                   AND A.VALOR > 0)
+    
+    LOOP
+      PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
+                                 r.CODEMPRESA,
+                                 r.DATA,
+                                 r.TIPOLANCAMENTO,
+                                 r.IDENTIFICADOR,
+                                 r.DOCUMENTO,
+                                 r.CONTADEBITO,
+                                 r.CONTACREDITO,
+                                 r.CODCC_DEBITO,
+                                 r.CODCC_CREDITO,
+                                 r.ATIVIDADE,
+                                 r.HISTORICO,
+                                 r.VALOR,
+                                 r.ORIGEM,
+                                 r.ENVIAR_CONTABIL,
+                                 r.DTCANCEL));
+    
+    END LOOP;
+  
+  END FN_APURA_COMPETE_CREDITO_LIMITE;
+
+  ----APURACAO IMPOSTOS - COMPETE - DESTINADAS A COMERCIO
+  FUNCTION FN_APURA_COMPETE_DEST_COM RETURN T_CONTABIL_TABLE
+    PIPELINED IS
+  
+  BEGIN
+    FOR r IN (SELECT 'AC03' CODLANC,
+                     1 CODEMPRESA,
+                     A.DATA,
+                     
+                     ----------TIPO LANCAMENTO
+                     3 TIPOLANCAMENTO,
+                     
+                     TO_NUMBER(TO_CHAR(A.DATA, 'DDMMYYYY')) IDENTIFICADOR,
+                     TO_NUMBER(TO_CHAR(A.DATA, 'DDMMYYYY')) DOCUMENTO,
+                     
+                     ----------CONTA_DEBITO
+                     vICMS_RECUPERAR_ES CONTADEBITO,
+                     
+                     ----------CONTA_CREDITO
+                     vICMS_RECOLHER_ES CONTACREDITO,
+                     
+                     ----------CODCC_DEBITO
+                     NULL CODCC_DEBITO,
+                     
+                     ----------CODCC_CREDITO
+                     NULL CODCC_CREDITO,
+                     
+                     ----------ATIVIDADE
+                     'APURACAO COMPETE - DESTINADAS A COMERCIO' ATIVIDADE,
+                     
+                     ----------HISTORICO
+                     'APURACAO COMPETE - DESTINADAS A COMERCIO' HISTORICO,
+                     
+                     ----------VALOR
+                     ROUND(NVL(A.VLCRED_DESTCOM, 0), 2) VALOR,
+                     
+                     ('APURA_COMPETE_DEST_COMERCIO') ORIGEM,
+                     
+                     ----------ENVIAR_CONTABIL
+                     'N' ENVIAR_CONTABIL,
+                     
+                     TO_DATE(NULL, 'DD/MM/YYYY') DTCANCEL
+                FROM BI_SINC_APURACAO_COMPETE A
+               WHERE 1 = 1
+                 AND A.DATA >= vDATA_MOV_INCREMENTAL
+                 AND A.DATA >= vDT_INICIO_BENEFICIO_ES
+                 AND A.DATA IS NOT NULL
+                 AND A.VLCRED_DESTCOM > 0)
+    
+    LOOP
+      PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
+                                 r.CODEMPRESA,
+                                 r.DATA,
+                                 r.TIPOLANCAMENTO,
+                                 r.IDENTIFICADOR,
+                                 r.DOCUMENTO,
+                                 r.CONTADEBITO,
+                                 r.CONTACREDITO,
+                                 r.CODCC_DEBITO,
+                                 r.CODCC_CREDITO,
+                                 r.ATIVIDADE,
+                                 r.HISTORICO,
+                                 r.VALOR,
+                                 r.ORIGEM,
+                                 r.ENVIAR_CONTABIL,
+                                 r.DTCANCEL));
+    
+    END LOOP;
+  
+  END FN_APURA_COMPETE_DEST_COM;
+	
+	  ----APURACAO IMPOSTOS - COMPETE - CREDITO PRESUMIDO 1.1%
+  FUNCTION FN_APURA_COMPETE_CRED_PRESUMIDO RETURN T_CONTABIL_TABLE
+    PIPELINED IS
+  
+  BEGIN
+    FOR r IN (WITH RATEIO_COMPETE AS
+                 (SELECT A.DATA,
+                        NVL(C.CODGERENTE, 1) CODGERENTE,
+                        (A.VLCRED_PRESUMIDO) VLCRED,
+                        NVL(C.PERC, 1) PERC
+                   FROM BI_SINC_APURACAO_COMPETE A
+                   LEFT JOIN VIEW_BI_SINC_APURA_COMPETE_CC C ON C.DATA = A.DATA),
+                
+                VALOR_RATEIO_COMPETE AS
+                 (SELECT DATA,
+                        CODGERENTE,
+                        VLCRED,
+                        PERC,
+                        ROUND((VLCRED * PERC), 2) VALOR
+                   FROM RATEIO_COMPETE)
+                
+                SELECT ('AC04_C.' || G.CODCC) CODLANC,
+                       1 CODEMPRESA,
+                       A.DATA,
+                       
+                       ----------TIPO LANCAMENTO
+                       3 TIPOLANCAMENTO,
+                       
+                       TO_NUMBER(TO_CHAR(A.DATA, 'DDMMYYYY')) IDENTIFICADOR,
+                       TO_NUMBER(TO_CHAR(A.DATA, 'DDMMYYYY')) DOCUMENTO,
+                       
+                       ----------CONTA_DEBITO
+                       vICMS_RECOLHER_ES CONTADEBITO,
+                       
+                       ----------CONTA_CREDITO
+                       vSUBVENCAO_FISCAL_ES CONTACREDITO,
+                       
+                       ----------CODCC_DEBITO
+                       NULL CODCC_DEBITO,
+                       
+                       ----------CODCC_CREDITO
+                       G.CODCC CODCC_CREDITO,
+                       
+                       ----------ATIVIDADE
+                       ('APURACAO COMPETE - CREDITO PRESUMIDO - RAT: ' || REPLACE(TO_CHAR(A.PERC, '999.00'), '.', ',')) ATIVIDADE,
+                       
+                       ----------HISTORICO
+                       'APURACAO COMPETE - CREDITO PRESUMIDO' HISTORICO,
+                       
+                       ----------VALOR
+                       ROUND(A.VALOR, 2) VALOR,
+                       
+                       ('APURA_COMPETE_CREDITO_PRESUMIDO') ORIGEM,
+                       
+                       ----------ENVIAR_CONTABIL
+                       'N' ENVIAR_CONTABIL,
+                       
+                       TO_DATE(NULL, 'DD/MM/YYYY') DTCANCEL
+                  FROM VALOR_RATEIO_COMPETE A
+                  LEFT JOIN TABLE (PKG_BI_CONTABILIDADE.FN_CC_GERENTE_ES()) G ON G.CODGERENTE = A.CODGERENTE
+                 WHERE 1 = 1
+                   AND A.DATA >= vDATA_MOV_INCREMENTAL
+                   AND A.DATA >= vDT_INICIO_BENEFICIO_ES
+                   AND A.DATA IS NOT NULL
+                   AND A.VALOR > 0)
+    
+    LOOP
+      PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
+                                 r.CODEMPRESA,
+                                 r.DATA,
+                                 r.TIPOLANCAMENTO,
+                                 r.IDENTIFICADOR,
+                                 r.DOCUMENTO,
+                                 r.CONTADEBITO,
+                                 r.CONTACREDITO,
+                                 r.CODCC_DEBITO,
+                                 r.CODCC_CREDITO,
+                                 r.ATIVIDADE,
+                                 r.HISTORICO,
+                                 r.VALOR,
+                                 r.ORIGEM,
+                                 r.ENVIAR_CONTABIL,
+                                 r.DTCANCEL));
+    
+    END LOOP;
+  
+  END FN_APURA_COMPETE_CRED_PRESUMIDO;
+
+	  ----APURACAO IMPOSTOS - COMPETE - ADICIONAL INCENTIVO 3.5%
+  FUNCTION FN_APURA_COMPETE_ADD_INCENTIVO RETURN T_CONTABIL_TABLE
+    PIPELINED IS
+  
+  BEGIN
+    FOR r IN (WITH RATEIO_COMPETE AS
+                 (SELECT A.DATA,
+                        NVL(C.CODGERENTE, 1) CODGERENTE,
+                        (A.VLADD_INCENTIVO) VLCRED,
+                        NVL(C.PERC, 1) PERC
+                   FROM BI_SINC_APURACAO_COMPETE A
+                   LEFT JOIN VIEW_BI_SINC_APURA_COMPETE_CC C ON C.DATA = A.DATA),
+                
+                VALOR_RATEIO_COMPETE AS
+                 (SELECT DATA,
+                        CODGERENTE,
+                        VLCRED,
+                        PERC,
+                        ROUND((VLCRED * PERC), 2) VALOR
+                   FROM RATEIO_COMPETE)
+                
+                SELECT ('AC05_C.' || G.CODCC) CODLANC,
+                       1 CODEMPRESA,
+                       A.DATA,
+                       
+                       ----------TIPO LANCAMENTO
+                       3 TIPOLANCAMENTO,
+                       
+                       TO_NUMBER(TO_CHAR(A.DATA, 'DDMMYYYY')) IDENTIFICADOR,
+                       TO_NUMBER(TO_CHAR(A.DATA, 'DDMMYYYY')) DOCUMENTO,
+                       
+                       ----------CONTA_DEBITO
+                       vICMS_BENEFICIO_COMPETE CONTADEBITO,
+                       
+                       ----------CONTA_CREDITO
+                       vICMS_RECOLHER_ES CONTACREDITO,
+                       
+                       ----------CODCC_DEBITO
+                       G.CODCC CODCC_DEBITO,
+                       
+                       ----------CODCC_CREDITO
+                       NULL CODCC_CREDITO,
+                       
+                       ----------ATIVIDADE
+                       ('APURACAO COMPETE - ADICIONAL INCENTIVO - RAT: ' || REPLACE(TO_CHAR(A.PERC, '999.00'), '.', ',')) ATIVIDADE,
+                       
+                       ----------HISTORICO
+                       'APURACAO COMPETE - ADICIONAL INCENTIVO ' HISTORICO,
+                       
+                       ----------VALOR
+                       ROUND(A.VALOR, 2) VALOR,
+                       
+                       ('APURA_COMPETE_ADD_INCENTIVO') ORIGEM,
+                       
+                       ----------ENVIAR_CONTABIL
+                       'N' ENVIAR_CONTABIL,
+                       
+                       TO_DATE(NULL, 'DD/MM/YYYY') DTCANCEL
+                  FROM VALOR_RATEIO_COMPETE A
+                  LEFT JOIN TABLE (PKG_BI_CONTABILIDADE.FN_CC_GERENTE_ES()) G ON G.CODGERENTE = A.CODGERENTE
+                 WHERE 1 = 1
+                   AND A.DATA >= vDATA_MOV_INCREMENTAL
+                   AND A.DATA >= vDT_INICIO_BENEFICIO_ES
+                   AND A.DATA IS NOT NULL
+                   AND A.VALOR > 0)
+    
+    LOOP
+      PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
+                                 r.CODEMPRESA,
+                                 r.DATA,
+                                 r.TIPOLANCAMENTO,
+                                 r.IDENTIFICADOR,
+                                 r.DOCUMENTO,
+                                 r.CONTADEBITO,
+                                 r.CONTACREDITO,
+                                 r.CODCC_DEBITO,
+                                 r.CODCC_CREDITO,
+                                 r.ATIVIDADE,
+                                 r.HISTORICO,
+                                 r.VALOR,
+                                 r.ORIGEM,
+                                 r.ENVIAR_CONTABIL,
+                                 r.DTCANCEL));
+    
+    END LOOP;
+  
+  END FN_APURA_COMPETE_ADD_INCENTIVO;
+	
+
+  ----APURACAO IMPOSTOS - COMPETE - SALDO APURADO
+  FUNCTION FN_APURA_COMPETE_SALDO RETURN T_CONTABIL_TABLE
+    PIPELINED IS
+  
+  BEGIN
+    FOR r IN (SELECT 'AC06' CODLANC,
+                     1 CODEMPRESA,
+                     A.DATA,
+                     
+                     ----------TIPO LANCAMENTO
+                     3 TIPOLANCAMENTO,
+                     
+                     TO_NUMBER(TO_CHAR(A.DATA, 'DDMMYYYY')) IDENTIFICADOR,
+                     TO_NUMBER(TO_CHAR(A.DATA, 'DDMMYYYY')) DOCUMENTO,
+                     
+                     ----------CONTA_DEBITO
+                     (CASE WHEN (A.VLSALDO > 0 AND A.VLRECUPERAR > 0) THEN 
+										       vICMS_RECUPERAR_ES 
+													ELSE 
+														vICMS_RECOLHER_ES
+										 END) CONTADEBITO,
+                     
+                     ----------CONTA_CREDITO
+                     (CASE WHEN (A.VLSALDO > 0 AND A.VLRECUPERAR > 0) THEN 
+                           vICMS_RECOLHER_ES 
+                          ELSE 
+                            vICMS_RECUPERAR_ES
+                     END)  CONTACREDITO,
+                     
+                     ----------CODCC_DEBITO
+                     NULL CODCC_DEBITO,
+                     
+                     ----------CODCC_CREDITO
+                     NULL CODCC_CREDITO,
+                     
+                     ----------ATIVIDADE
+                     'APURACAO COMPETE - SALDO APURADO' ATIVIDADE,
+                     
+                     ----------HISTORICO
+                     'APURACAO COMPETE - SALDO APURADO' HISTORICO,
+                     
+                     ----------VALOR
+                     ROUND(NVL(ABS(A.VLSALDO), 0), 2) VALOR,
+                     
+                     ('APURA_COMPETE_SALDO_APURADO') ORIGEM,
+                     
+                     ----------ENVIAR_CONTABIL
+                     'N' ENVIAR_CONTABIL,
+                     
+                     TO_DATE(NULL, 'DD/MM/YYYY') DTCANCEL
+                FROM BI_SINC_APURACAO_COMPETE A
+               WHERE 1 = 1
+                 AND A.DATA >= vDATA_MOV_INCREMENTAL
+                 AND A.DATA IS NOT NULL
+                 AND NVL(A.VLSALDO,0) <> 0)
+    
+    LOOP
+      PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
+                                 r.CODEMPRESA,
+                                 r.DATA,
+                                 r.TIPOLANCAMENTO,
+                                 r.IDENTIFICADOR,
+                                 r.DOCUMENTO,
+                                 r.CONTADEBITO,
+                                 r.CONTACREDITO,
+                                 r.CODCC_DEBITO,
+                                 r.CODCC_CREDITO,
+                                 r.ATIVIDADE,
+                                 r.HISTORICO,
+                                 r.VALOR,
+                                 r.ORIGEM,
+                                 r.ENVIAR_CONTABIL,
+                                 r.DTCANCEL));
+    
+    END LOOP;
+  
+  END FN_APURA_COMPETE_SALDO;
 
 END PKG_BI_CONTABILIDADE;
 /
