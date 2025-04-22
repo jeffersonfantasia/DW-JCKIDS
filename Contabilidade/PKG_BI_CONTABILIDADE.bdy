@@ -57,7 +57,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   vDEVOLUCAO_CLIENTE             NUMBER := 2201;
   vENTRADA_INVENTARIO            NUMBER := 3116;
   vSUBVENCAO_FISCAL_ES           NUMBER := 3109;
-	vICMS_BENEFICIO_COMPETE        NUMBER := 3206;
+  vICMS_BENEFICIO_COMPETE        NUMBER := 3206;
   vAQUISICAOIMOBILIZADO          NUMBER := 1451;
   vFRETE                         NUMBER := 3202;
   vDIFAL_MATERIAL_OPERACAO       NUMBER := 3555;
@@ -124,6 +124,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                                    223,
                                    8549,
                                    7170,
+                                   7534,
                                    9211,
                                    9266,
                                    9272,
@@ -552,8 +553,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      (CASE
                        WHEN M.TIPOMOV IN ('ENTRADA DEVOLUCAO') THEN
                         (CASE
-                          WHEN M.CODGERENTE IN (1, 8, 9, 10)
-                               AND M.CODFILIAL = vCODFILIAL_ES THEN
+                          WHEN M.DATA >= vDT_MUDANCA_FAT_DISTRIB_ES
+                               AND M.CODGERENTE IN (1, 8, 9, 10) THEN
                            vCC_DISTRIBUICAO_ES
                           ELSE
                            V.CODCC
@@ -568,8 +569,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      (CASE
                        WHEN M.TIPOMOV IN ('SAIDA VENDA', 'SAIDA FAT CONTA E ORDEM', 'SAIDA REM ENTREGA FUTURA') THEN
                         (CASE
-                          WHEN M.CODGERENTE IN (1, 8, 9, 10)
-                               AND M.CODFILIAL = vCODFILIAL_ES THEN
+                          WHEN M.DATA >= vDT_MUDANCA_FAT_DISTRIB_ES
+                               AND M.CODGERENTE IN (1, 8, 9, 10) THEN
                            vCC_DISTRIBUICAO_ES
                           ELSE
                            V.CODCC
@@ -809,8 +810,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                        WHEN M.TIPOMOV IN
                             ('SAIDA VENDA', 'SAIDA REM CONTA E ORDEM', 'SAIDA REM ENTREGA FUTURA', 'SAIDA BONIFICADA') THEN
                         (CASE
-                          WHEN M.CODGERENTE IN (1, 8, 9, 10)
-                               AND M.CODFILIAL = vCODFILIAL_ES THEN
+                          WHEN M.DATA >= vDT_MUDANCA_FAT_DISTRIB_ES
+                               AND M.CODGERENTE IN (1, 8, 9, 10) THEN
                            vCC_DISTRIBUICAO_ES
                           ELSE
                            V.CODCC
@@ -823,8 +824,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      (CASE
                        WHEN M.TIPOMOV IN ('ENTRADA DEVOLUCAO') THEN
                         (CASE
-                          WHEN M.CODGERENTE IN (1, 8, 9, 10)
-                               AND M.CODFILIAL = vCODFILIAL_ES THEN
+                          WHEN M.DATA >= vDT_MUDANCA_FAT_DISTRIB_ES
+                               AND M.CODGERENTE IN (1, 8, 9, 10) THEN
                            vCC_DISTRIBUICAO_ES
                           ELSE
                            V.CODCC
@@ -989,8 +990,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                                           'SAIDA BONIFICADA',
                                           'SAIDA DEMONSTRACAO') THEN
                         (CASE
-                          WHEN M.CODGERENTE IN (1, 8, 9, 10)
-                               AND M.CODFILIAL = vCODFILIAL_ES THEN
+                          WHEN M.DATA >= vDT_MUDANCA_FAT_DISTRIB_ES
+                               AND M.CODGERENTE IN (1, 8, 9, 10) THEN
                            vCC_DISTRIBUICAO_ES
                           ELSE
                            V.CODCC
@@ -1005,8 +1006,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      (CASE
                        WHEN M.TIPOMOV IN ('ENTRADA DEVOLUCAO', 'ENTRADA DEMONSTRACAO') THEN
                         (CASE
-                          WHEN M.CODGERENTE IN (1, 8, 9, 10)
-                               AND M.CODFILIAL = vCODFILIAL_ES THEN
+                          WHEN M.DATA >= vDT_MUDANCA_FAT_DISTRIB_ES
+                               AND M.CODGERENTE IN (1, 8, 9, 10) THEN
                            vCC_DISTRIBUICAO_ES
                           ELSE
                            V.CODCC
@@ -1115,8 +1116,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      (CASE
                        WHEN M.TIPOMOV IN ('SAIDA VENDA', 'SAIDA FAT CONTA E ORDEM', 'SAIDA REM ENTREGA FUTURA') THEN
                         (CASE
-                          WHEN M.CODGERENTE IN (1, 8, 9, 10)
-                               AND M.CODFILIAL = vCODFILIAL_ES THEN
+                          WHEN M.DATA >= vDT_MUDANCA_FAT_DISTRIB_ES
+                               AND M.CODGERENTE IN (1, 8, 9, 10) THEN
                            vCC_DISTRIBUICAO_ES
                           ELSE
                            V.CODCC
@@ -1129,8 +1130,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      (CASE
                        WHEN M.TIPOMOV IN ('ENTRADA DEVOLUCAO') THEN
                         (CASE
-                          WHEN M.CODGERENTE IN (1, 8, 9, 10)
-                               AND M.CODFILIAL = vCODFILIAL_ES THEN
+                          WHEN M.DATA >= vDT_MUDANCA_FAT_DISTRIB_ES
+                               AND M.CODGERENTE IN (1, 8, 9, 10) THEN
                            vCC_DISTRIBUICAO_ES
                           ELSE
                            V.CODCC
@@ -1237,8 +1238,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      (CASE
                        WHEN M.TIPOMOV IN ('SAIDA VENDA', 'SAIDA FAT CONTA E ORDEM', 'SAIDA REM ENTREGA FUTURA') THEN
                         (CASE
-                          WHEN M.CODGERENTE IN (1, 8, 9, 10)
-                               AND M.CODFILIAL = vCODFILIAL_ES THEN
+                          WHEN M.DATA >= vDT_MUDANCA_FAT_DISTRIB_ES
+                               AND M.CODGERENTE IN (1, 8, 9, 10) THEN
                            vCC_DISTRIBUICAO_ES
                           ELSE
                            V.CODCC
@@ -1251,8 +1252,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      (CASE
                        WHEN M.TIPOMOV IN ('ENTRADA DEVOLUCAO') THEN
                         (CASE
-                          WHEN M.CODGERENTE IN (1, 8, 9, 10)
-                               AND M.CODFILIAL = vCODFILIAL_ES THEN
+                          WHEN M.DATA >= vDT_MUDANCA_FAT_DISTRIB_ES
+                               AND M.CODGERENTE IN (1, 8, 9, 10) THEN
                            vCC_DISTRIBUICAO_ES
                           ELSE
                            V.CODCC
@@ -1330,8 +1331,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      vST_RECOLHER CONTACREDITO,
                      ----------CODCC_DEBITO
                      (CASE
-                       WHEN M.CODGERENTE IN (1, 8, 9, 10)
-                            AND M.CODFILIAL = vCODFILIAL_ES THEN
+                       WHEN M.DATA >= vDT_MUDANCA_FAT_DISTRIB_ES
+                            AND M.CODGERENTE IN (1, 8, 9, 10) THEN
                         vCC_DISTRIBUICAO_ES
                        ELSE
                         V.CODCC
@@ -1339,6 +1340,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      
                      ----------CODCC_CREDITO
                      NULL CODCC_CREDITO,
+                     
                      (M.TIPOMOV || ' - F' || LPAD(M.CODFILIAL, 2, 0) || ' - Nº TRANSACAO: ' || M.NUMTRANSACAO) ATIVIDADE,
                      
                      ----------HISTORICO
@@ -1408,8 +1410,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      vDIFAL_RECOLHER CONTACREDITO,
                      ----------CODCC_DEBITO
                      (CASE
-                       WHEN M.CODGERENTE IN (1, 8, 9, 10)
-                            AND M.CODFILIAL = vCODFILIAL_ES THEN
+                       WHEN M.DATA >= vDT_MUDANCA_FAT_DISTRIB_ES
+                            AND M.CODGERENTE IN (1, 8, 9, 10) THEN
                         vCC_DISTRIBUICAO_ES
                        ELSE
                         V.CODCC
@@ -1417,6 +1419,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      
                      ----------CODCC_CREDITO
                      NULL CODCC_CREDITO,
+                     
                      (M.TIPOMOV || ' - F' || LPAD(M.CODFILIAL, 2, 0) || ' - Nº TRANSACAO: ' || M.NUMTRANSACAO) ATIVIDADE,
                      
                      ----------HISTORICO
@@ -2357,7 +2360,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      ----------CODCC_DEBITO
                      (CASE
                        WHEN L.VALOR > 0
-                            AND C.CODDRE > 0 THEN
+                            AND JC.CODDRE > 0 THEN
                         DECODE(L.CODCC, '0', FL.CODCC, L.CODCC)
                        ELSE
                         NULL
@@ -2366,7 +2369,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      ----------CODCC_CREDITO
                      (CASE
                        WHEN L.VALOR < 0
-                            AND C.CODDRE > 0 THEN
+                            AND JC.CODDRE > 0 THEN
                         DECODE(L.CODCC, '0', FL.CODCC, L.CODCC)
                        ELSE
                         NULL
@@ -2398,7 +2401,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                 LEFT JOIN PCCONTA C ON C.CODCONTA = L.CODCONTA
                 LEFT JOIN BI_SINC_FORNECEDOR F ON F.CODFORNEC = L.CODFORNEC
                 LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_FILIAL()) FL ON FL.CODFILIAL = L.CODFILIAL
-                LEFT JOIN BI_SINC_PLANO_CONTAS_JC C ON C.CODGERENCIAL = L.CODCONTA
+                LEFT JOIN BI_SINC_PLANO_CONTAS_JC JC ON JC.CODGERENCIAL = L.CODCONTA
                WHERE 1 = 1
                  AND L.DTCOMPENSACAO >= vDATA_MOV_INCREMENTAL
                  AND L.CODCONTA <> L.CONTABANCO
@@ -2492,7 +2495,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      ----------CODCC_DEBITO
                      (CASE
                        WHEN L.VALOR > 0
-                            AND C.CODDRE > 0
+                            AND JC.CODDRE > 0
                             AND
                             (L.GRUPOCONTA IN
                             (SELECT CODGRUPO FROM TABLE(PKG_BI_CONTABILIDADE.FN_GRUPO_LANC_TIPO_FORNEC_CONSIDERA_CONTA())) OR
@@ -2509,7 +2512,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      ----------CODCC_CREDITO
                      (CASE
                        WHEN L.VALOR < 0
-                            AND C.CODDRE > 0
+                            AND JC.CODDRE > 0
                             AND
                             (L.GRUPOCONTA IN
                             (SELECT CODGRUPO FROM TABLE(PKG_BI_CONTABILIDADE.FN_GRUPO_LANC_TIPO_FORNEC_CONSIDERA_CONTA())) OR
@@ -2525,7 +2528,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      
                      ----------ATIVIDADE
                      (CASE
-                       WHEN C.CODDRE > 0
+                       WHEN JC.CODDRE > 0
                             AND
                             (L.GRUPOCONTA IN
                             (SELECT CODGRUPO FROM TABLE(PKG_BI_CONTABILIDADE.FN_GRUPO_LANC_TIPO_FORNEC_CONSIDERA_CONTA())) OR
@@ -2563,7 +2566,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      END) HISTORICO,
                      
                      ----------VALOR
-                     ROUND(ABS(L.VLRATEIO), 2) VALOR,
+                     ROUND(ABS(L.VLRATEIO), 2) - (L.PERCRATEIO * NVL(L.VLDESCONTO, 0) / 100) VALOR,
                      
                      ('LANC_PAG_FORNECEDOR') ORIGEM,
                      
@@ -2575,7 +2578,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                 LEFT JOIN PCCONTA C ON C.CODCONTA = L.CODCONTA
                 LEFT JOIN BI_SINC_FORNECEDOR F ON F.CODFORNEC = L.CODFORNEC
                 LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_FILIAL()) FL ON FL.CODFILIAL = L.CODFILIAL
-                LEFT JOIN BI_SINC_PLANO_CONTAS_JC C ON C.CODGERENCIAL = L.CODCONTA
+                LEFT JOIN BI_SINC_PLANO_CONTAS_JC JC ON JC.CODGERENCIAL = L.CODCONTA
                WHERE 1 = 1
                  AND L.DTCOMPENSACAO >= vDATA_MOV_INCREMENTAL
                  AND L.CODCONTA <> L.CONTABANCO
@@ -2647,7 +2650,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      ----------CODCC_DEBITO
                      (CASE
                        WHEN L.VALOR > 0
-                            AND C.CODDRE > 0 THEN
+                            AND JC.CODDRE > 0 THEN
                         DECODE(L.CODCC, '0', FL.CODCC, L.CODCC)
                        ELSE
                         NULL
@@ -2656,7 +2659,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      ----------CODCC_CREDITO
                      (CASE
                        WHEN L.VALOR < 0
-                            AND C.CODDRE > 0 THEN
+                            AND JC.CODDRE > 0 THEN
                         DECODE(L.CODCC, '0', FL.CODCC, L.CODCC)
                        ELSE
                         NULL
@@ -2687,7 +2690,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                 LEFT JOIN PCCONTA C ON C.CODCONTA = L.CODCONTA
                 LEFT JOIN BI_SINC_FORNECEDOR F ON F.CODFORNEC = L.CODFORNEC
                 LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_FILIAL()) FL ON FL.CODFILIAL = L.CODFILIAL
-                LEFT JOIN BI_SINC_PLANO_CONTAS_JC C ON C.CODGERENCIAL = L.CODCONTA
+                LEFT JOIN BI_SINC_PLANO_CONTAS_JC JC ON JC.CODGERENCIAL = L.CODCONTA
                WHERE 1 = 1
                  AND L.DTCOMPENSACAO >= vDATA_MOV_INCREMENTAL
                  AND L.CODBANCO NOT IN (SELECT CODBANCO FROM TABLE(PKG_BI_CONTABILIDADE.FN_BANCOS_DESCONSIDERAR()))
@@ -2720,86 +2723,116 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     PIPELINED IS
   
   BEGIN
-    FOR r IN (SELECT ('L04' || '.CC_' || L.CODCC) CODLANC,
-                     L.CODEMPRESA,
-                     L.DTCOMPENSACAO DATA,
-                     
-                     ----------TIPO LANCAMENTO
-                     3 TIPOLANCAMENTO,
-                     
-                     L.RECNUM IDENTIFICADOR,
-                     L.NUMNOTA DOCUMENTO,
-                     
-                     ----------CONTA_DEBITO
-                     (CASE
-                       WHEN (L.VALOR > 0 OR
-                            L.CODFORNEC IN
-                            (SELECT CODFORNEC
-                                FROM TABLE(PKG_BI_CONTABILIDADE.FN_FORNECEDOR_LANC_TIPO_FORNEC_CONSIDERA_CONTA()))) THEN
-                        L.CODCONTA
-                       ELSE
-                        L.CODFORNEC
-                     END) CONTADEBITO,
-                     
-                     ----------CONTA_CREDITO
-                     (CASE
-                       WHEN (L.VALOR < 0 OR
-                            L.CODFORNEC IN
-                            (SELECT CODFORNEC
-                                FROM TABLE(PKG_BI_CONTABILIDADE.FN_FORNECEDOR_LANC_TIPO_FORNEC_CONSIDERA_CONTA()))) THEN
-                        L.CODCONTA
-                       ELSE
-                        L.CODFORNEC
-                     END) CONTACREDITO,
-                     
-                     ----------CODCC_DEBITO
-                     (CASE
-                       WHEN L.VALOR > 0
-                            AND C.CODDRE > 0 THEN
-                        DECODE(L.CODCC, '0', FL.CODCC, L.CODCC)
-                       ELSE
-                        NULL
-                     END) CODCC_DEBITO,
-                     
-                     ----------CODCC_CREDITO
-                     (CASE
-                       WHEN L.VALOR < 0
-                            AND C.CODDRE > 0 THEN
-                        DECODE(L.CODCC, '0', FL.CODCC, L.CODCC)
-                       ELSE
-                        NULL
-                     END) CODCC_CREDITO,
-                     
-                     ----------ATIVIDADE
-                     (UPPER(C.CONTA) || ' - F' || LPAD(L.CODFILIAL, 2, 0) || ' - VLTOTAL: ' ||
-                     TRIM(TRANSLATE(TO_CHAR(L.VALOR, 'FM999G990D00'), '.,', ',.')) || ' - RECNUM: ' || L.RECNUM) ATIVIDADE,
-                     
-                     ----------HISTORICO
-                     (CASE
-                       WHEN L.NUMNOTA > 0 THEN
-                        ('Nº ' || L.NUMNOTA || ' - ' || UPPER(L.HISTORICO) || ' - ' || F.CNPJ || ' - ' || F.FORNECEDOR ||
-                        ' - Cód: ' || L.CODFORNEC)
-                       ELSE
-                        UPPER(L.HISTORICO)
-                     END) HISTORICO,
-                     
-                     ROUND(ABS(L.VLRATEIO), 2) VALOR,
-                     
-                     ('LANC_DESCONTO_OBTIDO') ORIGEM,
-                     
-                     ----------ENVIAR_CONTABIL
-                     'S' ENVIAR_CONTABIL,
-                     
-                     TO_DATE(NULL, 'DD/MM/YYYY') DTCANCEL
-                FROM BI_SINC_LANC_PAGAR_BASE L
-                LEFT JOIN PCCONTA C ON C.CODCONTA = L.CODCONTA
-                LEFT JOIN BI_SINC_FORNECEDOR F ON F.CODFORNEC = L.CODFORNEC
-                LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_FILIAL()) FL ON FL.CODFILIAL = L.CODFILIAL
-                LEFT JOIN BI_SINC_PLANO_CONTAS_JC C ON C.CODGERENCIAL = L.CODCONTA
-               WHERE 1 = 1
-                 AND L.DTCOMPENSACAO >= vDATA_MOV_INCREMENTAL
-                 AND L.CODBANCO NOT IN (SELECT CODBANCO FROM TABLE(PKG_BI_CONTABILIDADE.FN_BANCOS_DESCONSIDERAR()))
-                 AND L.CODCONTA = vDESCONTOS_OBTIDOS)
+    FOR r IN (WITH LANC_DESCONTOS AS
+                 (SELECT RECNUM,
+                        CODFORNEC,
+                        NUMNOTA
+                   FROM BI_SINC_LANC_PAGAR_BASE L
+                  WHERE L.CODCONTA = vDESCONTOS_OBTIDOS),
+                
+                LANC_DESCONTOS_CONTRA_CONTA AS
+                 (SELECT MAX(L.CODCONTA) CODCONTA,
+                        L.CODFORNEC,
+                        L.NUMNOTA
+                   FROM BI_SINC_LANC_PAGAR_BASE L
+                   JOIN LANC_DESCONTOS D ON D.CODFORNEC = L.CODFORNEC
+                                        AND D.NUMNOTA = L.NUMNOTA
+                  WHERE L.CODCONTA <> vDESCONTOS_OBTIDOS
+                    AND L.CODFORNEC IN
+                        (SELECT CODFORNEC
+                           FROM TABLE(PKG_BI_CONTABILIDADE.FN_FORNECEDOR_LANC_TIPO_FORNEC_CONSIDERA_CONTA()))
+                  GROUP BY L.CODFORNEC,
+                           L.NUMNOTA)
+                
+                SELECT ('L04' || '.CC_' || L.CODCC) CODLANC,
+                       L.CODEMPRESA,
+                       L.DTCOMPENSACAO DATA,
+                       
+                       ----------TIPO LANCAMENTO
+                       3 TIPOLANCAMENTO,
+                       
+                       L.RECNUM IDENTIFICADOR,
+                       L.NUMNOTA DOCUMENTO,
+                       
+                       ----------CONTA_DEBITO
+                       (CASE
+                         WHEN (L.VALOR > 0 OR
+                              L.CODFORNEC IN
+                              (SELECT CODFORNEC
+                                  FROM TABLE(PKG_BI_CONTABILIDADE.FN_FORNECEDOR_LANC_TIPO_FORNEC_CONSIDERA_CONTA()))) THEN
+                          COALESCE(DC.CODCONTA, L.CODCONTA)
+                         ELSE
+                          L.CODFORNEC
+                       END) CONTADEBITO,
+                       
+                       ----------CONTA_CREDITO
+                       (CASE
+                         WHEN (L.VALOR < 0 OR
+                              L.CODFORNEC IN
+                              (SELECT CODFORNEC
+                                  FROM TABLE(PKG_BI_CONTABILIDADE.FN_FORNECEDOR_LANC_TIPO_FORNEC_CONSIDERA_CONTA()))) THEN
+                          L.CODCONTA
+                         ELSE
+                          L.CODFORNEC
+                       END) CONTACREDITO,
+                       
+                       ----------CODCC_DEBITO
+                       (CASE
+                         WHEN (L.VALOR > 0 OR (L.CODFORNEC IN
+                              (SELECT CODFORNEC
+                                                  FROM TABLE(PKG_BI_CONTABILIDADE.FN_FORNECEDOR_LANC_TIPO_FORNEC_CONSIDERA_CONTA())) AND
+                              JC2.CODDRE > 0))
+                              AND JC.CODDRE > 0 THEN
+                          DECODE(L.CODCC, '0', FL.CODCC, L.CODCC)
+                         ELSE
+                          NULL
+                       END) CODCC_DEBITO,
+                       
+                       ----------CODCC_CREDITO
+                       (CASE
+                         WHEN (L.VALOR < 0 OR (L.CODFORNEC IN
+                              (SELECT CODFORNEC
+                                                  FROM TABLE(PKG_BI_CONTABILIDADE.FN_FORNECEDOR_LANC_TIPO_FORNEC_CONSIDERA_CONTA())) AND
+                              JC2.CODDRE > 0))
+                              AND JC.CODDRE > 0 THEN
+                          DECODE(L.CODCC, '0', FL.CODCC, L.CODCC)
+                         ELSE
+                          NULL
+                       END) CODCC_CREDITO,
+                       
+                       ----------ATIVIDADE
+                       (UPPER(C.CONTA) || ' - F' || LPAD(L.CODFILIAL, 2, 0) || ' - VLTOTAL: ' ||
+                       TRIM(TRANSLATE(TO_CHAR(L.VALOR, 'FM999G990D00'), '.,', ',.')) || ' - RECNUM: ' || L.RECNUM) ATIVIDADE,
+                       
+                       ----------HISTORICO
+                       (CASE
+                         WHEN L.NUMNOTA > 0 THEN
+                          ('Nº ' || L.NUMNOTA || ' - ' || UPPER(L.HISTORICO) || ' - ' || F.CNPJ || ' - ' || F.FORNECEDOR ||
+                          ' - Cód: ' || L.CODFORNEC)
+                         ELSE
+                          UPPER(L.HISTORICO)
+                       END) HISTORICO,
+                       
+                       ROUND(ABS(L.VLRATEIO), 2) VALOR,
+                       
+                       ('LANC_DESCONTO_OBTIDO') ORIGEM,
+                       
+                       ----------ENVIAR_CONTABIL
+                       'S' ENVIAR_CONTABIL,
+                       
+                       TO_DATE(NULL, 'DD/MM/YYYY') DTCANCEL
+                  FROM BI_SINC_LANC_PAGAR_BASE L
+                  LEFT JOIN PCCONTA C ON C.CODCONTA = L.CODCONTA
+                  LEFT JOIN BI_SINC_FORNECEDOR F ON F.CODFORNEC = L.CODFORNEC
+                  LEFT JOIN TABLE (PKG_BI_CONTABILIDADE.FN_CC_FILIAL()) FL ON FL.CODFILIAL = L.CODFILIAL
+                  LEFT JOIN BI_SINC_PLANO_CONTAS_JC JC ON JC.CODGERENCIAL = L.CODCONTA
+                  LEFT JOIN LANC_DESCONTOS_CONTRA_CONTA DC ON DC.CODFORNEC = L.CODFORNEC
+                                                          AND DC.NUMNOTA = L.NUMNOTA
+                  LEFT JOIN BI_SINC_PLANO_CONTAS_JC JC2 ON JC2.CODGERENCIAL = DC.CODCONTA
+                 WHERE 1 = 1
+                   AND L.DTCOMPENSACAO >= vDATA_MOV_INCREMENTAL
+                   AND L.CODBANCO NOT IN (SELECT CODBANCO FROM TABLE(PKG_BI_CONTABILIDADE.FN_BANCOS_DESCONSIDERAR()))
+                   AND L.CODCONTA = vDESCONTOS_OBTIDOS)
     
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
@@ -3623,7 +3656,13 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      NULL CODCC_DEBITO,
                      
                      ----------CODCC_CREDITO
-                     F.CODCC CODCC_CREDITO,
+                     (CASE
+                       WHEN P.DTCOMPENSACAO >= vDT_MUDANCA_FAT_DISTRIB_ES
+                            AND P.CODFILIAL = vCODFILIAL_DEPOSITO_SP THEN
+                        vCC_CORPORATIVO_SP
+                       ELSE
+                        F.CODCC
+                     END) CODCC_CREDITO,
                      
                      ----------ATIVIDADE
                      ('BAIXA INCLUSAO DUPLIC. - F' || LPAD(P.CODFILIAL, 2, 0) || ' - Nº MOV: ' || P.NUMTRANS ||
@@ -3837,6 +3876,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      
                      ----------CODCC_DEBITO
                      (CASE
+                       WHEN P.VLDESCONTO > 0
+                            AND P.CODFILIAL = vCODFILIAL_ES THEN
+                        NVL(G.CODCC, F.CODCC)
                        WHEN P.VLDESCONTO > 0 THEN
                         NVL(V.CODCC, F.CODCC)
                        ELSE
@@ -3847,6 +3889,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      (CASE
                        WHEN P.VLDESCONTO > 0 THEN
                         NULL
+                       WHEN P.CODFILIAL = vCODFILIAL_ES THEN
+                        NVL(G.CODCC, F.CODCC)
                        ELSE
                         NVL(V.CODCC, F.CODCC)
                      END) CODCC_CREDITO,
@@ -3883,6 +3927,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                 LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_FILIAL()) F ON F.CODFILIAL = P.CODFILIAL
                 LEFT JOIN BI_SINC_VENDEDOR S ON S.CODUSUR = P.CODUSUR
                 LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_VENDEDOR()) V ON V.CODSUPERVISOR = S.CODSUPERVISOR
+                LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_GERENTE_ES()) G ON G.CODGERENTE = S.CODGERENTE
                 LEFT JOIN BI_SINC_CLIENTE T ON T.CODCLI = P.CODCLI
                WHERE 1 = 1
                  AND P.DTCOMPENSACAO >= vDATA_MOV_INCREMENTAL
@@ -3947,6 +3992,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      
                      ----------CODCC_DEBITO
                      (CASE
+                       WHEN P.VLDESCONTO > 0
+                            AND P.CODFILIAL = vCODFILIAL_ES THEN
+                        NVL(G.CODCC, F.CODCC)
                        WHEN P.VLDESCONTO > 0 THEN
                         NVL(V.CODCC, F.CODCC)
                        ELSE
@@ -3957,6 +4005,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      (CASE
                        WHEN P.VLDESCONTO > 0 THEN
                         NULL
+                       WHEN P.CODFILIAL = vCODFILIAL_ES THEN
+                        NVL(G.CODCC, F.CODCC)
                        ELSE
                         NVL(V.CODCC, F.CODCC)
                      END) CODCC_CREDITO,
@@ -3993,6 +4043,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                 LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_FILIAL()) F ON F.CODFILIAL = P.CODFILIAL
                 LEFT JOIN BI_SINC_VENDEDOR S ON S.CODUSUR = P.CODUSUR
                 LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_VENDEDOR()) V ON V.CODSUPERVISOR = S.CODSUPERVISOR
+                LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_GERENTE_ES()) G ON G.CODGERENTE = S.CODGERENTE
                 LEFT JOIN BI_SINC_CLIENTE T ON T.CODCLI = P.CODCLI
                WHERE 1 = 1
                  AND P.DTCOMPENSACAO >= vDATA_MOV_INCREMENTAL
@@ -4062,12 +4113,17 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                       (CASE
                         WHEN P.VLJUROS > 0 THEN
                          NULL
+                        WHEN P.CODFILIAL = vCODFILIAL_ES THEN
+                         NVL(G.CODCC, F.CODCC)
                         ELSE
                          NVL(V.CODCC, F.CODCC)
                       END) CODCC_DEBITO,
                       
                       ----------CODCC_CREDITO
                       (CASE
+                        WHEN P.VLJUROS > 0
+                             AND P.CODFILIAL = vCODFILIAL_ES THEN
+                         NVL(G.CODCC, F.CODCC)
                         WHEN P.VLJUROS > 0 THEN
                          NVL(V.CODCC, F.CODCC)
                         ELSE
@@ -4106,6 +4162,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                 LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_FILIAL()) F ON F.CODFILIAL = P.CODFILIAL
                 LEFT JOIN BI_SINC_VENDEDOR S ON S.CODUSUR = P.CODUSUR
                 LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_VENDEDOR()) V ON V.CODSUPERVISOR = S.CODSUPERVISOR
+                LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_GERENTE_ES()) G ON G.CODGERENTE = S.CODGERENTE
                 LEFT JOIN BI_SINC_CLIENTE T ON T.CODCLI = P.CODCLI
                WHERE 1 = 1
                  AND P.DTCOMPENSACAO >= vDATA_MOV_INCREMENTAL
@@ -4183,6 +4240,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                        
                        ----------CODCC_DEBITO
                        (CASE
+                         WHEN (((P.CODCOB = 'ESTR' AND P.CODCOBORIG = 'JUR') OR (P.CODCOB = 'JUR')) AND
+                              P.CODFILIAL = vCODFILIAL_ES) THEN
+                          NVL(G.CODCC, F.CODCC)
                          WHEN ((P.CODCOB = 'ESTR' AND P.CODCOBORIG = 'JUR') OR (P.CODCOB = 'JUR')) THEN
                           NVL(V.CODCC, F.CODCC)
                          ELSE
@@ -4246,6 +4306,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                   LEFT JOIN TABLE (PKG_BI_CONTABILIDADE.FN_CC_FILIAL()) F ON F.CODFILIAL = P.CODFILIAL
                   LEFT JOIN BI_SINC_VENDEDOR S ON S.CODUSUR = P.CODUSUR
                   LEFT JOIN TABLE (PKG_BI_CONTABILIDADE.FN_CC_VENDEDOR()) V ON V.CODSUPERVISOR = S.CODSUPERVISOR
+                  LEFT JOIN TABLE (PKG_BI_CONTABILIDADE.FN_CC_GERENTE_ES()) G ON G.CODGERENTE = S.CODGERENTE
                   LEFT JOIN BI_SINC_CLIENTE T ON T.CODCLI = P.CODCLI
                   LEFT JOIN ANALISE_ESTORNO E ON E.NUMTRANS = P.NUMTRANS
                  WHERE 1 = 1
@@ -5282,13 +5343,18 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      V.NUMNOTADEV DOCUMENTO,
                      
                      ----------CONTA_DEBITO
-                     NVL(V.CONTABANCO, vRECEITA_EXTRA_OPERACIONAL) CONTADEBITO,
+                     NVL(V.CONTABANCO, vJUROS_PAGOS) CONTADEBITO,
                      
                      ----------CONTA_CREDITO
                      vDEVOLUCAO_RECEBER CONTACREDITO,
                      
                      ----------CODCC_DEBITO
-                     NULL CODCC_DEBITO,
+                     (CASE
+                       WHEN NVL(V.CONTABANCO, vJUROS_PAGOS) = vJUROS_PAGOS THEN
+                        L.CODCC
+                       ELSE
+                        NULL
+                     END) CODCC_DEBITO,
                      
                      ----------CODCC_CREDITO
                      NULL CODCC_CREDITO,
@@ -5312,6 +5378,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      TO_DATE(NULL, 'DD/MM/YYYY') DTCANCEL
                 FROM BI_SINC_VERBA_FORNECEDOR V
                 LEFT JOIN BI_SINC_FORNECEDOR F ON F.CODFORNEC = V.CODFORNEC
+                LEFT JOIN TABLE(PKG_BI_CONTABILIDADE.FN_CC_FILIAL()) L ON L.CODFILIAL = V.CODFILIAL
                WHERE 1 = 1
                  AND V.DTCOMPENSACAO >= vDATA_MOV_INCREMENTAL
                  AND V.DTCOMPENSACAO IS NOT NULL
@@ -5755,20 +5822,10 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      TO_NUMBER(TO_CHAR(A.DATA, 'DDMMYYYY')) DOCUMENTO,
                      
                      ----------CONTA_DEBITO
-                     (CASE
-                       WHEN A.VLRECUPERAR > 0 THEN
-                        vICMS_RECUPERAR
-                       ELSE
-                        vICMS_RECOLHER
-                     END) CONTADEBITO,
+                     vICMS_RECOLHER CONTADEBITO,
                      
                      ----------CONTA_CREDITO
-                     (CASE
-                       WHEN A.VLRECUPERAR > 0 THEN
-                        vICMS_RECOLHER
-                       ELSE
-                        vICMS_RECUPERAR
-                     END) CONTACREDITO,
+                     vICMS_RECUPERAR CONTACREDITO,
                      
                      ----------CODCC_DEBITO
                      NULL CODCC_DEBITO,
@@ -5849,20 +5906,10 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      TO_NUMBER(TO_CHAR(A.DATA, 'DDMMYYYY')) DOCUMENTO,
                      
                      ----------CONTA_DEBITO
-                     (CASE
-                       WHEN A.VLRECUPERAR > 0 THEN
-                        vPIS_RECUPERAR
-                       ELSE
-                        vPIS_RECOLHER
-                     END) CONTADEBITO,
+                     vPIS_RECOLHER CONTADEBITO,
                      
                      ----------CONTA_CREDITO
-                     (CASE
-                       WHEN A.VLRECUPERAR > 0 THEN
-                        vPIS_RECOLHER
-                       ELSE
-                        vPIS_RECUPERAR
-                     END) CONTACREDITO,
+                     vPIS_RECUPERAR CONTACREDITO,
                      
                      ----------CODCC_DEBITO
                      NULL CODCC_DEBITO,
@@ -5943,20 +5990,10 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      TO_NUMBER(TO_CHAR(A.DATA, 'DDMMYYYY')) DOCUMENTO,
                      
                      ----------CONTA_DEBITO
-                     (CASE
-                       WHEN A.VLRECUPERAR > 0 THEN
-                        vCOFINS_RECUPERAR
-                       ELSE
-                        vCOFINS_RECOLHER
-                     END) CONTADEBITO,
+                     vCOFINS_RECOLHER CONTADEBITO,
                      
                      ----------CONTA_CREDITO
-                     (CASE
-                       WHEN A.VLRECUPERAR > 0 THEN
-                        vCOFINS_RECOLHER
-                       ELSE
-                        vCOFINS_RECUPERAR
-                     END) CONTACREDITO,
+                     vCOFINS_RECUPERAR CONTACREDITO,
                      
                      ----------CODCC_DEBITO
                      NULL CODCC_DEBITO,
@@ -6250,8 +6287,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     END LOOP;
   
   END FN_APURA_COMPETE_DEST_COM;
-	
-	  ----APURACAO IMPOSTOS - COMPETE - CREDITO PRESUMIDO 1.1%
+
+  ----APURACAO IMPOSTOS - COMPETE - CREDITO PRESUMIDO 1.1%
   FUNCTION FN_APURA_COMPETE_CRED_PRESUMIDO RETURN T_CONTABIL_TABLE
     PIPELINED IS
   
@@ -6283,7 +6320,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                        TO_NUMBER(TO_CHAR(A.DATA, 'DDMMYYYY')) DOCUMENTO,
                        
                        ----------CONTA_DEBITO
-                       vICMS_RECOLHER_ES CONTADEBITO,
+                       vICMS_RECUPERAR_ES CONTADEBITO,
                        
                        ----------CONTA_CREDITO
                        vSUBVENCAO_FISCAL_ES CONTACREDITO,
@@ -6339,7 +6376,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   
   END FN_APURA_COMPETE_CRED_PRESUMIDO;
 
-	  ----APURACAO IMPOSTOS - COMPETE - ADICIONAL INCENTIVO 3.5%
+  ----APURACAO IMPOSTOS - COMPETE - ADICIONAL INCENTIVO 3.5%
   FUNCTION FN_APURA_COMPETE_ADD_INCENTIVO RETURN T_CONTABIL_TABLE
     PIPELINED IS
   
@@ -6426,7 +6463,6 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     END LOOP;
   
   END FN_APURA_COMPETE_ADD_INCENTIVO;
-	
 
   ----APURACAO IMPOSTOS - COMPETE - SALDO APURADO
   FUNCTION FN_APURA_COMPETE_SALDO RETURN T_CONTABIL_TABLE
@@ -6444,18 +6480,10 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      TO_NUMBER(TO_CHAR(A.DATA, 'DDMMYYYY')) DOCUMENTO,
                      
                      ----------CONTA_DEBITO
-                     (CASE WHEN (A.VLSALDO > 0 AND A.VLRECUPERAR > 0) THEN 
-										       vICMS_RECUPERAR_ES 
-													ELSE 
-														vICMS_RECOLHER_ES
-										 END) CONTADEBITO,
+                     vICMS_RECOLHER_ES CONTADEBITO,
                      
                      ----------CONTA_CREDITO
-                     (CASE WHEN (A.VLSALDO > 0 AND A.VLRECUPERAR > 0) THEN 
-                           vICMS_RECOLHER_ES 
-                          ELSE 
-                            vICMS_RECUPERAR_ES
-                     END)  CONTACREDITO,
+                     vICMS_RECUPERAR_ES CONTACREDITO,
                      
                      ----------CODCC_DEBITO
                      NULL CODCC_DEBITO,
@@ -6470,7 +6498,18 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      'APURACAO COMPETE - SALDO APURADO' HISTORICO,
                      
                      ----------VALOR
-                     ROUND(NVL(ABS(A.VLSALDO), 0), 2) VALOR,
+                     (CASE
+                       WHEN A.DATA < vDT_INICIO_BENEFICIO_ES THEN
+                        ROUND(A.VLDEBITO, 2)
+                       WHEN (A.VLSALDO > 0 AND A.VLRECUPERAR > 0) THEN
+                        (ROUND(NVL(A.VLCREDITO, 0), 2) + ROUND(NVL(A.VLCRED_RED, 0), 2) +
+                        ROUND(NVL(A.VLCRED_ALIQPERC, 0), 2) + ROUND(NVL(A.VLCRED_PRESUMIDO, 0), 2) +
+                        ROUND(NVL(A.VLCRED_DESTCOM, 0), 2) - ROUND(NVL(A.VLSALDO, 0), 2))
+                       ELSE
+                        (ROUND(NVL(A.VLCREDITO, 0), 2) + ROUND(NVL(A.VLCRED_RED, 0), 2) +
+                        ROUND(NVL(A.VLCRED_ALIQPERC, 0), 2) + ROUND(NVL(A.VLCRED_PRESUMIDO, 0), 2) +
+                        ROUND(NVL(A.VLCRED_DESTCOM, 0), 2) + ROUND(NVL(ABS(A.VLSALDO), 0), 2))
+                     END) VALOR,
                      
                      ('APURA_COMPETE_SALDO_APURADO') ORIGEM,
                      
@@ -6482,7 +6521,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                WHERE 1 = 1
                  AND A.DATA >= vDATA_MOV_INCREMENTAL
                  AND A.DATA IS NOT NULL
-                 AND NVL(A.VLSALDO,0) <> 0)
+                 AND NVL(A.VLSALDO, 0) <> 0)
     
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
