@@ -3000,7 +3000,12 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      L.RECNUM) ATIVIDADE,
                      
                      ----------HISTORICO
-                     ('PAG NF ' || L.NUMNOTA || ' - ' || L.HISTORICO) HISTORICO,
+                     (CASE
+                       WHEN NVL(L.NUMNOTA, 0) <> 0 THEN
+                        ('PAG NF ' || L.NUMNOTA || ' - ' || L.HISTORICO)
+                       ELSE
+                        (UPPER(C.CONTA) || ' - ' || L.HISTORICO)
+                     END) HISTORICO,
                      
                      ROUND(ABS(L.VLRATEIO), 2) VALOR,
                      
