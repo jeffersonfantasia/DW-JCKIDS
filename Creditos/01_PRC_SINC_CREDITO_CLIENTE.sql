@@ -20,10 +20,21 @@ BEGIN
               
               DUPLICATA AS
                (SELECT P.NUMTRANSVENDA,
-                      P.DUPLIC
+                      P.DUPLIC,
+                      P.CODCLI
                  FROM PCPREST P
                 GROUP BY P.NUMTRANSVENDA,
-                         P.DUPLIC),
+                         P.DUPLIC,
+                         P.CODCLI),
+              
+              CLIENTDUP AS
+               (SELECT P.NUMTRANSVENDA,
+                      P.PREST,
+                      P.CODCLI
+                 FROM PCPREST P
+                GROUP BY P.NUMTRANSVENDA,
+                         P.PREST,
+                         P.CODCLI),
               
               BANCO AS
                (SELECT B.CODBANCO,
@@ -78,7 +89,9 @@ BEGIN
                  LEFT JOIN DUPLICATA P ON P.NUMTRANSVENDA = C.NUMTRANSVENDADESC
                  LEFT JOIN PCNFENT E ON E.NUMTRANSENT = C.NUMTRANSENTDEVCLI
                  LEFT JOIN BI_SINC_FILIAL F ON F.CODFILIAL = C.CODFILIAL
-                 LEFT JOIN CLIENTE T ON T.CODCLI = C.CODCLI
+                 LEFT JOIN CLIENTDUP CD ON CD.NUMTRANSVENDA = C.NUMTRANSVENDADESC
+                                       AND CD.PREST = C.PRESTRESTCLI
+                 LEFT JOIN CLIENTE T ON T.CODCLI = CD.CODCLI
                 WHERE NVL(C.CODROTINA, 0) <> 9801
                   AND C.DTLANC >= vDATA_MOV_INCREMENTAL)
               
