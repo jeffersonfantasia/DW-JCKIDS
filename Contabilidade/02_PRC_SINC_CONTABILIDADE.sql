@@ -21,6 +21,8 @@ BEGIN
                   OR NVL(S.DOCUMENTO, 0) <> NVL(M.DOCUMENTO, 0)
                   OR NVL(S.OPERACAO, 0) <> NVL(M.OPERACAO, 0)
                   OR NVL(S.CODGERENCIAL, 0) <> NVL(M.CODGERENCIAL, 0)
+                  OR NVL(S.OPER_RAZAO, 0) <> NVL(M.OPER_RAZAO, 0)
+                  OR NVL(S.CONTARAZAO, 0) <> NVL(M.CONTARAZAO, 0)
                   OR NVL(S.CODCC, '99') <> NVL(M.CODCC, '0')
                   OR NVL(S.CODDRE, '0') <> NVL(M.CODDRE, '0')
                   OR NVL(S.CODCONTABIL, '0') <> NVL(M.CODCONTABIL, '0')
@@ -37,12 +39,14 @@ BEGIN
   LOOP
     BEGIN
       UPDATE BI_SINC_CONTABILIDADE
-         SET CODEMPRESA      = r.CODEMPRESA,                       
+         SET CODEMPRESA      = r.CODEMPRESA,
              DATA            = r.DATA,
              TIPOLANCAMENTO  = r.TIPOLANCAMENTO,
              IDENTIFICADOR   = r.IDENTIFICADOR,
              DOCUMENTO       = r.DOCUMENTO,
              CODGERENCIAL    = r.CODGERENCIAL,
+             OPER_RAZAO      = r.OPER_RAZAO,
+             CONTARAZAO      = r.CONTARAZAO,
              CODCC           = r.CODCC,
              CODDRE          = r.CODDRE,
              CODCONTABIL     = r.CODCONTABIL,
@@ -67,6 +71,8 @@ BEGIN
            DOCUMENTO,
            OPERACAO,
            CODGERENCIAL,
+           OPER_RAZAO,
+           CONTARAZAO,
            CODCC,
            CODDRE,
            CODCONTABIL,
@@ -87,6 +93,8 @@ BEGIN
            r.DOCUMENTO,
            r.OPERACAO,
            r.CODGERENCIAL,
+           r.OPER_RAZAO,
+           r.CONTARAZAO,
            r.CODCC,
            r.CODDRE,
            r.CODCONTABIL,
