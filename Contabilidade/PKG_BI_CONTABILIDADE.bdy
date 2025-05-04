@@ -22,6 +22,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   vFATURAMENTO_BRUTO             NUMBER := 3101;
   vFATURAMENTO_ANTECIPADO        NUMBER := 1182;
   vESTOQUE                       NUMBER := 1174;
+  vCMV                           NUMBER := 3110;
   vICMS_VENDA                    NUMBER := 3104;
   vPIS_VENDA                     NUMBER := 3105;
   vCOFINS_VENDA                  NUMBER := 3106;
@@ -37,6 +38,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   vESTOQUE_RECEBIDO_CONSIGNADO   NUMBER := 1176;
   vREMESSA_MERCADORIA_CONSIGNADO NUMBER := 2200;
   vDEVOLUCAO_RECEBER             NUMBER := 1178;
+  vICMS_TRANSFERENCIA            NUMBER := 1187;
   vICMS_RECUPERAR                NUMBER := 1201;
   vICMS_RECUPERAR_ES             NUMBER := 1204;
   vPIS_RECUPERAR                 NUMBER := 1202;
@@ -429,6 +431,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                         'P01'
                      END) CODLANC,
                      M.CODEMPRESA,
+                     M.CODFILIAL,
                      M.DATA,
                      ---------TIPOLANCAMENTO
                      (CASE
@@ -441,13 +444,12 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                           ELSE
                            3
                         END)
-                       WHEN M.TIPOMOV IN ('SAIDA DEVOLUCAO', 'SAIDA TRANSFERENCIA') THEN
+                       WHEN M.TIPOMOV IN ('SAIDA DEVOLUCAO') THEN
                         1
                        WHEN M.TIPOMOV IN ('ENTRADA COMPRA',
                                           'ENTRADA COMPRA CONSIGNADO',
                                           'ENTRADA COMPRA TRIANGULAR',
                                           'ENTRADA BONIFICADA',
-                                          'ENTRADA TRANSFERENCIA',
                                           'ENTRADA REM ENTREGA FUTURA') THEN
                         2
                        ELSE
@@ -477,6 +479,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                         vDEVOLUCAO_RECEBER
                        WHEN M.TIPOMOV IN ('SAIDA TRANSFERENCIA') THEN
                         vTRANSFERENCIA_MERCADORIA
+                       WHEN M.TIPOMOV IN ('ENTRADA TRANSFERENCIA') THEN
+                        vESTOQUE
                        WHEN M.TIPOMOV IN ('ENTRADA CONSIGNADO') THEN
                         vESTOQUE_RECEBIDO_CONSIGNADO
                        WHEN M.TIPOMOV IN ('ENTRADA DEVOLUCAO') THEN
@@ -514,7 +518,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                         vRETORNO_CONSERTO
                        WHEN M.TIPOMOV IN ('SAIDA DEMONSTRACAO') THEN
                         vRETORNO_DEMOSTRACAO
-                       WHEN M.TIPOMOV IN ('SAIDA PERDA MERCADORIA') THEN
+                       WHEN M.TIPOMOV IN ('SAIDA PERDA MERCADORIA', 'SAIDA TRANSFERENCIA') THEN
                         vESTOQUE
                        WHEN M.TIPOMOV IN ('ENTRADA COMPRA',
                                           'ENTRADA COMPRA CONSIGNADO',
@@ -624,6 +628,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -655,6 +660,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                         'P02'
                      END) CODLANC,
                      M.CODEMPRESA,
+                     M.CODFILIAL,
                      M.DATA,
                      ---------TIPOLANCAMENTO
                      (CASE
@@ -674,7 +680,6 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                                           'ENTRADA COMPRA CONSIGNADO',
                                           'ENTRADA COMPRA TRIANGULAR',
                                           'ENTRADA BONIFICADA',
-                                          'ENTRADA TRANSFERENCIA',
                                           'ENTRADA REM ENTREGA FUTURA') THEN
                         vESTOQUE
                        WHEN M.TIPOMOV IN ('ENTRADA SIMPLES REMESSA')
@@ -729,18 +734,17 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                       (M.TEMVENDAORIG = 'N' AND
                       M.CODFORNEC NOT IN (SELECT CODFORNEC FROM TABLE(PKG_BI_CONTABILIDADE.FN_FORNEC_JCBROTHERS()))))
                  AND M.TIPOMOV IN ('SAIDA DEVOLUCAO',
-                                   'SAIDA TRANSFERENCIA',
                                    'ENTRADA COMPRA',
                                    'ENTRADA COMPRA CONSIGNADO',
                                    'ENTRADA COMPRA TRIANGULAR',
                                    'ENTRADA BONIFICADA',
-                                   'ENTRADA TRANSFERENCIA',
                                    'ENTRADA SIMPLES REMESSA',
                                    'ENTRADA REM ENTREGA FUTURA'))
     
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -767,6 +771,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   BEGIN
     FOR r IN (SELECT 'P03' CODLANC,
                      M.CODEMPRESA,
+                     M.CODFILIAL,
                      M.DATA,
                      ---------TIPOLANCAMENTO
                      3 TIPOLANCAMENTO,
@@ -845,6 +850,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -876,6 +882,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                         'P04'
                      END) CODLANC,
                      M.CODEMPRESA,
+                     M.CODFILIAL,
                      M.DATA,
                      ---------TIPOLANCAMENTO
                      (CASE
@@ -885,11 +892,10 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                                           'ENTRADA COMPRA CONSIGNADO',
                                           'ENTRADA COMPRA TRIANGULAR',
                                           'ENTRADA BONIFICADA',
-                                          'ENTRADA TRANSFERENCIA',
                                           'ENTRADA SIMPLES REMESSA',
                                           'ENTRADA REM ENTREGA FUTURA') THEN
                         1
-                       WHEN M.TIPOMOV IN ('SAIDA DEVOLUCAO', 'SAIDA TRANSFERENCIA') THEN
+                       WHEN M.TIPOMOV IN ('SAIDA DEVOLUCAO') THEN
                         2
                        ELSE
                         3
@@ -923,6 +929,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                           ELSE
                            vICMS_RECUPERAR
                         END)
+                       WHEN M.TIPOMOV IN ('SAIDA TRANSFERENCIA') THEN
+                        vICMS_TRANSFERENCIA
                        ELSE
                         NULL
                      END) CONTADEBITO,
@@ -948,6 +956,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                        WHEN (M.TIPOMOV IN ('ENTRADA CONSIGNADO') OR
                             (M.TIPOMOV IN ('ENTRADA COMPRA') AND M.VALORCONTABIL = 0)) THEN
                         vESTOQUE
+                       WHEN M.TIPOMOV IN ('ENTRADA TRANSFERENCIA') THEN
+                        vICMS_TRANSFERENCIA
                        ELSE
                         NULL
                      END) CONTACREDITO,
@@ -1014,6 +1024,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -1040,6 +1051,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   BEGIN
     FOR r IN (SELECT 'P05' CODLANC,
                      M.CODEMPRESA,
+                     M.CODFILIAL,
                      M.DATA,
                      ---------TIPOLANCAMENTO
                      (CASE
@@ -1136,6 +1148,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -1162,6 +1175,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   BEGIN
     FOR r IN (SELECT 'P06' CODLANC,
                      M.CODEMPRESA,
+                     M.CODFILIAL,
                      M.DATA,
                      ---------TIPOLANCAMENTO
                      (CASE
@@ -1258,6 +1272,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -1284,6 +1299,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   BEGIN
     FOR r IN (SELECT 'P07' CODLANC,
                      M.CODEMPRESA,
+                     M.CODFILIAL,
                      M.DATA,
                      3 TIPOLANCAMENTO,
                      M.NUMTRANSACAO IDENTIFICADOR,
@@ -1346,6 +1362,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -1372,6 +1389,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   BEGIN
     FOR r IN (SELECT 'P08' CODLANC,
                      M.CODEMPRESA,
+                     M.CODFILIAL,
                      M.DATA,
                      3 TIPOLANCAMENTO,
                      M.NUMTRANSACAO IDENTIFICADOR,
@@ -1415,6 +1433,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -1448,6 +1467,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                 
                 SELECT ('D01' || '.CC_' || DECODE(E.CODCC, '0', L.CODCC, E.CODCC)) CODLANC,
                        E.CODEMPRESA,
+                       E.CODFILIAL,
                        E.DATA,
                        
                        ----------TIPO LANCAMENTO
@@ -1555,6 +1575,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -1584,6 +1605,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                 
                 SELECT DISTINCT ('D02') CODLANC,
                                 E.CODEMPRESA,
+                                E.CODFILIAL,
                                 E.DATA,
                                 
                                 ----------TIPO LANCAMENTO
@@ -1658,6 +1680,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -1689,6 +1712,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                 
                 SELECT ('D03' || '.CC_' || DECODE(E.CODCC, '0', L.CODCC, E.CODCC)) CODLANC,
                        E.CODEMPRESA,
+                       E.CODFILIAL,
                        E.DATA,
                        
                        ----------TIPO LANCAMENTO
@@ -1784,6 +1808,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -1810,6 +1835,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   BEGIN
     FOR r IN (SELECT ('D04' || '.CC_' || DECODE(E.CODCC, '0', L.CODCC, E.CODCC)) CODLANC,
                      E.CODEMPRESA,
+                     E.CODFILIAL,
                      E.DATA,
                      
                      ----------TIPO LANCAMENTO
@@ -1883,6 +1909,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -1909,6 +1936,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   BEGIN
     FOR r IN (SELECT ('D05' || '.CC_' || DECODE(E.CODCC, '0', L.CODCC, E.CODCC)) CODLANC,
                      E.CODEMPRESA,
+                     E.CODFILIAL,
                      E.DATA,
                      
                      ----------TIPO LANCAMENTO
@@ -1982,6 +2010,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -2008,6 +2037,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   BEGIN
     FOR r IN (SELECT ('D06' || '.CC_' || DECODE(E.CODCC, '0', L.CODCC, E.CODCC)) CODLANC,
                      E.CODEMPRESA,
+                     E.CODFILIAL,
                      E.DATA,
                      
                      ----------TIPO LANCAMENTO
@@ -2073,6 +2103,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -2099,6 +2130,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   BEGIN
     FOR r IN (SELECT ('G01' || '.CC_' || L.CODCC) CODLANC,
                      L.CODEMPRESA,
+                     L.CODFILIAL,
                      L.DTCOMPETENCIA DATA,
                      
                      ----------TIPO LANCAMENTO
@@ -2152,6 +2184,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -2200,7 +2233,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                 
                 SELECT ('G02' || '.CC_' || L.CODCC) CODLANC,
                        L.CODEMPRESA,
-                       
+                       L.CODFILIAL,
                        ----------DATA
                        (CASE
                          WHEN (L.CODCONTA = vCSRF_RECOLHER OR (NVL(L.RECNUMPRINC, 0) = 0 OR L.RECNUMPRINC = L.RECNUM)) THEN
@@ -2277,6 +2310,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -2303,6 +2337,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   BEGIN
     FOR r IN (SELECT ('L01' || '.CC_' || L.CODCC) CODLANC,
                      L.CODEMPRESA,
+                     L.CODFILIAL,
                      L.DTCOMPENSACAO DATA,
                      
                      ----------TIPO LANCAMENTO
@@ -2390,6 +2425,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -2416,6 +2452,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   BEGIN
     FOR r IN (SELECT ('L02' || '.CC_' || L.CODCC) CODLANC,
                      L.CODEMPRESA,
+                     L.CODFILIAL,
                      L.DTCOMPENSACAO DATA,
                      
                      ----------TIPO LANCAMENTO
@@ -2567,6 +2604,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -2593,6 +2631,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   BEGIN
     FOR r IN (SELECT ('L03' || '.CC_' || L.CODCC) CODLANC,
                      L.CODEMPRESA,
+                     L.CODFILIAL,
                      L.DTCOMPENSACAO DATA,
                      
                      ----------TIPO LANCAMENTO
@@ -2669,6 +2708,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -2716,6 +2756,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                 
                 SELECT ('L04' || '.CC_' || L.CODCC) CODLANC,
                        L.CODEMPRESA,
+                       L.CODFILIAL,
                        L.DTCOMPENSACAO DATA,
                        
                        ----------TIPO LANCAMENTO
@@ -2807,6 +2848,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -2833,6 +2875,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   BEGIN
     FOR r IN (SELECT ('L05' || '.CC_' || L.CODCC) CODLANC,
                      L.CODEMPRESA,
+                     L.CODFILIAL,
                      L.DTCOMPENSACAO DATA,
                      
                      ----------TIPO LANCAMENTO
@@ -2897,6 +2940,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -2923,6 +2967,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   BEGIN
     FOR r IN (SELECT ('L06' || '.CC_' || L.CODCC) CODLANC,
                      L.CODEMPRESA,
+                     L.CODFILIAL,
                      L.DTCOMPENSACAO DATA,
                      
                      ----------TIPO LANCAMENTO
@@ -3001,6 +3046,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -3027,6 +3073,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   BEGIN
     FOR r IN (SELECT 'L07' CODLANC,
                      L.CODEMPRESA,
+                     L.CODFILIAL,
                      L.DTCOMPENSACAO DATA,
                      
                      ----------TIPO LANCAMENTO
@@ -3100,6 +3147,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -3126,6 +3174,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   BEGIN
     FOR r IN (SELECT ('L08' || '.CC_' || L.CODCC) CODLANC,
                      L.CODEMPRESA,
+                     L.CODFILIAL,
                      L.DTCOMPENSACAO DATA,
                      
                      ----------TIPO LANCAMENTO
@@ -3191,6 +3240,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -3220,6 +3270,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                 
                 SELECT ('L09' || '.CC_' || L.CODCC) CODLANC,
                        L.CODEMPRESA,
+                       L.CODFILIAL,
                        (CASE
                          WHEN L.VALOR < 0 THEN
                           L.DTCOMPENSACAO
@@ -3293,6 +3344,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -3319,6 +3371,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   BEGIN
     FOR r IN (SELECT ('L10' || '.CC_' || L.CODCC) CODLANC,
                      L.CODEMPRESA,
+                     L.CODFILIAL,
                      L.DTPAGAMENTO DATA,
                      
                      ----------TIPO LANCAMENTO
@@ -3371,6 +3424,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -3397,6 +3451,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   BEGIN
     FOR r IN (SELECT ('L11' || '.CC_' || L.CODCC) CODLANC,
                      L.CODEMPRESA,
+                     L.CODFILIAL,
                      NVL(L.DTCOMPENSACAO, L.DTPAGAMENTO) DATA,
                      
                      ----------TIPO LANCAMENTO
@@ -3446,6 +3501,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -3479,6 +3535,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                 
                 SELECT ('R01' || '.P_' || P.PREST) CODLANC,
                        P.CODEMPRESA,
+                       P.CODFILIAL,
                        P.DTDESD DATA,
                        
                        ----------TIPO LANCAMENTO
@@ -3529,6 +3586,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -3555,6 +3613,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   BEGIN
     FOR r IN (SELECT ('R02' || '.P_' || P.PREST) CODLANC,
                      P.CODEMPRESA,
+                     P.CODFILIAL,
                      P.DTCOMPENSACAO DATA,
                      
                      ----------TIPO LANCAMENTO
@@ -3607,6 +3666,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -3633,6 +3693,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   BEGIN
     FOR r IN (SELECT ('R03' || '.P_' || P.PREST) CODLANC,
                      P.CODEMPRESA,
+                     P.CODFILIAL,
                      P.DTCOMPENSACAO DATA,
                      
                      ----------TIPO LANCAMENTO
@@ -3686,6 +3747,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -3712,6 +3774,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   BEGIN
     FOR r IN (SELECT ('R04' || '.P_' || P.PREST) CODLANC,
                      P.CODEMPRESA,
+                     P.CODFILIAL,
                      P.DTCOMPENSACAO DATA,
                      
                      ----------TIPO LANCAMENTO
@@ -3771,6 +3834,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -3808,6 +3872,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                 
                 SELECT ('R05' || '.P_' || P.PREST) CODLANC,
                        P.CODEMPRESA,
+                       P.CODFILIAL,
                        P.DTCOMPENSACAO DATA,
                        
                        ----------TIPO LANCAMENTO
@@ -3893,6 +3958,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -3919,6 +3985,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   BEGIN
     FOR r IN (SELECT ('R06' || '.P_' || P.PREST) CODLANC,
                      P.CODEMPRESA,
+                     P.CODFILIAL,
                      P.DTCOMPENSACAO DATA,
                      
                      ----------TIPO LANCAMENTO
@@ -4009,6 +4076,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -4035,6 +4103,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   BEGIN
     FOR r IN (SELECT ('R07' || '.P_' || P.PREST) CODLANC,
                      P.CODEMPRESA,
+                     P.CODFILIAL,
                      P.DTCOMPENSACAO DATA,
                      
                      ----------TIPO LANCAMENTO
@@ -4126,6 +4195,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -4154,6 +4224,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
               
               SELECT ('R08' || '.P_' || P.PREST) CODLANC,
                       P.CODEMPRESA,
+                      P.CODFILIAL,
                       P.DTCOMPENSACAO DATA,
                       
                       ----------TIPO LANCAMENTO
@@ -4244,6 +4315,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -4281,6 +4353,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                 
                 SELECT ('R09' || '.P_' || P.PREST) CODLANC,
                        P.CODEMPRESA,
+                       P.CODFILIAL,
                        P.DTCOMPENSACAO DATA,
                        
                        ----------TIPO LANCAMENTO
@@ -4390,6 +4463,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -4416,6 +4490,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   BEGIN
     FOR r IN (SELECT ('R10' || '.P_' || P.PREST) CODLANC,
                      P.CODEMPRESA,
+                     P.CODFILIAL,
                      P.DTPAGAMENTO DATA,
                      
                      ----------TIPO LANCAMENTO
@@ -4465,6 +4540,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -4491,6 +4567,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   BEGIN
     FOR r IN (SELECT ('C01' || '.' || C.CODIGO) CODLANC,
                      C.CODEMPRESA,
+                     C.CODFILIAL,
                      C.DTCOMPENSACAO DATA,
                      
                      ----------TIPO LANCAMENTO
@@ -4539,6 +4616,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -4565,6 +4643,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   BEGIN
     FOR r IN (SELECT ('C02' || '.' || C.CODIGO) CODLANC,
                      C.CODEMPRESA,
+                     C.CODFILIAL,
                      C.DTCOMPENSACAO DATA,
                      
                      ----------TIPO LANCAMENTO
@@ -4616,6 +4695,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -4642,6 +4722,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   BEGIN
     FOR r IN (SELECT ('C03' || '.' || C.CODIGO) CODLANC,
                      C.CODEMPRESA,
+                     C.CODFILIAL,
                      C.DTDESCONTO DATA,
                      
                      ----------TIPO LANCAMENTO
@@ -4693,6 +4774,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -4719,6 +4801,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   BEGIN
     FOR r IN (SELECT ('C04' || '.' || C.CODIGO) CODLANC,
                      C.CODEMPRESA,
+                     C.CODFILIAL,
                      C.DTDESCONTO DATA,
                      
                      ----------TIPO LANCAMENTO
@@ -4768,6 +4851,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -4794,6 +4878,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   BEGIN
     FOR r IN (SELECT ('C05' || '.' || C.CODIGO) CODLANC,
                      C.CODEMPRESA,
+                     C.CODFILIAL,
                      C.DTESTORNO DATA,
                      
                      ----------TIPO LANCAMENTO
@@ -4844,6 +4929,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -4870,6 +4956,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   BEGIN
     FOR r IN (SELECT ('C06' || '.' || C.CODIGO) CODLANC,
                      C.CODEMPRESA,
+                     C.CODFILIAL,
                      C.DTDESCONTO DATA,
                      
                      ----------TIPO LANCAMENTO
@@ -4921,6 +5008,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -4947,6 +5035,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   BEGIN
     FOR r IN (SELECT ('C07' || '.' || C.CODIGO) CODLANC,
                      C.CODEMPRESA,
+                     C.CODFILIAL,
                      C.DTDESCONTO DATA,
                      
                      ----------TIPO LANCAMENTO
@@ -4997,6 +5086,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -5023,6 +5113,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   BEGIN
     FOR r IN (SELECT ('C08' || '.' || C.CODIGO) CODLANC,
                      C.CODEMPRESA,
+                     C.CODFILIAL,
                      C.DTESTORNO DATA,
                      
                      ----------TIPO LANCAMENTO
@@ -5073,6 +5164,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -5099,6 +5191,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   BEGIN
     FOR r IN (SELECT ('C09' || '.' || C.CODIGO) CODLANC,
                      C.CODEMPRESA,
+                     C.CODFILIAL,
                      C.DTCOMPENSACAO DATA,
                      
                      ----------TIPO LANCAMENTO
@@ -5150,6 +5243,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -5176,6 +5270,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   BEGIN
     FOR r IN (SELECT ('C10' || '.' || C.CODIGO) CODLANC,
                      C.CODEMPRESA,
+                     C.CODFILIAL,
                      C.DTDESCONTO DATA,
                      
                      ----------TIPO LANCAMENTO
@@ -5226,6 +5321,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -5252,6 +5348,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   BEGIN
     FOR r IN (SELECT ('C11' || '.' || C.CODIGO) CODLANC,
                      C.CODEMPRESA,
+                     C.CODFILIAL,
                      C.DTESTORNO DATA,
                      
                      ----------TIPO LANCAMENTO
@@ -5303,6 +5400,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -5329,6 +5427,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   BEGIN
     FOR r IN (SELECT 'V01' CODLANC,
                      V.CODEMPRESA,
+                     V.CODFILIAL,
                      V.DTPAGVERBA DATA,
                      
                      ----------TIPO LANCAMENTO
@@ -5377,6 +5476,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -5403,6 +5503,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   BEGIN
     FOR r IN (SELECT 'V02' CODLANC,
                      V.CODEMPRESA,
+                     V.CODFILIAL,
                      V.DTCOMPENSACAO DATA,
                      
                      ----------TIPO LANCAMENTO
@@ -5457,6 +5558,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -5483,6 +5585,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   BEGIN
     FOR r IN (SELECT 'V03' CODLANC,
                      V.CODEMPRESA,
+                     V.CODFILIAL,
                      NVL(V.DTCOMPENSACAO, V.DTPAGLANC) DATA,
                      
                      ----------TIPO LANCAMENTO
@@ -5532,6 +5635,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -5558,6 +5662,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   BEGIN
     FOR r IN (SELECT 'V04' CODLANC,
                      V.CODEMPRESA,
+                     V.CODFILIAL,
                      NVL(V.DTCOMPENSACAO, V.DTPAGLANC) DATA,
                      
                      ----------TIPO LANCAMENTO
@@ -5614,6 +5719,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -5640,6 +5746,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   BEGIN
     FOR r IN (SELECT 'V05' CODLANC,
                      V.CODEMPRESA,
+                     V.CODFILIAL,
                      V.DTCOMPENSACAO DATA,
                      
                      ----------TIPO LANCAMENTO
@@ -5690,6 +5797,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -5716,6 +5824,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   BEGIN
     FOR r IN (SELECT 'B01' CODLANC,
                      M.CODEMPRESA,
+                     M.CODFILIAL,
                      M.DTCOMPENSACAO DATA,
                      
                      ----------TIPO LANCAMENTO
@@ -5773,6 +5882,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -5799,6 +5909,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   BEGIN
     FOR r IN (SELECT 'B02' CODLANC,
                      M.CODEMPRESA,
+                     M.CODFILIAL,
                      M.DTCOMPENSACAO DATA,
                      
                      ----------TIPO LANCAMENTO
@@ -5856,6 +5967,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -5881,7 +5993,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   
   BEGIN
     FOR r IN (SELECT ('AP01' || '.F' || LPAD(A.CODFILIAL, 2, 0)) CODLANC,
-                     1 CODEMPRESA,
+                     '1' CODEMPRESA,
+                     A.CODFILIAL,
                      A.DATA,
                      
                      ----------TIPO LANCAMENTO
@@ -5940,6 +6053,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -5965,7 +6079,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   
   BEGIN
     FOR r IN (SELECT 'AP02' CODLANC,
-                     1 CODEMPRESA,
+                     '1' CODEMPRESA,
+                     '1' CODFILIAL,
                      A.DATA,
                      
                      ----------TIPO LANCAMENTO
@@ -6024,6 +6139,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -6049,7 +6165,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   
   BEGIN
     FOR r IN (SELECT 'AP03' CODLANC,
-                     1 CODEMPRESA,
+                     '1' CODEMPRESA,
+                     '1' CODFILIAL,
                      A.DATA,
                      
                      ----------TIPO LANCAMENTO
@@ -6108,6 +6225,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -6133,7 +6251,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   
   BEGIN
     FOR r IN (SELECT 'AC01' CODLANC,
-                     1 CODEMPRESA,
+                     '1' CODEMPRESA,
+                     '11' CODFILIAL,
                      A.DATA,
                      
                      ----------TIPO LANCAMENTO
@@ -6179,6 +6298,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -6220,7 +6340,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                    FROM RATEIO_COMPETE)
                 
                 SELECT ('AC02_C.' || G.CODCC) CODLANC,
-                       1 CODEMPRESA,
+                       '1' CODEMPRESA,
+                       '11' CODFILIAL,
                        A.DATA,
                        
                        ----------TIPO LANCAMENTO
@@ -6267,6 +6388,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -6292,7 +6414,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   
   BEGIN
     FOR r IN (SELECT 'AC03' CODLANC,
-                     1 CODEMPRESA,
+                     '1' CODEMPRESA,
+                     '11' CODFILIAL,
                      A.DATA,
                      
                      ----------TIPO LANCAMENTO
@@ -6338,6 +6461,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -6379,7 +6503,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                    FROM RATEIO_COMPETE)
                 
                 SELECT ('AC04_C.' || G.CODCC) CODLANC,
-                       1 CODEMPRESA,
+                       '1' CODEMPRESA,
+                       '11' CODFILIAL,
                        A.DATA,
                        
                        ----------TIPO LANCAMENTO
@@ -6426,6 +6551,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -6467,7 +6593,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                    FROM RATEIO_COMPETE)
                 
                 SELECT ('AC05_C.' || G.CODCC) CODLANC,
-                       1 CODEMPRESA,
+                       '1' CODEMPRESA,
+                       '11' CODFILIAL,
                        A.DATA,
                        
                        ----------TIPO LANCAMENTO
@@ -6514,6 +6641,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -6539,7 +6667,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   
   BEGIN
     FOR r IN (SELECT 'AC06' CODLANC,
-                     1 CODEMPRESA,
+                     '1' CODEMPRESA,
+                     '11' CODFILIAL,
                      A.DATA,
                      
                      ----------TIPO LANCAMENTO
@@ -6595,6 +6724,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
                                  r.CODEMPRESA,
+                                 r.CODFILIAL,
                                  r.DATA,
                                  r.TIPOLANCAMENTO,
                                  r.IDENTIFICADOR,
@@ -6613,6 +6743,110 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
     END LOOP;
   
   END FN_APURA_COMPETE_SALDO;
+
+  ----APURACAO CMV
+  FUNCTION FN_APURA_CMV RETURN T_CONTABIL_TABLE
+    PIPELINED IS
+  
+  BEGIN
+    FOR r IN (SELECT ('AV01' || '.F' || LPAD(A.CODFILIAL, 2, 0) || '.CC_' || A.CODCC) CODLANC,
+                     A.CODEMPRESA,
+                     A.CODFILIAL,
+                     A.DATA,
+                     
+                     ----------TIPO LANCAMENTO
+                     3 TIPOLANCAMENTO,
+                     
+                     TO_NUMBER(TO_CHAR(A.DATA, 'DDMMYYYY') || LPAD(A.CODFILIAL, 2, 0)) IDENTIFICADOR,
+                     TO_NUMBER(TO_CHAR(A.DATA, 'DDMMYYYY') || LPAD(A.CODFILIAL, 2, 0)) DOCUMENTO,
+                     
+                     ----------CONTA_DEBITO
+                     (CASE
+                       WHEN A.VLCMVRATEIO > 0 THEN
+                        vCMV
+                       ELSE
+                        vESTOQUE
+                     END) CONTADEBITO,
+                     
+                     ----------CONTA_CREDITO
+                     (CASE
+                       WHEN A.VLCMVRATEIO > 0 THEN
+                        vESTOQUE
+                       ELSE
+                        vCMV
+                     END) CONTACREDITO,
+                     
+                     ----------CODCC_DEBITO
+                     (CASE
+                       WHEN A.VLCMVRATEIO > 0 THEN
+                        A.CODCC
+                       ELSE
+                        NULL
+                     END) CODCC_DEBITO,
+                     
+                     ----------CODCC_CREDITO
+                     (CASE
+                       WHEN A.VLCMVRATEIO > 0 THEN
+                        NULL
+                       ELSE
+                        A.CODCC
+                     END) CODCC_CREDITO,
+                     
+                     ----------ATIVIDADE
+                     (CASE
+                       WHEN A.VLCMVRATEIO > 0 THEN
+                        ('APURACAO CMV - F' || LPAD(A.CODFILIAL, 2, 0) || ' - RAT:' ||
+                        REPLACE(TO_CHAR(A.PERC, '999.00'), '.', ','))
+                       ELSE
+                        ('APURACAO CMV DEVOLUÇÃO - F' || LPAD(A.CODFILIAL, 2, 0) || ' - RAT:' ||
+                        REPLACE(TO_CHAR(A.PERC, '999.00'), '.', ','))
+                     END) ATIVIDADE,
+                     
+                     ----------HISTORICO
+                     (CASE
+                       WHEN A.VLCMVRATEIO > 0 THEN
+                        ('APURACAO CMV - F' || LPAD(A.CODFILIAL, 2, 0))
+                       ELSE
+                        ('APURACAO CMV DEVOLUCAO - F' || LPAD(A.CODFILIAL, 2, 0))
+                     END) HISTORICO,
+                     
+                     ----------VALOR
+                     ABS(A.VLCMVRATEIO) VALOR,
+                     
+                     ('APURA_CMV') ORIGEM,
+                     
+                     ----------ENVIAR_CONTABIL
+                     'N' ENVIAR_CONTABIL,
+                     
+                     TO_DATE(NULL, 'DD/MM/YYYY') DTCANCEL
+                FROM VIEW_BI_SINC_APURA_CMV A
+               WHERE 1 = 1
+                 AND A.DATA >= vDATA_MOV_INCREMENTAL
+                 AND A.DATA IS NOT NULL
+                 AND NVL(A.VLCMVRATEIO, 0) <> 0)
+    
+    LOOP
+      PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
+                                 r.CODEMPRESA,
+                                 r.CODFILIAL,
+                                 r.DATA,
+                                 r.TIPOLANCAMENTO,
+                                 r.IDENTIFICADOR,
+                                 r.DOCUMENTO,
+                                 r.CONTADEBITO,
+                                 r.CONTACREDITO,
+                                 r.CODCC_DEBITO,
+                                 r.CODCC_CREDITO,
+                                 r.ATIVIDADE,
+                                 r.HISTORICO,
+                                 r.VALOR,
+                                 r.ORIGEM,
+                                 r.ENVIAR_CONTABIL,
+                                 r.DTCANCEL));
+    
+    END LOOP;
+  
+  END FN_APURA_CMV;
 
 END PKG_BI_CONTABILIDADE;
 /
