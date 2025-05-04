@@ -14,6 +14,7 @@ BEGIN
                                                  AND S.OPERACAO = M.OPERACAO
                WHERE S.DT_UPDATE IS NULL
                   OR S.CODEMPRESA <> M.CODEMPRESA
+                  OR S.CODFILIAL <> M.CODFILIAL
                   OR NVL(S.DATA, TO_DATE('01/01/1889', 'DD/MM/YYYY')) <>
                      NVL(M.DATA, TO_DATE('01/01/1889', 'DD/MM/YYYY'))
                   OR NVL(S.TIPOLANCAMENTO, 0) <> NVL(M.TIPOLANCAMENTO, 0)
@@ -40,6 +41,7 @@ BEGIN
     BEGIN
       UPDATE BI_SINC_CONTABILIDADE
          SET CODEMPRESA      = r.CODEMPRESA,
+             CODFILIAL       = r.CODFILIAL,
              DATA            = r.DATA,
              TIPOLANCAMENTO  = r.TIPOLANCAMENTO,
              IDENTIFICADOR   = r.IDENTIFICADOR,
@@ -65,6 +67,7 @@ BEGIN
         INSERT INTO BI_SINC_CONTABILIDADE
           (CODLANC,
            CODEMPRESA,
+           CODFILIAL,
            DATA,
            TIPOLANCAMENTO,
            IDENTIFICADOR,
@@ -87,6 +90,7 @@ BEGIN
         VALUES
           (r.CODLANC,
            r.CODEMPRESA,
+           r.CODFILIAL,
            r.DATA,
            r.TIPOLANCAMENTO,
            r.IDENTIFICADOR,
