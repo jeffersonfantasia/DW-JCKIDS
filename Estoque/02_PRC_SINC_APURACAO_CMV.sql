@@ -8,7 +8,7 @@ CREATE OR REPLACE PROCEDURE PRC_SINC_APURACAO_CMV AS
   vESTOQUE_DEZ19_F1 NUMBER := 449187.86;
   vESTOQUE_DEZ19_F2 NUMBER := 3557003.73;
   vESTOQUE_DEZ19_F7 NUMBER := 795570.26;
-  vDATA_INICIAL     DATE := TO_DATE('01/01/2020', 'DD/MM/YYYY');
+  --vDATA_INICIAL     DATE := TO_DATE('01/01/2020', 'DD/MM/YYYY');
 
   -----------------------VARIAVEIS PARA CALCULO
   vVALOR_ESTOQUE_ANTERIOR NUMBER := 0;
@@ -24,7 +24,9 @@ BEGIN
                       S.CODGERENCIAL,
                       S.OPERACAO,
                       S.VALOR
-                 FROM BI_SINC_CONTABILIDADE S),
+                 FROM BI_SINC_CONTABILIDADE S
+                WHERE S.ORIGEM NOT IN ('APURA_CMV')
+                  AND S.CODGERENCIAL IN (1174, 1187)),
               
               ESTOQUE_ACC AS
                (SELECT E.CODFILIAL,
@@ -56,8 +58,7 @@ BEGIN
                       SUM(S.VALOR) VALOR
                  FROM CONTABIL_AGG S
                  JOIN BI_SINC_PLANO_CONTAS_JC C ON C.CODGERENCIAL = S.CODGERENCIAL
-                WHERE C.CODGERENCIAL IN (1174, 1187)
-                  AND S.OPERACAO = 'D'
+                WHERE S.OPERACAO = 'D'
                 GROUP BY S.CODFILIAL,
                          S.DATA
                UNION ALL
@@ -67,8 +68,7 @@ BEGIN
                       SUM(S.VALOR * -1) VALOR
                  FROM CONTABIL_AGG S
                  JOIN BI_SINC_PLANO_CONTAS_JC C ON C.CODGERENCIAL = S.CODGERENCIAL
-                WHERE C.CODGERENCIAL IN (1174, 1187)
-                  AND S.OPERACAO = 'C'
+                WHERE S.OPERACAO = 'C'
                 GROUP BY S.CODFILIAL,
                          S.DATA),
               
@@ -97,7 +97,11 @@ BEGIN
                 ORDER BY CODFILIAL,
                          DATA)
               
-              SELECT M.* FROM APURA_CMV M WHERE M.DATA >= vDATA_MOV_INCREMENTAL ORDER BY CODFILIAL, M.RN)
+              SELECT M.*
+                FROM APURA_CMV M
+               WHERE M.DATA >= vDATA_MOV_INCREMENTAL
+               ORDER BY CODFILIAL,
+                        M.RN)
   
   LOOP
     BEGIN
