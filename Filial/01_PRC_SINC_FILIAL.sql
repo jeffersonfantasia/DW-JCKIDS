@@ -5,6 +5,9 @@ BEGIN
                (SELECT F.CODIGO CODFILIAL,
                       G.NOME_GRUPOFILIAL EMPRESA,
                       NVL(F.FANTASIA, 'JC BROTHERS') FILIAL,
+                      REGEXP_REPLACE(F.CGC, '^([0-9]{2})([0-9]{3})([0-9]{3})([0-9]{4})([0-9]{2})$', '\1.\2.\3/\4-\5') CNPJ,
+                      (G.NOME_GRUPOFILIAL || ' - CNPJ: ' ||
+                      REGEXP_REPLACE(F.CGC, '^([0-9]{2})([0-9]{3})([0-9]{3})([0-9]{4})([0-9]{2})$', '\1.\2.\3/\4-\5')) FILIAL_CONTABIL,
                       TO_NUMBER(F.CODIGO) ORDEM,
                       F.CODGRUPOFILIAL CODEMPRESA,
                       NVL(F.CODFORNEC, 1) CODFORNEC,
@@ -38,14 +41,16 @@ BEGIN
   LOOP
     BEGIN
       UPDATE BI_SINC_FILIAL
-         SET EMPRESA    = r.EMPRESA,
-             FILIAL     = r.FILIAL,
-             ORDEM      = r.ORDEM,
-             CODEMPRESA = r.CODEMPRESA,
-             CODFORNEC  = r.CODFORNEC,
-             CODCLI     = r.CODCLI,
-             TIPOFILIAL = r.TIPOFILIAL,
-             DT_UPDATE  = SYSDATE
+         SET EMPRESA         = r.EMPRESA,
+             FILIAL          = r.FILIAL,
+             CNPJ            = r.CNPJ,
+             FILIAL_CONTABIL = r.FILIAL_CONTABIL,
+             ORDEM           = r.ORDEM,
+             CODEMPRESA      = r.CODEMPRESA,
+             CODFORNEC       = r.CODFORNEC,
+             CODCLI          = r.CODCLI,
+             TIPOFILIAL      = r.TIPOFILIAL,
+             DT_UPDATE       = SYSDATE
        WHERE CODFILIAL = r.CODFILIAL;
     
       IF SQL%NOTFOUND THEN
@@ -53,6 +58,8 @@ BEGIN
           (CODFILIAL,
            EMPRESA,
            FILIAL,
+           CNPJ,
+           FILIAL_CONTABIL,
            ORDEM,
            CODEMPRESA,
            CODFORNEC,
@@ -63,6 +70,8 @@ BEGIN
           (r.CODFILIAL,
            r.EMPRESA,
            r.FILIAL,
+           r.CNPJ,
+           r.FILIAL_CONTABIL,
            r.ORDEM,
            r.CODEMPRESA,
            r.CODFORNEC,
