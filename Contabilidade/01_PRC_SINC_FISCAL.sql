@@ -29,6 +29,7 @@ BEGIN
                   OR NVL(S.PERCPIS, 0) <> NVL(M.PERCPIS, 0)
                   OR NVL(S.PERCCOFINS, 0) <> NVL(M.PERCCOFINS, 0)
                   OR NVL(S.CST_PISCOFINS, '0') <> NVL(M.CST_PISCOFINS, '0')
+                  OR NVL(S.QT, 0) <> NVL(M.QT, 0)
                   OR NVL(S.VALORCONTABIL, 0) <> NVL(M.VALORCONTABIL, 0)
                   OR NVL(S.VLDIFALCONSUM, 0) <> NVL(M.VLDIFALCONSUM, 0)
                   OR NVL(S.VLBASEICMS, 0) <> NVL(M.VLBASEICMS, 0)
@@ -58,6 +59,7 @@ BEGIN
              PERCPIS         = r.PERCPIS,
              PERCCOFINS      = r.PERCCOFINS,
              CST_PISCOFINS   = r.CST_PISCOFINS,
+             QT              = r.QT,
              VALORCONTABIL   = r.VALORCONTABIL,
              VLDIFALCONSUM   = r.VLDIFALCONSUM,
              VLBASEICMS      = r.VLBASEICMS,
@@ -89,6 +91,7 @@ BEGIN
            PERCPIS,
            PERCCOFINS,
            CST_PISCOFINS,
+           QT,
            VALORCONTABIL,
            VLDIFALCONSUM,
            VLBASEICMS,
@@ -116,6 +119,7 @@ BEGIN
            r.PERCPIS,
            r.PERCCOFINS,
            r.CST_PISCOFINS,
+           r.QT,
            r.VALORCONTABIL,
            r.VLDIFALCONSUM,
            r.VLBASEICMS,
