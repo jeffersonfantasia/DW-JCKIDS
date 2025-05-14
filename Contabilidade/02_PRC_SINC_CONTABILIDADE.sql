@@ -27,6 +27,7 @@ BEGIN
                   OR NVL(S.CODCC, '99') <> NVL(M.CODCC, '0')
                   OR NVL(S.CODDRE, '0') <> NVL(M.CODDRE, '0')
                   OR NVL(S.CODCONTABIL, '0') <> NVL(M.CODCONTABIL, '0')
+                  OR NVL(S.RAZAOCONTABIL, '0') <> NVL(M.RAZAOCONTABIL, '0')
                   OR NVL(S.IDGERENCIAL, '0') <> NVL(M.IDGERENCIAL, '0')
                   OR NVL(S.IDCONTABIL, '0') <> NVL(M.IDCONTABIL, '0')
                   OR S.ATIVIDADE <> M.ATIVIDADE
@@ -52,6 +53,7 @@ BEGIN
              CODCC           = r.CODCC,
              CODDRE          = r.CODDRE,
              CODCONTABIL     = r.CODCONTABIL,
+             RAZAOCONTABIL   = r.RAZAOCONTABIL,
              IDGERENCIAL     = r.IDGERENCIAL,
              IDCONTABIL      = r.IDCONTABIL,
              ATIVIDADE       = r.ATIVIDADE,
@@ -79,6 +81,7 @@ BEGIN
            CODCC,
            CODDRE,
            CODCONTABIL,
+           RAZAOCONTABIL,
            IDGERENCIAL,
            IDCONTABIL,
            ATIVIDADE,
@@ -102,6 +105,7 @@ BEGIN
            r.CODCC,
            r.CODDRE,
            r.CODCONTABIL,
+           r.RAZAOCONTABIL,
            r.IDGERENCIAL,
            r.IDCONTABIL,
            r.ATIVIDADE,
