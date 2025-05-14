@@ -1,0 +1,16 @@
+CREATE OR REPLACE VIEW VIEW_BI_SINC_FORNEC_PLANO_CONTAS_ESTILO AS
+
+  SELECT C.CODEMPRESA,
+         (C.CODFORNEC || ' - ' || C.CODCONTABIL || ' - ' || INITCAP(F.FORNECEDOR) || ' - ' || F.CNPJ) CONTA,
+         TO_CHAR(C.CODCONTABIL) CODCONTABIL,
+         37 CODN1,
+         '386 - Fornecedores Nacionais' CONTAN1,
+         11 CODN2,
+         '385 - Fornecedores' CONTAN2,
+         3 CODN3,
+         '353 - Passivo Circulante' CONTAN3,
+         2 CODN4,
+         '352 - Passivo' CONTAN4
+    FROM BI_SINC_FORNECEDOR_CONTA C
+    LEFT JOIN BI_SINC_FORNECEDOR F ON F.CODFORNEC = C.CODFORNEC
+   ORDER BY F.FORNECEDOR
