@@ -6,8 +6,16 @@ BEGIN
                       G.NOME_GRUPOFILIAL EMPRESA,
                       NVL(F.FANTASIA, 'JC BROTHERS') FILIAL,
                       REGEXP_REPLACE(F.CGC, '^([0-9]{2})([0-9]{3})([0-9]{3})([0-9]{4})([0-9]{2})$', '\1.\2.\3/\4-\5') CNPJ,
-                      (G.NOME_GRUPOFILIAL || ' - CNPJ: ' ||
-                      REGEXP_REPLACE(F.CGC, '^([0-9]{2})([0-9]{3})([0-9]{3})([0-9]{4})([0-9]{2})$', '\1.\2.\3/\4-\5')) FILIAL_CONTABIL,
+                      (CASE
+                        WHEN F.CGC IS NULL THEN
+                         'JC BROTHERS'
+                        ELSE
+                         (G.NOME_GRUPOFILIAL || ' - CNPJ: ' || SUBSTR(REGEXP_REPLACE(F.CGC,
+                                                                                     '^([0-9]{2})([0-9]{3})([0-9]{3})([0-9]{4})([0-9]{2})$',
+                                                                                     '\1.\2.\3/\4-\5'),
+                                                                      12,
+                                                                      7))
+                      END) FILIAL_CONTABIL,
                       TO_NUMBER(F.CODIGO) ORDEM,
                       F.CODGRUPOFILIAL CODEMPRESA,
                       NVL(F.CODFORNEC, 1) CODFORNEC,
@@ -27,10 +35,13 @@ BEGIN
               
               SELECT F.*
                 FROM FILIAIS F
+              
                 LEFT JOIN BI_SINC_FILIAL S ON S.CODFILIAL = F.CODFILIAL
                WHERE S.DT_UPDATE IS NULL
                   OR NVL(S.EMPRESA, '0') <> F.EMPRESA
                   OR NVL(S.FILIAL, '0') <> F.FILIAL
+                  OR NVL(S.CNPJ, '0') <> NVL(F.CNPJ, '0')
+                  OR NVL(S.FILIAL_CONTABIL, '0') <> NVL(F.FILIAL_CONTABIL, '0')
                   OR NVL(S.CODEMPRESA, '0') <> F.CODEMPRESA
                   OR NVL(S.CODFORNEC, 0) <> F.CODFORNEC
                   OR NVL(S.CODCLI, 0) <> F.CODCLI
