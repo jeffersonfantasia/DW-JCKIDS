@@ -659,6 +659,7 @@ BEGIN
        CODCC           VARCHAR2(4),
        CODDRE          NUMBER(2),
        CODCONTABIL     NUMBER(6),
+       RAZAOCONTABIL   NUMBER(6),
        IDGERENCIAL     VARCHAR2(10),
        IDCONTABIL      VARCHAR2(10),
        ATIVIDADE       VARCHAR2(350),
