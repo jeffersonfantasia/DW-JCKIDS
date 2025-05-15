@@ -2587,7 +2587,15 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      END) HISTORICO,
                      
                      ----------VALOR
-                     ROUND(ABS(L.VLRATEIO), 2) - (L.PERCRATEIO * NVL(L.VLDESCONTO, 0) / 100) VALOR,
+                     (CASE
+                       WHEN NVL(L.PERCRATEIO, 0) = 0 THEN
+                        ROUND(ABS(L.VLRATEIO) - (NVL(L.VLDESCONTO, 0) + NVL(L.VLDEVOLUCAO, 0)), 2)
+                       WHEN NVL(L.VLDESCONTO, 0) < 1 THEN
+                        ROUND(ABS(L.VLRATEIO) - (L.PERCRATEIODESC * (NVL(L.VLDESCONTO, 0) + NVL(L.VLDEVOLUCAO, 0)) / 100),
+                              2)
+                       ELSE
+                        ROUND(ABS(L.VLRATEIO) - (L.PERCRATEIO * (NVL(L.VLDESCONTO, 0) + NVL(L.VLDEVOLUCAO, 0)) / 100), 2)
+                     END) VALOR,
                      
                      ('LANC_PAG_FORNECEDOR') ORIGEM,
                      
@@ -4378,7 +4386,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                        
                        ----------CONTA_DEBITO
                        (CASE
-                         WHEN ((P.CODCOB = 'ESTR' AND P.CODCOBORIG = 'JUR') OR (P.CODCOB = 'JUR')) THEN
+                         WHEN ((P.CODCOB = 'ESTR' AND P.CODCOBORIG = 'JUR')) THEN
                           vJUROS_RECEBIDOS --ESTORNO JUROS
                          WHEN (P.CODCOB = 'ESTR') THEN
                           P.CONTACLIENTE --ESTORNOS GERAIS
@@ -4388,6 +4396,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                        
                        ----------CONTA_CREDITO
                        (CASE
+                         WHEN (P.CODCOB = 'JUR') THEN
+                          vJUROS_RECEBIDOS
                          WHEN (P.CODCOB = 'ESTR') THEN
                           P.CONTABANCO --ESTORNO JUROS E ESTORNOS GERAIS
                          ELSE
@@ -4396,17 +4406,23 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                        
                        ----------CODCC_DEBITO
                        (CASE
-                         WHEN (((P.CODCOB = 'ESTR' AND P.CODCOBORIG = 'JUR') OR (P.CODCOB = 'JUR')) AND
-                              P.CODFILIAL = vCODFILIAL_ES) THEN
+                         WHEN ((P.CODCOB = 'ESTR' AND P.CODCOBORIG = 'JUR') AND P.CODFILIAL = vCODFILIAL_ES) THEN
                           NVL(G.CODCC, F.CODCC)
-                         WHEN ((P.CODCOB = 'ESTR' AND P.CODCOBORIG = 'JUR') OR (P.CODCOB = 'JUR')) THEN
+                         WHEN (P.CODCOB = 'ESTR' AND P.CODCOBORIG = 'JUR') THEN
                           NVL(V.CODCC, F.CODCC)
                          ELSE
                           NULL
                        END) CODCC_DEBITO,
                        
                        ----------CODCC_CREDITO
-                       NULL CODCC_CREDITO,
+                       (CASE
+                         WHEN (P.CODCOB = 'JUR' AND P.CODFILIAL = vCODFILIAL_ES) THEN
+                          NVL(G.CODCC, F.CODCC)
+                         WHEN P.CODCOB = 'JUR' THEN
+                          NVL(V.CODCC, F.CODCC)
+                         ELSE
+                          NULL
+                       END) CODCC_CREDITO,
                        
                        ----------ATIVIDADE
                        (CASE
@@ -4446,8 +4462,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                           ROUND(ABS(P.VLRECEBIDO), 2) --BAIXA E ESTORNO DE JUROS
                          WHEN P.VLJUROS <> 0 THEN
                           ABS(ROUND(P.VLRECEBIDO, 2) - ROUND(P.VLJUROS, 2)) --BAIXA E ESTORNO DE DUPLICATAS COM VLJUROS
-                         WHEN (P.CODCOB = 'ESTR' AND P.VLDESCONTO <> 0 AND P.CONTACLIENTE = vCLIENTES_NACIONAIS) THEN
-                          ABS(ROUND(P.VLRECEBIDO, 2) + ROUND(P.VLDESCONTO, 2)) --ESTORNO DE DUPLICATA COM DESCONTO SEM SER MKT
+                       --WHEN (P.CODCOB = 'ESTR' AND P.VLDESCONTO <> 0 AND P.CONTACLIENTE = vCLIENTES_NACIONAIS) THEN
+                       --ABS(ROUND(P.VLRECEBIDO, 2) + ROUND(P.VLDESCONTO, 2)) --ESTORNO DE DUPLICATA COM DESCONTO SEM SER MKT
                          ELSE
                           ROUND(ABS(P.VLRECEBIDO), 2)
                        END) VALOR,
