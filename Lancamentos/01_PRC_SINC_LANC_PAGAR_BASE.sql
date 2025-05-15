@@ -14,6 +14,15 @@ BEGIN
                  FROM PCBANCO B
                  LEFT JOIN PCCONTA C ON B.CODBANCO = C.CODCONTAMASTER),
               
+              PRIMERO_CC_RATEIO AS
+               (SELECT *
+                 FROM (SELECT R.RECNUM,
+                              R.CODIGOCENTROCUSTO,
+                              100 PERCRATEIODESC,
+                              ROW_NUMBER() OVER (PARTITION BY R.RECNUM ORDER BY R.CODIGOCENTROCUSTO) AS RN
+                         FROM PCRATEIOCENTROCUSTO R)
+                WHERE RN = 1),
+              
               BASE AS
                (SELECT F.CODEMPRESA,
                       L.CODFILIAL,
@@ -35,22 +44,25 @@ BEGIN
                         ELSE
                          4
                       END) CODFLUXO,
-                      NVL(R.CODIGOCENTROCUSTO, 0) CODCC,
+                      NVL(R.CODIGOCENTROCUSTO, '0') CODCC,
+                      PR.CODIGOCENTROCUSTO CODCCMAX,
+                      NVL(PR.PERCRATEIODESC, 0) PERCRATEIODESC,
                       NVL(R.PERCRATEIO, 0) PERCRATEIO,
                       R.VALOR VLRATEIO,
                       (CASE
                         WHEN L.DTPAGTO IS NULL THEN
                          L.VALOR
                         ELSE
-                         (CASE
-                           WHEN (NVL(L.VPAGOBORDERO, 0) > 0 AND L.VPAGO > NVL(L.VPAGOBORDERO, 0)) THEN
-                            (L.VPAGOBORDERO - NVL(L.TXPERM, 0))
-                           ELSE
-                            L.VPAGO
-                         END)
+                         (NVL(L.VPAGOBORDERO, L.VPAGO) - NVL(L.TXPERM, 0) + NVL(L.DESCONTOFIN, 0) + NVL(L.VALORDEV, 0))
                       END) VALOR,
                       NVL(L.TXPERM, 0) VLJUROS,
-                      NVL(L.DESCONTOFIN, 0) VLDESCONTO,
+                      (CASE
+                        WHEN NVL(L.DESCONTOFIN, 0) < 1
+                             AND R.CODIGOCENTROCUSTO <> NVL(PR.CODIGOCENTROCUSTO, '0') THEN
+                         0
+                        ELSE
+                         NVL(L.DESCONTOFIN, 0)
+                      END) VLDESCONTO,
                       NVL(L.VALORDEV, 0) VLDEVOLUCAO,
                       (NVL(L.VLIRRF, 0) + NVL(L.VLISS, 0) + NVL(L.VLINSS, 0)) VLIMPOSTO,
                       L.CODCONTA,
@@ -78,6 +90,8 @@ BEGIN
                  LEFT JOIN BANCO B ON B.CODBANCO = M.CODBANCO
                  LEFT JOIN BI_SINC_FILIAL F ON F.CODFILIAL = L.CODFILIAL
                  LEFT JOIN PCRATEIOCENTROCUSTO R ON R.RECNUM = L.RECNUM
+                 LEFT JOIN PRIMERO_CC_RATEIO PR ON PR.RECNUM = L.RECNUM
+                                               AND PR.CODIGOCENTROCUSTO = R.CODIGOCENTROCUSTO
                  LEFT JOIN PCCONTA C ON C.CODCONTA = L.CODCONTA
                  LEFT JOIN BI_SINC_CALENDARIO C ON C.DATA = L.DTVENC
                 WHERE 1 = 1
@@ -103,6 +117,7 @@ BEGIN
                       L.CODFLUXO,
                       L.CODCC,
                       L.PERCRATEIO,
+                      L.PERCRATEIODESC,
                       NVL(L.VLRATEIO, L.VALOR) VLRATEIO,
                       L.VALOR,
                       L.VLJUROS,
@@ -142,6 +157,7 @@ BEGIN
                   OR NVL(S.DTVENCUTIL, '01/01/1899') <> L.DTVENCUTIL
                   OR S.CODFLUXO <> L.CODFLUXO
                   OR NVL(S.PERCRATEIO, 0) <> NVL(L.PERCRATEIO, 0)
+                  OR NVL(S.PERCRATEIODESC, 0) <> NVL(L.PERCRATEIODESC, 0)
                   OR S.VLRATEIO <> L.VLRATEIO
                   OR S.VALOR <> L.VALOR
                   OR NVL(S.VLJUROS, 0) <> NVL(L.VLJUROS, 0)
@@ -179,6 +195,7 @@ BEGIN
              DTVENCUTIL      = r.DTVENCUTIL,
              CODFLUXO        = r.CODFLUXO,
              PERCRATEIO      = r.PERCRATEIO,
+             PERCRATEIODESC  = r.PERCRATEIODESC,
              VLRATEIO        = r.VLRATEIO,
              VALOR           = r.VALOR,
              VLJUROS         = r.VLJUROS,
@@ -218,6 +235,7 @@ BEGIN
            CODFLUXO,
            CODCC,
            PERCRATEIO,
+           PERCRATEIODESC,
            VLRATEIO,
            VALOR,
            VLJUROS,
@@ -253,6 +271,7 @@ BEGIN
            r.CODFLUXO,
            r.CODCC,
            r.PERCRATEIO,
+           r.PERCRATEIODESC,
            r.VLRATEIO,
            r.VALOR,
            r.VLJUROS,
