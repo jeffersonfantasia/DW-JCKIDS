@@ -757,6 +757,7 @@ BEGIN
        CODFLUXO           NUMBER(2),
        CODCC              VARCHAR2(3),
        PERCRATEIO         NUMBER(10,6),
+       PERCRATEIODESC     NUMBER(10,6),
        VLRATEIO           NUMBER(12,2),
        VALOR              NUMBER(12,2),
        VLJUROS            NUMBER(12,2),
