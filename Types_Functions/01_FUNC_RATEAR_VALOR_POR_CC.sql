@@ -1,16 +1,12 @@
 CREATE OR REPLACE FUNCTION FUNC_RATEAR_VALOR_POR_CC(
                                                     
                                                     VALOR_NOTA  IN NUMBER,
-                                                    PERCENTUAIS IN PERCENTUAIS_T) RETURN PERCENTUAIS_T
+                                                    PERCENTUAIS IN T_PERCENTUAIS_CC) RETURN T_PERCENTUAIS_CC
   PIPELINED IS
   VALOR_RATEADO NUMBER;
   SOMA_RATEADA  NUMBER := 0;
-  AJUSTE        NUMBER;
+
 BEGIN
-  -- VERIFICAR SE A SOMA DOS PERCENTUAIS É 100%
-  IF (SELECT SUM(COLUMN_VALUE) FROM TABLE(PERCENTUAIS)) <> 1 THEN
-    RAISE_APPLICATION_ERROR(-20001, 'A soma dos percentuais deve ser 100%');
-  END IF;
 
   FOR I IN 1 .. PERCENTUAIS.COUNT
   LOOP
