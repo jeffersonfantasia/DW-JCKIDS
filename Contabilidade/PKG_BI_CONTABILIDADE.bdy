@@ -6466,7 +6466,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                        'APURACAO COMPETE - CREDITO PRESUMIDO' HISTORICO,
                        
                        ----------VALOR
-                       ROUND(ABS(A.VALOR), 2) VALOR,
+                       ROUND(A.VALOR, 2) VALOR,
                        
                        ('APURA_COMPETE_CREDITO_PRESUMIDO') ORIGEM,
                        
@@ -6480,7 +6480,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                    AND A.DATA >= vDATA_MOV_INCREMENTAL
                    AND A.DATA >= vDT_INICIO_BENEFICIO_ES
                    AND A.DATA IS NOT NULL
-                   AND A.VALOR IS NOT NULL)
+                   AND NVL(A.VALOR,0) > 0)
     
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
