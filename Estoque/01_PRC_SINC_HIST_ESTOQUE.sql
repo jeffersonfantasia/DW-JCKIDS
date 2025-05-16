@@ -1,21 +1,22 @@
 CREATE OR REPLACE PROCEDURE PRC_SINC_HIST_ESTOQUE AS
 
-  -----------------------DATAS DE ATUALIZACAO
-  --vDATA_MOV_INCREMENTAL DATE := TRUNC(SYSDATE) - 1;
-  --vDATA_MOV_INCREMENTAL DATE := TO_DATE('01/01/2020', 'DD/MM/YYYY');
 
 BEGIN
   FOR r IN (WITH ESTOQUE AS
                (SELECT E.DATA,
                       E.CODFILIAL,
-                      SUM(ROUND(ROUND(E.QTEST, 3) * ROUND(E.CUSTOCONT, 3), 2)) VLESTOQUECONTABIL,
-                      SUM(ROUND(ROUND(E.QTESTGER, 3) * ROUND(E.CUSTOFIN, 3), 2)) VLESTOQUEFINANCEIRO,
-                      SUM(ROUND(ROUND(E.QTESTGER, 3) * ROUND(E.CUSTOREP, 3), 2)) VLESTOQUEGERENCIAL
+                      SUM(ROUND(E.QTEST, 3) * ROUND(E.CUSTOCONT, 3)) VLESTOQUECONTABIL,
+                      SUM(ROUND(E.QTESTGER, 3) * ROUND(E.CUSTOFIN, 3)) VLESTOQUEFINANCEIRO,
+                      SUM(ROUND(E.QTESTGER, 3) * ROUND(E.CUSTOREP, 3)) VLESTOQUEGERENCIAL
                  FROM PCHISTEST E
-                WHERE E.DATA >= TRUNC(SYSDATE) - 1
+                WHERE 1 = 1
+                  AND E.DATA >= TRUNC(SYSDATE) - 1
+                  --AND E.DATA >= '01/01/2020'
                   AND NVL(E.TIPOMERCDEPTO, 'X') <> 'IM'
                   AND NVL(E.TIPOMERCDEPTO, 'X') <> 'CI'
                   AND NVL(E.TIPOMERC, 'X') NOT IN ('MC', 'ME', 'PB')
+                  AND ROUND(E.QTEST, 3) > 0
+                  AND ROUND(E.CUSTOCONT, 3) > 0
                 GROUP BY E.DATA,
                          E.CODFILIAL
                UNION ALL
