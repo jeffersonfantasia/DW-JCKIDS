@@ -22,6 +22,7 @@ BEGIN
               
               LANCAMENTOS AS
                (SELECT L.RECNUM,
+                      L.CODFORNEC,
                       M.DTCOMPENSACAO,
                       L.DTPAGTO,
                       B.CODCONTA CONTABANCO,
@@ -35,7 +36,7 @@ BEGIN
               VERBAS AS
                (SELECT F.CODEMPRESA,
                       V.CODFILIAL,
-                      V.CODFORNEC,
+                      NVL(L.CODFORNEC, V.CODFORNEC) CODFORNEC,
                       V.NUMTRANSCRFOR,
                       V.NUMVERBA,
                       V.DTPAGO DTPAGVERBA,
