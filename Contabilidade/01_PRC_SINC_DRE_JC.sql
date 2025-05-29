@@ -1,5 +1,5 @@
-CREATE OR REPLACE PROCEDURE PRC_SINC_DRE_JC AS
-
+create or replace PROCEDURE PRC_SINC_DRE_JC AS
+ v_mensagem VARCHAR2(4000);
 BEGIN
   FOR r IN (
             
@@ -9,14 +9,14 @@ BEGIN
                        TO_NUMBER(col003) SUBTOTAL,
                        TRIM(TO_CHAR(col004)) CONTADRE,
                        TRIM(TO_CHAR(col005)) GRUPODRE
-                  FROM apex_data_parser.parse(p_content           => apex_web_service.make_rest_request_b(p_url         => 'http://10.122.152.4:90/planilhas/DRE.xlsx',
+                  FROM apex_data_parser.parse(p_content           => apex_web_service.make_rest_request_b(p_url         => 'http://10.122.152.7:90/planilhas/DRE.xlsx',
                                                                                                           p_http_method => 'GET'),
                                               p_skip_rows         => 1,
                                               p_detect_data_types => 'S',
                                               p_file_name         => 'DRE.xlsx'))
               SELECT F.*
                 FROM DRE F
-                LEFT JOIN BI_SINC_DRE_JC S ON S.CODDRE = F.CODDRE
+                LEFT JOIN JEFFERSON.BI_SINC_DRE_JC@DBLINK S ON S.CODDRE = F.CODDRE
                WHERE S.DT_UPDATE IS NULL
                   OR NVL(S.SUBCONTADRE, '') <> F.SUBCONTADRE
                   OR NVL(S.SUBTOTAL, 0) <> F.SUBTOTAL
@@ -26,7 +26,7 @@ BEGIN
   -- Atualiza ou insere os resultados na tabela BI_SINC conforme as condições mencionadas
   LOOP
     BEGIN
-      UPDATE BI_SINC_DRE_JC
+      UPDATE JEFFERSON.BI_SINC_DRE_JC@DBLINK
          SET SUBCONTADRE = r.SUBCONTADRE,
              SUBTOTAL    = r.SUBTOTAL,
              CONTADRE    = r.CONTADRE,
@@ -35,7 +35,7 @@ BEGIN
        WHERE CODDRE = r.CODDRE;
     
       IF SQL%NOTFOUND THEN
-        INSERT INTO BI_SINC_DRE_JC
+        INSERT INTO JEFFERSON.BI_SINC_DRE_JC@DBLINK
           (CODDRE,
            SUBCONTADRE,
            SUBTOTAL,
@@ -59,5 +59,13 @@ BEGIN
   END LOOP;
 
   COMMIT;
+ -- Se chegou até aqui, não houve erro
+  v_mensagem := 'Processo concluído com sucesso!';
+  APEX_UTIL.SET_SESSION_STATE('P11000_RETORNO', v_mensagem);
 
+EXCEPTION
+  WHEN OTHERS THEN
+    v_mensagem := 'Erro durante a execução: ' || SQLERRM;
+    APEX_UTIL.SET_SESSION_STATE('P11000_RETORNO', v_mensagem);
+    ROLLBACK;
 END;
