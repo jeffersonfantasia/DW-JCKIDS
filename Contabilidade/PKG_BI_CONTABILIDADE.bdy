@@ -120,27 +120,29 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   BEGIN
     FOR r IN (SELECT CODFORNEC
                 FROM BI_SINC_FORNECEDOR
-               WHERE CODFORNEC IN (15,
-                                   143,
-                                   87,
-                                   223,
-                                   8549,
-                                   7170,
-                                   7534,
-                                   9211,
-                                   9266,
-                                   9272,
-                                   9391,
-                                   9681,
-                                   9786,
-                                   9837,
-                                   9974,
-                                   10336,
-                                   10360,
-                                   10567,
-                                   10579,
-                                   10620,
-                                   10621))
+               WHERE CODFORNEC IN (15, --TELEFONICA / VIVO
+                                   21, --ADASP-  ASSOC.DISTRIB.ATAC.PROD.IN.
+                                   87, --VIVO S/A
+                                   143, --NET SAO PAULO LTDA
+                                   223, --NUCLEO DE INF.E COORD.DO PONTO BR
+                                   7170, --SABESP-CIA SANEAMENTO BASICO DO EST DE S
+                                   7534, --CONSELHO REG DOS REPRES COM EST SAO PAUL
+                                   8549, --RB SERVICOS EMPRESARIAIS LTDA
+                                   9211, --TIM CELULAR S.A
+                                   9266, --SEM PARAR - CGMP CENTRO DE GESTAO DE MEIOS DE PAGAMENTO S/C
+                                   9272, --EMPRESA BRASILEIRA DE CORREIOS E TELEGRAFOS
+                                   9391, --R3 VIAGENS TURISMO E EVENTOS LTDA EPP
+                                   9681, --CLARO S/A
+                                   9786, --IDT BRASIL TELECOMUNICACAO LTDAQ
+                                   9837, --TIM S.A
+                                   9974, --BLUE COMUNICACAO UNIFICADA LTDA
+                                   10336, --TELECOM SOUTH AMERICA S/A
+                                   10360, --CLARO NXT TELECOMUNICACOES S/A
+                                   10567, --ORGANICO OFFICES E SERVICOS S/A
+                                   10579, --MUNDIVOX NETWORKS LTDA
+                                   10620, --ESCRITORIO CENTRAL DE ARRECADACAO E DISTRIBUICAO ECAD
+                                   10621 --MN TECNOLOGIA DE INFORMACAO LTDA
+                                   ))
     LOOP
       PIPE ROW(T_FORNEC_RECORD(r.CODFORNEC));
     END LOOP;
@@ -153,39 +155,39 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   BEGIN
     FOR r IN (SELECT CODFORNEC
                 FROM BI_SINC_FORNECEDOR
-               WHERE CODFORNEC IN (21,
-                                   162,
-                                   185,
-                                   264,
-                                   7331,
-                                   7793,
-                                   8958,
-                                   8959,
-                                   9177,
-                                   9158,
-                                   9178,
-                                   9160,
-                                   9346,
-                                   9421,
-                                   9444,
-                                   9737,
-                                   9772,
-                                   9776,
-                                   9811,
-                                   9819,
-                                   9851,
-                                   9852,
-                                   9870,
-                                   10070,
-                                   10073,
-                                   10117,
-                                   10156,
-                                   10271,
-                                   10353,
-                                   10506,
-                                   10534,
-                                   10535,
-                                   10580))
+               WHERE CODFORNEC IN (162, --BANCO ITAU S.A.
+                                   185, --BANCO BRADESCO S/A
+                                   264, --ALLIANZ -  AGF BRASIL SEGUROS S.A
+                                   7331, --ROGERIO APARECIDO GONCALVES FARIA
+                                   7793, --ITAU SEGUROS S A
+                                   8958, --JF
+                                   8959, --CB
+                                   9158, --PREFEITURA DO MUNICIPIO DE DIADEMA - SP
+                                   9160, --PREFEITURA DE SAO PAULO - SECRET MUNIC DE FINA E DESENV ECON
+                                   9177, --MINISTERIO DA FAZENDA
+                                   9178, --GOVERNO DO ESTADO DE SAO PAULO
+                                   9346, --INSTITUTO DE PESOS E MEDIDAS DO ESTADO DE SAO PAULO
+                                   9421, --GOVERNO DO ESTADO DO RIO DE JANEIRO
+                                   9444, --BANCO SANTANDER S A
+                                   9737, --MITSUI SUMITOMO SEGUROS S A
+                                   9772, --SAO PAULO TRIBUNAL DE JUSTICA
+                                   9776, --THOMAS CLOVIS MARCHETTI - 04 CP
+                                   9811, --SUL AMERICA SEGUROS DE AUTOMOVEIS E MASSIFICADOS S.A.
+                                   9819, --TRIBUNAL DE JUSTICA DO ESTADO DO RIO DE JANEIRO
+                                   9851, --PREFEITURA MUNICIPAL DE CAMPINAS
+                                   9852, --DEPARTAMENTO ESTADUAL DE TRANSITO
+                                   9870, --DER - DEPARTAMENTO DE ESTRADA E RODAGEN DO ESTADO DE SP
+                                   10070, --SECRETARIA DA FAZENDA E PLANEJAMENTO
+                                   10073, --CONSELHO DE ARQUITETURA E URBANISMO DE SAO PAULO (CAU-SP)
+                                   10117, --MUNICIPIO DE PORTO FELIZ - COORDENADORIA DE SISTEMA VIARIO
+                                   10156, --SOMPO SEGUROS S.A.
+                                   10271, --PREFEITURA DA SERRA
+                                   10353, --PREFEITURA MUNICIPAL DE JUNDIAI
+                                   10506, --SINDICATO DOS EMPREGADOS NO COMERCIO DE JUNDIAI
+                                   10534, --SINDICATO DOS EMPREGADOS NO COMERCIO DE CAMPINAS
+                                   10535, --SEEDESP-SIND DOS EMPREG COND EM EMP DIS GEN ALI REM JORN REV
+                                   10580 --PORTO SEGURO - SEGURO SAUDE S/A
+                                   ))
     LOOP
       PIPE ROW(T_FORNEC_RECORD(r.CODFORNEC));
     END LOOP;
@@ -6480,7 +6482,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                    AND A.DATA >= vDATA_MOV_INCREMENTAL
                    AND A.DATA >= vDT_INICIO_BENEFICIO_ES
                    AND A.DATA IS NOT NULL
-                   AND NVL(A.VALOR,0) > 0)
+                   AND NVL(A.VALOR, 0) > 0)
     
     LOOP
       PIPE ROW(T_CONTABIL_RECORD(r.CODLANC,
