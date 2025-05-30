@@ -47,7 +47,15 @@ BEGIN
   END IF;
 
   RETURN V_VALOR_RATEADO;
+
 EXCEPTION
   WHEN NO_DATA_FOUND THEN
-    RAISE_APPLICATION_ERROR(-20001, 'Centro de custo não encontrado para o RECNUM especificado.');
+    -- Tratar erro de forma mais específica
+    RAISE_APPLICATION_ERROR(-20001, 
+      'Centro de custo ' || P_CODIGOCENTROCUSTO || 
+      ' não encontrado para o RECNUM ' || P_RECNUM || '.');
+  WHEN OTHERS THEN
+    -- Capturar outros erros não previstos
+    RAISE_APPLICATION_ERROR(-20002, 
+      'Erro ao processar rateio: ' || SQLERRM);
 END;
