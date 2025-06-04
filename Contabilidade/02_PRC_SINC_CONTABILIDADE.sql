@@ -1,8 +1,8 @@
 CREATE OR REPLACE PROCEDURE PRC_SINC_CONTABILIDADE AS
 
   -----------------------DATAS DE ATUALIZACAO
-  vDATA_MOV_INCREMENTAL DATE := TRUNC(SYSDATE) - 90;
-  --vDATA_MOV_INCREMENTAL DATE := TO_DATE('01/01/2020', 'DD/MM/YYYY');
+  --vDATA_MOV_INCREMENTAL DATE := TRUNC(SYSDATE) - 90;
+  vDATA_MOV_INCREMENTAL DATE := TO_DATE('01/01/2020', 'DD/MM/YYYY');
 
 BEGIN
   FOR r IN (WITH CONTABILIDADE AS
@@ -20,17 +20,17 @@ BEGIN
                   OR NVL(S.TIPOLANCAMENTO, 0) <> NVL(M.TIPOLANCAMENTO, 0)
                   OR NVL(S.IDENTIFICADOR, 0) <> NVL(M.IDENTIFICADOR, 0)
                   OR NVL(S.DOCUMENTO, 0) <> NVL(M.DOCUMENTO, 0)
-                  OR NVL(S.OPERACAO, 0) <> NVL(M.OPERACAO, 0)
+                  OR NVL(S.OPERACAO, '0') <> NVL(M.OPERACAO, '0')
                   OR NVL(S.CODGERENCIAL, 0) <> NVL(M.CODGERENCIAL, 0)
-                  OR NVL(S.OPER_RAZAO, 0) <> NVL(M.OPER_RAZAO, 0)
+                  OR NVL(S.OPER_RAZAO, '0') <> NVL(M.OPER_RAZAO, '0')
                   OR NVL(S.CONTARAZAO, 0) <> NVL(M.CONTARAZAO, 0)
-                  OR NVL(S.CODCC, '99') <> NVL(M.CODCC, '0')
-                  OR NVL(S.CODDRE, '0') <> NVL(M.CODDRE, '0')
+                  OR NVL(S.CODCC, '99') <> NVL(M.CODCC, '99')
+                  OR NVL(S.CODDRE, 0) <> NVL(M.CODDRE, 0)
                   OR NVL(S.CODCONTABIL, '0') <> NVL(M.CODCONTABIL, '0')
                   OR NVL(S.RAZAOCONTABIL, '0') <> NVL(M.RAZAOCONTABIL, '0')
                   OR NVL(S.IDGERENCIAL, '0') <> NVL(M.IDGERENCIAL, '0')
                   OR NVL(S.IDCONTABIL, '0') <> NVL(M.IDCONTABIL, '0')
-                  OR S.ATIVIDADE <> M.ATIVIDADE
+                  --OR S.ATIVIDADE <> M.ATIVIDADE
                   OR S.HISTORICO <> M.HISTORICO
                   OR S.VALOR <> M.VALOR
                   OR S.ORIGEM <> M.ORIGEM
