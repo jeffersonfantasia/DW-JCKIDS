@@ -5972,7 +5972,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                        WHEN A.VLRECUPERAR > 0 THEN
                         ROUND(A.VLDEBITO, 2)
                        ELSE
-                        ROUND(A.VLCREDITO, 2)
+                        ROUND(A.VLCREDITO, 2) + ROUND(A.VLSALDOANT, 2)
                      END) VALOR,
                      
                      ('APURA_ICMS') ORIGEM,
