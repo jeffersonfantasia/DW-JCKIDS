@@ -2,6 +2,7 @@ CREATE OR REPLACE VIEW VIEW_BI_SINC_APURA_PISCOFINS AS
 
       SELECT 'PIS' TIPO,
              A.DATA,
+             A.VLSALDOANT,
              A.VLCREDITO,
              A.VLDEBITO,
              A.VLSALDO,
@@ -12,6 +13,7 @@ CREATE OR REPLACE VIEW VIEW_BI_SINC_APURA_PISCOFINS AS
       UNION ALL
       SELECT 'COFINS' TIPO,
              A.DATA,
+             A.VLSALDOANT,
              A.VLCREDITO,
              A.VLDEBITO,
              A.VLSALDO,
