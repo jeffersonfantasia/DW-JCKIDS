@@ -10,6 +10,7 @@ CREATE OR REPLACE PROCEDURE PRC_SINC_APURACAO_ICMS AS
   vVALOR_APURADO        NUMBER;
   vVALOR_PAGAR          NUMBER;
   vVALOR_RECUPERAR      NUMBER;
+  vVALOR_ANT_SALDO      NUMBER;
 
 BEGIN
   FOR r IN (SELECT M.*
@@ -18,17 +19,19 @@ BEGIN
              ORDER BY M.CODFILIAL,
                       M.DATA,
                       M.RN)
-  
+
   LOOP
     BEGIN
       IF r.RN = 1 THEN
         vVALOR_SALDO_ANTERIOR := 0;
       END IF;
-    
+
+     vVALOR_ANT_SALDO := vVALOR_SALDO_ANTERIOR;
+
       -- Calcula o resultado atual
       vVALOR_SALDO_ATUAL := r.VLSALDO;
       vVALOR_APURADO     := vVALOR_SALDO_ANTERIOR + vVALOR_SALDO_ATUAL;
-    
+
       -- Atualiza os valores a pagar e a recuperar
       vVALOR_PAGAR := CASE
                         WHEN vVALOR_APURADO < 0 THEN
@@ -42,7 +45,7 @@ BEGIN
                             ELSE
                              0
                           END;
-    
+
       -- Atualiza o valor_recuperar_anterior para a próxima iteração
       vVALOR_SALDO_ANTERIOR := CASE
                                  WHEN vVALOR_APURADO > 0 THEN
@@ -50,9 +53,10 @@ BEGIN
                                  ELSE
                                   0
                                END;
-    
+
       UPDATE BI_SINC_APURACAO_ICMS
-         SET VLCREDITO   = r.VLCREDITO,
+         SET VLSALDOANT  = vVALOR_ANT_SALDO,
+             VLCREDITO   = r.VLCREDITO,
              VLDEBITO    = r.VLDEBITO,
              VLSALDO     = r.VLSALDO,
              VLPAGAR     = vVALOR_PAGAR,
@@ -60,11 +64,12 @@ BEGIN
              DT_UPDATE   = SYSDATE
        WHERE DATA = r.DATA
          AND CODFILIAL = r.CODFILIAL;
-    
+
       IF SQL%NOTFOUND THEN
         INSERT INTO BI_SINC_APURACAO_ICMS
           (CODFILIAL,
            DATA,
+           VLSALDOANT,
            VLCREDITO,
            VLDEBITO,
            VLSALDO,
@@ -74,6 +79,7 @@ BEGIN
         VALUES
           (r.CODFILIAL,
            r.DATA,
+           vVALOR_ANT_SALDO,
            r.VLCREDITO,
            r.VLDEBITO,
            r.VLSALDO,
