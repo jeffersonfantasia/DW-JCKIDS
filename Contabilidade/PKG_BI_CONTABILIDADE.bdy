@@ -621,8 +621,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      
                      ----------ENVIAR_CONTABIL
                      (CASE
-                       WHEN M.TIPOMOV IN ('SAIDA PERDA MERCADORIA')
-                            OR (M.TIPOMOV IN ('ENTRADA SIMPLES REMESSA') AND
+                       WHEN (M.TIPOMOV IN ('ENTRADA SIMPLES REMESSA') AND
                             M.CODFORNEC IN (SELECT CODFORNEC FROM TABLE(PKG_BI_CONTABILIDADE.FN_FORNEC_JCBROTHERS()))) THEN
                         'S'
                        ELSE
