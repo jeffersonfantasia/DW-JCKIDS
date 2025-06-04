@@ -18,6 +18,7 @@ CREATE OR REPLACE PROCEDURE PRC_SINC_APURACAO_COMPETE AS
   vVALOR_APURADO        NUMBER;
   vVALOR_PAGAR          NUMBER;
   vVALOR_RECUPERAR      NUMBER;
+  vVALOR_ANT_SALDO      NUMBER;
 
   vVALOR_ICMS_ENT_NAC             NUMBER;
   vVALOR_ICMS_ENT_IMP             NUMBER;
@@ -59,6 +60,8 @@ BEGIN
       IF r.RN = 1 THEN
         vVALOR_SALDO_ANTERIOR := 0;
       END IF;
+    
+      vVALOR_ANT_SALDO := vVALOR_SALDO_ANTERIOR;
     
       -- ATRIBUI OS RESULTADOS DA CONSULTA AS VARIAVEIS
       vVALOR_BASEICMS_ENT_NAC         := r.VLBASEICMS_ENT_NAC;
@@ -125,18 +128,27 @@ BEGIN
                                NVL(vVALOR_CRED_DESTINADO_COMERCIO, 0);
     
       -- CALCULO AJUSTADO DO CREDITO PRESUMIDO DE 1.1% E CREDITO 7% + RATEIO
-			vVALOR_CREDITO_7PERC_AJUST := CASE WHEN vVALOR_CRED_PRESUMIDO < 0 THEN vVALOR_CREDITO_7PERC + vVALOR_CRED_PRESUMIDO ELSE vVALOR_CREDITO_7PERC END;
-			
-			vVALOR_CRED_PRESUMIDO_AJUST := CASE WHEN vVALOR_CRED_PRESUMIDO < 0 THEN 0 ELSE vVALOR_CRED_PRESUMIDO END;
-			
-			
-			
-			-- CALCULO DO ADICIONAL DE 3.5% DO INCENTIVO
+      vVALOR_CREDITO_7PERC_AJUST := CASE
+                                      WHEN vVALOR_CRED_PRESUMIDO < 0 THEN
+                                       vVALOR_CREDITO_7PERC + vVALOR_CRED_PRESUMIDO
+                                      ELSE
+                                       vVALOR_CREDITO_7PERC
+                                    END;
+    
+      vVALOR_CRED_PRESUMIDO_AJUST := CASE
+                                       WHEN vVALOR_CRED_PRESUMIDO < 0 THEN
+                                        0
+                                       ELSE
+                                        vVALOR_CRED_PRESUMIDO
+                                     END;
+    
+      -- CALCULO DO ADICIONAL DE 3.5% DO INCENTIVO
       vVALOR_ADICIONAL_INCENTIVO := vALIQ_CREDITO_ADICIONAL * NVL(vVALOR_CRED_DESTINADO_COMERCIO, 0);
     
       -- APURACAO COMPETE
-      vVALOR_APURADO_COMPETE := ((r.VLCREDITO + NVL(vVALOR_CREDITO_RED_ESCOLHIDO, 0) + NVL(vVALOR_CREDITO_7PERC_AJUST, 0) +
-                                NVL(vVALOR_CRED_PRESUMIDO_AJUST, 0) + NVL(vVALOR_CRED_DESTINADO_COMERCIO, 0)) -
+      vVALOR_APURADO_COMPETE := ((r.VLCREDITO + NVL(vVALOR_CREDITO_RED_ESCOLHIDO, 0) +
+                                NVL(vVALOR_CREDITO_7PERC_AJUST, 0) + NVL(vVALOR_CRED_PRESUMIDO_AJUST, 0) +
+                                NVL(vVALOR_CRED_DESTINADO_COMERCIO, 0)) -
                                 (r.VLDEBITO + NVL(vVALOR_ESTORNO_CRED_RED, 0) + NVL(vVALOR_ESTORNO_CRED_COMPETE, 0)));
     
       -- CALCULA O RESULTADO ATUAL
@@ -174,7 +186,8 @@ BEGIN
     
       -- FAZ O UPSERT
       UPDATE BI_SINC_APURACAO_COMPETE
-         SET VLCREDITO         = r.VLCREDITO,
+         SET VLSALDOANT        = vVALOR_ANT_SALDO,
+             VLCREDITO         = r.VLCREDITO,
              VLDEBITO          = r.VLDEBITO,
              VLCRED_RED        = vVALOR_CREDITO_RED_ESCOLHIDO,
              VLCRED_ALIQPERC   = vVALOR_CREDITO_7PERC_AJUST,
@@ -192,6 +205,7 @@ BEGIN
       IF SQL%NOTFOUND THEN
         INSERT INTO BI_SINC_APURACAO_COMPETE
           (DATA,
+           VLSALDOANT,
            VLCREDITO,
            VLDEBITO,
            VLCRED_RED,
@@ -207,6 +221,7 @@ BEGIN
            DT_UPDATE)
         VALUES
           (r.DATA,
+           vVALOR_ANT_SALDO,
            r.VLCREDITO,
            r.VLDEBITO,
            vVALOR_CREDITO_RED_ESCOLHIDO,
