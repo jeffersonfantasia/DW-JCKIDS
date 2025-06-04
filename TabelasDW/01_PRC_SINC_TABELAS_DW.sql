@@ -1111,6 +1111,7 @@ BEGIN
     EXECUTE IMMEDIATE 'CREATE TABLE BI_SINC_APURACAO_PIS
     (
        DATA            DATE,
+       VLSALDOANT      NUMBER(15, 2),
        VLCREDITO       NUMBER(15, 2),
        VLDEBITO        NUMBER(15, 2),
        VLSALDO         NUMBER(15, 2),
@@ -1127,6 +1128,7 @@ BEGIN
     EXECUTE IMMEDIATE 'CREATE TABLE BI_SINC_APURACAO_COFINS
     (
        DATA            DATE,
+       VLSALDOANT      NUMBER(15, 2),
        VLCREDITO       NUMBER(15, 2),
        VLDEBITO        NUMBER(15, 2),
        VLSALDO         NUMBER(15, 2),
@@ -1144,6 +1146,7 @@ BEGIN
     (
        CODFILIAL       VARCHAR2(2),
        DATA            DATE,
+       VLSALDOANT      NUMBER(15, 2),
        VLCREDITO       NUMBER(15, 2),
        VLDEBITO        NUMBER(15, 2),
        VLSALDO         NUMBER(15, 2),
@@ -1160,6 +1163,7 @@ BEGIN
     EXECUTE IMMEDIATE 'CREATE TABLE BI_SINC_APURACAO_COMPETE
     (
        DATA               DATE,
+       VLSALDOANT         NUMBER(15, 2),
        VLCREDITO          NUMBER(15, 2),
        VLDEBITO           NUMBER(15, 2),
        VLCRED_RED         NUMBER(15, 2),
