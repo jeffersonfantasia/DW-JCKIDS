@@ -24,13 +24,14 @@ BEGIN
                   OR NVL(S.CODGERENCIAL, 0) <> NVL(M.CODGERENCIAL, 0)
                   OR NVL(S.OPER_RAZAO, '0') <> NVL(M.OPER_RAZAO, '0')
                   OR NVL(S.CONTARAZAO, 0) <> NVL(M.CONTARAZAO, 0)
+                  OR NVL(S.DESC_CONTARAZAO, '0') <> NVL(M.DESC_CONTARAZAO, '0')
                   OR NVL(S.CODCC, '99') <> NVL(M.CODCC, '99')
                   OR NVL(S.CODDRE, 0) <> NVL(M.CODDRE, 0)
                   OR NVL(S.CODCONTABIL, '0') <> NVL(M.CODCONTABIL, '0')
                   OR NVL(S.RAZAOCONTABIL, '0') <> NVL(M.RAZAOCONTABIL, '0')
                   OR NVL(S.IDGERENCIAL, '0') <> NVL(M.IDGERENCIAL, '0')
                   OR NVL(S.IDCONTABIL, '0') <> NVL(M.IDCONTABIL, '0')
-                  --OR S.ATIVIDADE <> M.ATIVIDADE
+                    --OR S.ATIVIDADE <> M.ATIVIDADE
                   OR S.HISTORICO <> M.HISTORICO
                   OR S.VALOR <> M.VALOR
                   OR S.ORIGEM <> M.ORIGEM
@@ -50,6 +51,7 @@ BEGIN
              CODGERENCIAL    = r.CODGERENCIAL,
              OPER_RAZAO      = r.OPER_RAZAO,
              CONTARAZAO      = r.CONTARAZAO,
+             DESC_CONTARAZAO = r.DESC_CONTARAZAO,
              CODCC           = r.CODCC,
              CODDRE          = r.CODDRE,
              CODCONTABIL     = r.CODCONTABIL,
@@ -78,6 +80,7 @@ BEGIN
            CODGERENCIAL,
            OPER_RAZAO,
            CONTARAZAO,
+           DESC_CONTARAZAO,
            CODCC,
            CODDRE,
            CODCONTABIL,
@@ -102,6 +105,7 @@ BEGIN
            r.CODGERENCIAL,
            r.OPER_RAZAO,
            r.CONTARAZAO,
+           r.DESC_CONTARAZAO,
            r.CODCC,
            r.CODDRE,
            r.CODCONTABIL,
