@@ -672,6 +672,7 @@ BEGIN
        CODGERENCIAL    NUMBER(6),
        OPER_RAZAO      VARCHAR2(1),
        CONTARAZAO      NUMBER(6),
+       DESC_CONTARAZAO VARCHAR2(120),
        CODCC           VARCHAR2(4),
        CODDRE          NUMBER(2),
        CODCONTABIL     NUMBER(6),
