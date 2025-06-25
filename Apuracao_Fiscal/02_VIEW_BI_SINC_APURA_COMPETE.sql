@@ -8,7 +8,7 @@ CREATE OR REPLACE VIEW VIEW_BI_SINC_APURA_COMPETE AS
                 (CASE
                   WHEN F.PERCICMS = 4 THEN
                    1
-                  WHEN F.PERCICMS NOT IN (0, 17) THEN
+                  WHEN (F.PERCICMS NOT IN (0, 17) AND F.CFOP NOT IN (1949, 2949)) THEN
                    2
                   ELSE
                    3
@@ -31,7 +31,7 @@ CREATE OR REPLACE VIEW VIEW_BI_SINC_APURA_COMPETE AS
                 (CASE
                   WHEN F.PERCICMS = 4 THEN
                    'ENT COMPETE IMP'
-                  WHEN F.PERCICMS NOT IN (0, 17) THEN
+                  WHEN (F.PERCICMS NOT IN (0, 17) AND F.CFOP NOT IN (1949, 2949)) THEN
                    'ENT COMPETE'
                   ELSE
                    'ENT FORA COMPETE'
