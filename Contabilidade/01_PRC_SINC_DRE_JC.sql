@@ -7,8 +7,10 @@ BEGIN
                (SELECT TRIM(TO_CHAR(col001)) CODDRE,
                        TRIM(TO_CHAR(col002)) SUBCONTADRE,
                        TO_NUMBER(col003) SUBTOTAL,
-                       TRIM(TO_CHAR(col004)) CONTADRE,
-                       TRIM(TO_CHAR(col005)) GRUPODRE
+                       TRIM(TO_CHAR(col004)) CODCONTADRE,
+                       TRIM(TO_CHAR(col005)) CONTADRE,
+                       TRIM(TO_CHAR(col006)) CODGRUPODRE,
+                       TRIM(TO_CHAR(col007)) GRUPODRE
                   FROM apex_data_parser.parse(p_content           => apex_web_service.make_rest_request_b(p_url         => 'http://10.122.152.7:90/planilhas/DRE.xlsx',
                                                                                                           p_http_method => 'GET'),
                                               p_skip_rows         => 1,
@@ -20,7 +22,9 @@ BEGIN
                WHERE S.DT_UPDATE IS NULL
                   OR NVL(S.SUBCONTADRE, '') <> F.SUBCONTADRE
                   OR NVL(S.SUBTOTAL, 0) <> F.SUBTOTAL
+                  OR NVL(S.CODCONTADRE, '') <> F.CODCONTADRE
                   OR NVL(S.CONTADRE, '') <> F.CONTADRE
+                  OR NVL(S.CODGRUPODRE, '') <> F.CODGRUPODRE
                   OR NVL(S.GRUPODRE, '') <> F.GRUPODRE)
   
   -- Atualiza ou insere os resultados na tabela BI_SINC conforme as condições mencionadas
@@ -29,7 +33,9 @@ BEGIN
       UPDATE JEFFERSON.BI_SINC_DRE_JC@DBLINK
          SET SUBCONTADRE = r.SUBCONTADRE,
              SUBTOTAL    = r.SUBTOTAL,
+             CODCONTADRE = r.CODCONTADRE,
              CONTADRE    = r.CONTADRE,
+             CODGRUPODRE = r.CODGRUPODRE,
              GRUPODRE    = r.GRUPODRE,
              DT_UPDATE   = TRUNC(SYSDATE)
        WHERE CODDRE = r.CODDRE;
@@ -39,14 +45,18 @@ BEGIN
           (CODDRE,
            SUBCONTADRE,
            SUBTOTAL,
+           CODCONTADRE,
            CONTADRE,
+           CODGRUPODRE,
            GRUPODRE,
            DT_UPDATE)
         VALUES
           (r.CODDRE,
            r.SUBCONTADRE,
            r.SUBTOTAL,
+           r.CODCONTADRE,
            r.CONTADRE,
+           r.CODGRUPODRE,
            r.GRUPODRE,
            SYSDATE);
       END IF;
