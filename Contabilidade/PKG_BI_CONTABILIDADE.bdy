@@ -132,6 +132,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                                    9266, --SEM PARAR - CGMP CENTRO DE GESTAO DE MEIOS DE PAGAMENTO S/C
                                    9272, --EMPRESA BRASILEIRA DE CORREIOS E TELEGRAFOS
                                    9391, --R3 VIAGENS TURISMO E EVENTOS LTDA EPP
+                                   9567, --INSTITUTO NACIONAL DA PROPRIEDADE INDUSTRIAL
                                    9681, --CLARO S/A
                                    9786, --IDT BRASIL TELECOMUNICACAO LTDAQ
                                    9837, --TIM S.A
@@ -912,6 +913,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      ----------CONTADEBITO
                      (CASE
                        WHEN M.TIPOMOV IN ('SAIDA VENDA',
+                                          'SAIDA SIMPLES REMESSA',
                                           'SAIDA FAT CONTA E ORDEM',
                                           'SAIDA REM ENTREGA FUTURA',
                                           'SAIDA BONIFICADA',
@@ -943,6 +945,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      ----------CONTACREDITO
                      (CASE
                        WHEN M.TIPOMOV IN ('SAIDA VENDA',
+                                          'SAIDA SIMPLES REMESSA',
                                           'SAIDA FAT CONTA E ORDEM',
                                           'SAIDA REM ENTREGA FUTURA',
                                           'SAIDA BONIFICADA',
@@ -971,6 +974,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      ----------CODCC_DEBITO
                      (CASE
                        WHEN M.TIPOMOV IN ('SAIDA VENDA',
+                                          'SAIDA SIMPLES REMESSA',
                                           'SAIDA FAT CONTA E ORDEM',
                                           'SAIDA REM ENTREGA FUTURA',
                                           'SAIDA BONIFICADA',
@@ -5452,7 +5456,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
   END FN_CRED_CONTA_GER_DUP_ESTORNO;
 
   ----VERBA DE FORNECEDORES - ESTORNO DA NOTA DE DEVOLUCAO AO FORNECEDOR
-/*  FUNCTION FN_VERBA_ESTORNO_DEVOLUCAO RETURN T_CONTABIL_TABLE
+  /*  FUNCTION FN_VERBA_ESTORNO_DEVOLUCAO RETURN T_CONTABIL_TABLE
     PIPELINED IS
   
   BEGIN
@@ -6057,7 +6061,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                        WHEN A.VLRECUPERAR > 0 THEN
                         ROUND(A.VLDEBITO, 2)
                        ELSE
-                        ROUND(A.VLCREDITO, 2)
+                        ROUND(A.VLCREDITO + A.VLSALDOANT, 2)
                      END) VALOR,
                      
                      ('APURA_PIS') ORIGEM,
@@ -6143,7 +6147,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                        WHEN A.VLRECUPERAR > 0 THEN
                         ROUND(A.VLDEBITO, 2)
                        ELSE
-                        ROUND(A.VLCREDITO, 2)
+                        ROUND(A.VLCREDITO + A.VLSALDOANT, 2)
                      END) VALOR,
                      
                      ('APURA_COFINS') ORIGEM,
