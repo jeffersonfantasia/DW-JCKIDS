@@ -5,9 +5,9 @@ BEGIN
   FOR r IN (WITH ESTOQUE AS
                (SELECT E.DATA,
                       E.CODFILIAL,
-                      SUM(ROUND(E.QTEST, 3) * ROUND(E.CUSTOCONT, 3)) VLESTOQUECONTABIL,
-                      SUM(ROUND(E.QTESTGER, 3) * ROUND(E.CUSTOFIN, 3)) VLESTOQUEFINANCEIRO,
-                      SUM(ROUND(E.QTESTGER, 3) * ROUND(E.CUSTOREP, 3)) VLESTOQUEGERENCIAL
+                      SUM(ROUND(ROUND(E.QTEST, 6) * ROUND(E.CUSTOCONT, 6),2)) VLESTOQUECONTABIL,
+                      SUM(ROUND(ROUND(E.QTESTGER, 6) * ROUND(E.CUSTOFIN, 6),2)) VLESTOQUEFINANCEIRO,
+                      SUM(ROUND(ROUND(E.QTESTGER, 6) * ROUND(E.CUSTOREP, 6),2)) VLESTOQUEGERENCIAL
                  FROM PCHISTEST E
                 WHERE 1 = 1
                   AND E.DATA >= TRUNC(SYSDATE) - 1
@@ -15,8 +15,8 @@ BEGIN
                   AND NVL(E.TIPOMERCDEPTO, 'X') <> 'IM'
                   AND NVL(E.TIPOMERCDEPTO, 'X') <> 'CI'
                   AND NVL(E.TIPOMERC, 'X') NOT IN ('MC', 'ME', 'PB')
-                  AND ROUND(E.QTEST, 3) > 0
-                  AND ROUND(E.CUSTOCONT, 3) > 0
+                  AND ROUND(E.QTEST, 6) > 0
+                  AND ROUND(E.CUSTOCONT, 6) > 0
                 GROUP BY E.DATA,
                          E.CODFILIAL
                UNION ALL
