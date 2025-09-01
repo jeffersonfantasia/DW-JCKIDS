@@ -4299,7 +4299,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                       
                       ----------ATIVIDADE
                       (CASE
-                        WHEN P.VLDESCONTO > 0 THEN
+                        WHEN P.VLJUROS > 0 THEN
                          ('JUROS DUPLIC. - F' || LPAD(P.CODFILIAL, 2, 0) || ' - Nº MOV: ' || P.NUMTRANS ||
                          ' - Nº TRANSACAO: ' || P.NUMTRANSVENDA || '-' || LPAD(P.PREST, 2, 0))
                         ELSE
@@ -4309,7 +4309,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                       
                       ----------HISTORICO
                       (CASE
-                        WHEN P.VLDESCONTO > 0 THEN
+                        WHEN P.VLJUROS > 0 THEN
                          ('JUROS NF ' || P.NUMNOTA || ' - ' || 'PREST: ' || P.PREST || ' - ' || T.CLIENTE || ' - Cód. ' ||
                          T.CODCLI)
                         ELSE
