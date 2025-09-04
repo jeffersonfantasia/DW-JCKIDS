@@ -77,11 +77,19 @@ CREATE OR REPLACE VIEW VIEW_BI_SINC_MOV_CONTABIL_DC AS
              M.DOCUMENTO,
              M.OPERACAO,
              M.CODGERENCIAL,
-             M.CONTARAZAO,
-             C3.CONTAN5 DESC_CONTARAZAO,
              M.OPER_RAZAO,
+             M.CONTARAZAO,
+             C2.CONTAN5 DESC_CONTARAZAO,
              M.CODCC,
              C.CODDRE,
+             (CASE
+               WHEN C.CODDFC = 18
+                    AND M.OPERACAO = 'C' THEN
+                17
+               ELSE
+                NVL(C.CODDFC, 0)
+             END) CODDFC,
+             NVL(C2.CODDFC, 0) CODDFC_CTARAZAO,
              C.CODCONTABIL,
              C2.CODCONTABIL RAZAOCONTABIL,
              (M.CODGERENCIAL || '-' || M.CODEMPRESA) IDGERENCIAL,
@@ -95,8 +103,6 @@ CREATE OR REPLACE VIEW VIEW_BI_SINC_MOV_CONTABIL_DC AS
         LEFT JOIN VIEW_BI_SINC_PLANO_CONTAS_JC C ON C.CODGERENCIAL = M.CODGERENCIAL
                                                 AND C.CODEMPRESA = M.CODEMPRESA
         LEFT JOIN VIEW_BI_SINC_PLANO_CONTAS_JC C2 ON C2.CODGERENCIAL = M.CONTARAZAO
-                                                 AND C2.CODEMPRESA = M.CODEMPRESA
-        LEFT JOIN VIEW_BI_SINC_PLANO_CONTAS_JC C3 ON C3.CODGERENCIAL = M.CONTARAZAO
-                                                 AND C3.CODEMPRESA = M.CODEMPRESA)
+                                                 AND C2.CODEMPRESA = M.CODEMPRESA)
     
     SELECT M.* FROM RESULTADO M
