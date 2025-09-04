@@ -28,6 +28,7 @@ BEGIN
                   OR NVL(S.CODCC, '99') <> NVL(M.CODCC, '99')
                   OR NVL(S.CODDRE, 0) <> NVL(M.CODDRE, 0)
                   OR NVL(S.CODDFC, 0) <> NVL(M.CODDFC, 0)
+                  OR NVL(S.CODDFC_CTARAZAO, 0) <> NVL(M.CODDFC_CTARAZAO, 0)
                   OR NVL(S.CODCONTABIL, '0') <> NVL(M.CODCONTABIL, '0')
                   OR NVL(S.RAZAOCONTABIL, '0') <> NVL(M.RAZAOCONTABIL, '0')
                   OR NVL(S.IDGERENCIAL, '0') <> NVL(M.IDGERENCIAL, '0')
@@ -56,6 +57,7 @@ BEGIN
              CODCC           = r.CODCC,
              CODDRE          = r.CODDRE,
              CODDFC          = r.CODDFC,
+             CODDFC_CTARAZAO = r.CODDFC_CTARAZAO,
              CODCONTABIL     = r.CODCONTABIL,
              RAZAOCONTABIL   = r.RAZAOCONTABIL,
              IDGERENCIAL     = r.IDGERENCIAL,
@@ -85,6 +87,8 @@ BEGIN
            DESC_CONTARAZAO,
            CODCC,
            CODDRE,
+           CODDFC,
+           CODDFC_CTARAZAO,
            CODCONTABIL,
            RAZAOCONTABIL,
            IDGERENCIAL,
@@ -110,6 +114,8 @@ BEGIN
            r.DESC_CONTARAZAO,
            r.CODCC,
            r.CODDRE,
+           r.CODDFC,
+           r.CODDFC_CTARAZAO,
            r.CODCONTABIL,
            r.RAZAOCONTABIL,
            r.IDGERENCIAL,
