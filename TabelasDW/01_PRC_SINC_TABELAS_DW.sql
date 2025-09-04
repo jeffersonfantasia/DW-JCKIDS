@@ -585,6 +585,22 @@ BEGIN
        CONSTRAINT PK_DRE_JC PRIMARY KEY (CODDRE)
     ) ';
   END IF;
+	
+	----BI_SINC_DFC_JC
+  SELECT COUNT(*) INTO v_table_exists FROM user_tables WHERE table_name = 'BI_SINC_DFC_JC';
+  IF v_table_exists = 0 THEN
+    EXECUTE IMMEDIATE 'CREATE TABLE BI_SINC_DFC_JC
+    (
+       CODDFC      NUMBER(2),
+       CONTADFC    VARCHAR2(60),
+       CODTIPO     NUMBER(1),
+       TIPO        VARCHAR2(10),
+       CODGRUPODFC NUMBER(2),
+       GRUPODFC    VARCHAR2(20),
+       DT_UPDATE   DATE,
+       CONSTRAINT PK_DFC_JC PRIMARY KEY (CODDFC)
+    ) ';
+  END IF;
 
   ----BI_SINC_PLANO_CONTAS_ESTILO
   SELECT COUNT(*) INTO v_table_exists FROM user_tables WHERE table_name = 'BI_SINC_PLANO_CONTAS_ESTILO';
