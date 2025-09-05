@@ -187,7 +187,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                                    10506, --SINDICATO DOS EMPREGADOS NO COMERCIO DE JUNDIAI
                                    10534, --SINDICATO DOS EMPREGADOS NO COMERCIO DE CAMPINAS
                                    10535, --SEEDESP-SIND DOS EMPREG COND EM EMP DIS GEN ALI REM JORN REV
-                                   10580 --PORTO SEGURO - SEGURO SAUDE S/A
+                                   10580, --PORTO SEGURO - SEGURO SAUDE S/A
+                                   10712 --MUNICIPIO DE CARIACICA
                                    ))
     LOOP
       PIPE ROW(T_FORNEC_RECORD(r.CODFORNEC));
