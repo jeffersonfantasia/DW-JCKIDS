@@ -1,6 +1,6 @@
 # DW-JCKIDS — Data Warehouse para BI da JC Kids
 
-Bem-vindo ao repositório de Data Warehouse (DW) criado para suportar o BI da JC Kids. Aqui você encontra toda a lógica, estrutura, procedimentos, funções e documentação necessárias para implementar, manter e expandir o DW em Oracle 19c, cobrindo toda a cadeia contábil, fiscal, comercial e operacional da empresa.
+**Data Warehouse desenvolvido para centralizar, padronizar e consolidar informações contábeis, fiscais, financeiras e comerciais da JC Kids, utilizando Oracle 19c e best practices em BI.**
 
 ***
 
@@ -24,119 +24,201 @@ Bem-vindo ao repositório de Data Warehouse (DW) criado para suportar o BI da JC
 
 ## Visão Geral do Projeto
 
-Este Data Warehouse foi modelado para centralizar, padronizar e disponibilizar dados críticos dos principais processos operacionais e contábeis do negócio, permitindo análises, auditorias e integração de informações gerenciais, fiscais e financeiras com alta performance.
+O DW-JCKIDS consolida dados de múltiplos módulos do ERP (contabilidade, fiscal, vendas, estoque, financeiro, etc.) em um modelo unificado, de fácil consumo por ferramentas de BI como Power BI.
 
-Arquitetura pensada para rastreabilidade, flexibilidade e reuso por múltiplas áreas do BI.
+**Principais objetivos:**
+- Unificação dos dados em um único repositório corporativo
+- Performance superior em consultas analíticas e relatórios gerenciais
+- Rastreabilidade, controle de qualidade, auditoria e histórico de dados
+- Flexibilidade para evolução dos requisitos de negócio
 
 ***
 
 ## Arquitetura e Modelagem
 
-- **Modelagem em estrela** (Star Schema): tabelas fato core (movimentação contábil, produtos, clientes, etc.) ao centro, ligadas a múltiplas dimensões (calendário, região, categoria, filial, etc.).
-- **Fluxo modular de tratamento:** cada área/tema da empresa é tratada via procedures e packages independentes, seguindo o conceito de Data Mart setorial.
-- **PL/SQL Orquestrado por Packages:** toda lógica de negócio, integração e tratamento está concentrada em packages robustas, principalmente para contabilidade (`PKG_BI_CONTABILIDADE`).
-- **Pipeline Functions**: funções que retornam tabelas para uso em fluxos de transformação/cálculo.
+- **Modelo em estrela** (Star Schema): tabelas fato (ex: `BI_SINC_CONTABILIDADE`) centralizam informações detalhadas; dimensões (`BI_SINC_PRODUTO`, `BI_SINC_FILIAL`, etc.) fornecem atributos descritivos.
+- **Pacotes PL/SQL**: Toda lógica de integração, tratamento, consistência e agregação está encapsulada em packages (ex: `PKG_BI_CONTABILIDADE`).
+- **Funções pipeline (pipelined functions)**: São utilizadas para tabelas temporárias e ETLs flexíveis.
+
+**Exemplo visual:**  
+```
+[BI_SINC_CONTABILIDADE] <-- [BI_SINC_PRODUTO]
+                         <-- [BI_SINC_FILIAL]
+                         <-- [BI_SINC_CLIENTE]
+                         <-- [BI_SINC_PLANO_CONTAS_JC]
+```
 
 ***
 
 ## Organização dos Diretórios
 
-- Cada diretório na raiz corresponde a uma área/processo.
-  - Exemplo: `Contabilidade`, `Cliente`, `Estoque`, `Mov_Produto`, `Despesas`, `Apuracao_Fiscal`, etc.
-- Dentro de cada área:
-  - Procedures de integração/sincronização
-  - Views para análise e consumo via BI
-  - Funções utilitárias e tipos (`Types_Functions`)
-  - Scripts de criação de tabelas e índices
+Cada área de negócio tem seu próprio diretório, facilitando manutenção e evolução:
+
+```
+Apuracao_Fiscal/      -- Apuração de impostos
+Banco/                -- Movimento bancário
+Calendario/           -- Datas e períodos
+Centro_Custo/         -- Centros de custo
+Cliente/              -- Cadastro de clientes
+Contabilidade/        -- Regras e lógicas contábeis principais
+Estoque/              -- Controle de estoques
+Fornecedor/           -- Cadastro de fornecedores
+Mov_Produto/          -- Movimentações de produto
+TabelasDW/            -- Scripts gerais para toda a estrutura DW
+Types_Functions/      -- Tipos e funções auxiliares Oracle
+```
+
+*Exemplo real de script de sincronização*:  
+`Contabilidade/02_PRC_SINC_CONTABILIDADE.sql`
 
 ***
 
 ## Fluxo Completo de Construção
 
-1. **Extração dos dados brutos** dos sistemas fontes (ERP, legado, arquivos, etc.)
-2. **Tratamentos e normalização via Packages**: Executando as procedures (`PRC_SINC_*`) que criam/populam tabelas intermediárias
-3. **Aplicação das regras de negócio** via functions/ETL para:
-   - Conciliar lançamentos contábeis, fiscais e operacionais
-   - Sanear, ajustar e classificar movimentos
-4. **Construção das tabelas e fatos finais** para o BI (Consulte diretório `TabelasDW`)
-5. **Geração de views analíticas e agregadas** para rápida consulta e dashboards
+1. **Extração de dados dos sistemas origem**  
+2. **Pré-tratamento e staging em tabelas temporárias**
+3. **Aplicação de regras de negócio nas procedures e functions**
+4. **Carga nas tabelas finais do Data Warehouse (ex: `BI_SINC_CONTABILIDADE`)**
+5. **Geração de views analíticas agregadas para BI**
+
+> **Exemplo:**  
+> Para atualizar dados de estoque:  
+> 1. Executar `Estoque/01_PRC_SINC_HIST_ESTOQUE.sql`  
+> 2. Validar em `BI_SINC_ESTOQUE`
 
 ***
 
 ## Estrutura das Tabelas Principais
 
-- Todas as tabelas físico-lógicas estão detalhadas em `TabelasDW/01_PRC_SINC_TABELAS_DW.sql`
-- Padrão: 
-  - Colunas de negócios (ex: CODFILIAL, CODPROD, DATA, VALOR, etc.)
-  - Colunas técnicas (DT_UPDATE)
-  - Constraints e índices para performance e integridade
+As tabelas principais ficam em `TabelasDW/01_PRC_SINC_TABELAS_DW.sql`.
 
-### Exemplos de Fatos e Dimensões
+### Exemplo de tabela fato (resumido):
 
-- `BI_SINC_CONTABILIDADE`: Lançamentos contábeis detalhados, com chaves para empresa, filial, centro de custo, plano de contas, valores, históricos.
-- `BI_SINC_MOV_PRODUTO`, `BI_SINC_CLIENTE`, etc.: consolidação de produtos, clientes, fornecedores, eventos fiscais, apurações mensais.
+```sql
+CREATE TABLE BI_SINC_CONTABILIDADE (
+  CODLANC        VARCHAR2(40),
+  CODEMPRESA     VARCHAR2(2),
+  CODFILIAL      VARCHAR2(2),
+  DATA           DATE,
+  VALOR          NUMBER(15,2),
+  HISTORICO      VARCHAR2(450),
+  ORIGEM         VARCHAR2(80),
+  -- outros campos omitidos
+  CONSTRAINT PK_CONTABILIDADE PRIMARY KEY (CODLANC, OPERACAO)
+);
+```
+
+### Exemplo de tabela dimensão:
+
+```sql
+CREATE TABLE BI_SINC_PRODUTO (
+  CODPROD        NUMBER(6),
+  PRODUTO        VARCHAR2(40),
+  DEPARTAMENTO   VARCHAR2(25),
+  MARCA          VARCHAR2(40),
+  -- outros campos
+  CONSTRAINT PK_CODPROD PRIMARY KEY (CODPROD)
+);
+```
 
 ***
 
 ## Packages e Procedures
 
-- **Procedures padrão `PRC_SINC_*`**: automatizam criação, atualização e manutenção de tabelas, garantindo idempotência e integridade dos dados.
-- **Package principal**: `PKG_BI_CONTABILIDADE` — centraliza toda lógica de movimentação, rateio, ajustes, auditorias e validações contábeis.
-- **Uso de funções type-table** (em `Types_Functions/`), permitindo retornos dinâmicos de tabelas para tratar etapas intermediárias e facilitar manutenção.
+Toda lógica de tratamento está em packages, garantindo centralização e reaproveitamento.
+
+**Exemplo:**  
+- `Contabilidade/PKG_BI_CONTABILIDADE.bdy`  
+  - Functions de geração de lançamentos, rateios, conciliações.
+- `Mov_Produto/01_PRC_SINC_MOV_PRODUTO.sql`  
+  - Procedure para inserir movimentos de produto tratados.
 
 ***
 
 ## Fluxos de ETL
 
-- Executar as procedures na ordem definida por dependência nos fluxos (veja diagramas na documentação visual/Miro).
-- Cada fluxo é auto-suficiente, com ETL modular, permitindo paralelismo e facilidade na recuperação de falhas.
+1. Execute as procedures na ordem lógica (por exemplo, sincronize primeiro clientes, depois produtos, depois vendas).
+2. Verifique logs por possíveis erros.
+3. As views agregadas (`VIEW_BI_SINC_*`) permitem consumir dados tratados diretamente no BI.
+
+> **Exemplo prático:**  
+> ```sql
+> EXEC Contabilidade.PRC_SINC_CONTABILIDADE;
+> EXEC Mov_Produto.PRC_SINC_MOV_PRODUTO;
+> SELECT * FROM BI_SINC_CONTABILIDADE;
+> ```
 
 ***
 
 ## Padrões e Regras de Negócio
 
-- Todos os tratamentos e regras de conciliação estão documentados nos scripts das funções e procedures.
-- Seguir sempre as transações atômicas para integração de dados: rollback automático em caso de erro.
-- Tabelas de parâmetros (`BI_SINC_PARAMETROS_GLOBAL`) controlam as regras variáveis do negócio.
+- Todo tratamento/exceção está registrado nos próprios scripts.
+- As principais regras ficam em functions e são reaproveitadas.
+- Parâmetros de negócio variáveis estão em `BI_SINC_PARAMETROS_GLOBAL`.
+
+> **Exemplo:**  
+> O campo "TIPOLANCAMENTO" em `BI_SINC_CONTABILIDADE` diferencia lançamentos fiscais de gerenciais, conforme lógica na package.
 
 ***
 
 ## Como Executar/Sincronizar
 
-1. Execute a procedure de sincronização principal do módulo necessário (ex: `EXEC PRC_SINC_TABELAS_DW`)
-2. Siga para as procedures de cada área/tema de acordo com o necessário.
-3. Sugerido uso de jobs agendados Oracle para garantir atualização periódica e monitoramento via logs.
+- Execute cada procedure conforme a necessidade de carga ou atualização.
+- O ideal é criar jobs Oracle (agendamentos) para garantir atualização automática e periódica.
+
+> **Exemplo de execução manual:**  
+> ```sql
+> EXEC TabelasDW.PRC_SINC_TABELAS_DW;
+> EXEC Cliente.PRC_SINC_CLIENTE;
+> EXEC Contabilidade.PRC_SINC_CONTABILIDADE;
+> ```
 
 ***
 
 ## Dicionário de Dados
 
-- Para cada tabela, descreva:
-  - Nome
-  - Colunas (nome, tipo, descrição)
-  - Relacionamentos principais
-- Sugestão: gerar documentação automática a partir dos scripts, utilizando ferramentas como Oracle Data Modeler.
+**BI_SINC_CONTABILIDADE**  
+| Coluna     | Tipo         | Descrição                  |
+| ---------- | ------------ | ------------------------- |
+| CODLANC    | VARCHAR2(40) | Código do lançamento      |
+| CODEMPRESA | VARCHAR2(2)  | Código da empresa         |
+| CODFILIAL  | VARCHAR2(2)  | Filial                    |
+| DATA       | DATE         | Data do lançamento        |
+| VALOR      | NUMBER(15,2) | Valor do movimento        |
+| ...        | ...          | ...                       |
+
+*Para o dicionário completo consulte o script TabelasDW/01_PRC_SINC_TABELAS_DW.sql.*
 
 ***
 
 ## Auditoria, Logging e Controle de Erros
 
-- Todas as procedures utilizam tratamento de exceções padrão Oracle, com rollback e registro de erro conforme necessário.
-- Recomendado centralizar logs técnicos e funcionais para diagnóstico.
+- Procedures utilizam tratamento padrão de exceções do Oracle.
+- Quando ocorre erro, há rollback e o erro pode ser logado via DBMS_OUTPUT ou em futuras implementações de tabela de logs.
+
+> **Exemplo de tratamento:**
+> ```sql
+> BEGIN
+>   -- .. rotina
+> EXCEPTION
+>   WHEN OTHERS THEN
+>     ROLLBACK;
+>     -- DBMS_OUTPUT.PUT_LINE(SQLERRM);
+> END;
+> ```
 
 ***
 
 ## Boas Práticas e Observações
 
-- Realize manutenção periódica dos índices para manter performance
-- Evite hardcode de regras de negócio — use tabelas de parâmetros
-- Versionar scripts de alterações de schema no repositório para rastreabilidade total
+- Mantenha scripts de modificação versionados no repositório
+- Não insira regras de negócio fixas (hardcoded): use parâmetros!
+- Atualize sempre documentação quando alterar objetos
+- Realize manutenção dos índices periodicamente
 
 ***
 
 ## Colaboradores e Contato
 
-- Jefferson Fantasia — jeffersonfantasia@gmail.com (atual responsável pelo projeto)
-- Para colaboração, submeta Pull Requests ou issues detalhadas
-
-***
+**Responsável:**  
+Jefferson Fantasia  
