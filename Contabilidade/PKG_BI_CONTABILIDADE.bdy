@@ -2066,7 +2066,12 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      END) CONTADEBITO,
                      
                      ----------CONTA_CREDITO
-                     vICMS_RECOLHER CONTACREDITO,
+                     (CASE
+                       WHEN E.CODFILIAL = vCODFILIAL_ES THEN
+                        vICMS_RECOLHER_ES
+                       ELSE
+                        vICMS_RECOLHER
+                     END) CONTACREDITO,
                      
                      ----------CODCC_DEBITO
                      (CASE
