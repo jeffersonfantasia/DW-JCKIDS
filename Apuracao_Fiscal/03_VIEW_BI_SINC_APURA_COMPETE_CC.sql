@@ -5,9 +5,9 @@ CREATE OR REPLACE VIEW VIEW_BI_SINC_APURA_COMPETE_CC AS
              (CASE
                WHEN M.CODGERENTE IN (1, 8, 9, 10) THEN
                 1
-               WHEN M.CODSUPERVISOR IN (2) THEN
+               WHEN M.CODGERENTE IN (2) THEN
                 2
-               WHEN M.CODSUPERVISOR IN (4) THEN
+               WHEN M.CODGERENTE IN (4) THEN
                 4
                ELSE
                 1
