@@ -1,4 +1,4 @@
-CREATE OR REPLACE VIEW VIEW_BI_SINC_APURA_COMPETE AS 
+--CREATE OR REPLACE VIEW VIEW_BI_SINC_APURA_COMPETE AS 
 
  WITH TIPOS AS
   (SELECT TO_DATE(TRUNC(TO_DATE(F.DATA, 'DD/MM/YYYY'), 'MM')) DATA,
@@ -6,9 +6,11 @@ CREATE OR REPLACE VIEW VIEW_BI_SINC_APURA_COMPETE AS
           (CASE
             WHEN MOVIMENTO = 'E' THEN
              (CASE
-               WHEN F.PERCICMS = 4 THEN
+               WHEN (F.PERCICMS = 4 AND F.CFOP NOT IN (2152)) THEN
                 1
-               WHEN (F.PERCICMS NOT IN (0, 17) AND F.CFOP NOT IN (1949, 2949)) THEN
+               WHEN F.CFOP IN (2910) THEN
+                8
+               WHEN (F.PERCICMS NOT IN (0, 17) AND F.CFOP NOT IN (1949, 2949) AND NOT (F.PERCICMS = 4 AND F.CFOP = 2152)) THEN
                 2
                ELSE
                 3
@@ -20,7 +22,9 @@ CREATE OR REPLACE VIEW VIEW_BI_SINC_APURA_COMPETE AS
                   WHEN SUBSTR(TO_CHAR(F.CFOP), 0, 1) = '5'
                        AND F.PERCICMS <> 0 THEN
                    4
-                  WHEN ((F.CFOP = 6152 AND F.PERCICMS = 4) OR (F.CFOP = 6108 AND F.PERCICMS <> 0)) THEN
+                  WHEN (F.CFOP = 6108 AND F.PERCICMS <> 0) THEN
+                   9
+                  WHEN (F.CFOP = 6152 AND F.PERCICMS = 4) THEN
                    5
                   WHEN (F.CFOP = 6202 OR F.PERCICMS = 0) THEN
                    6
@@ -36,6 +40,8 @@ CREATE OR REPLACE VIEW VIEW_BI_SINC_APURA_COMPETE AS
              (CASE
                WHEN F.PERCICMS = 4 THEN
                 'ENT COMPETE IMP'
+               WHEN F.CFOP IN (2910) THEN
+                'ENT BONIFIC COMPETE'
                WHEN (F.PERCICMS NOT IN (0, 17) AND F.CFOP NOT IN (1949, 2949)) THEN
                 'ENT COMPETE'
                ELSE
@@ -48,7 +54,9 @@ CREATE OR REPLACE VIEW VIEW_BI_SINC_APURA_COMPETE AS
                   WHEN SUBSTR(TO_CHAR(F.CFOP), 0, 1) = '5'
                        AND F.PERCICMS <> 0 THEN
                    'SAID BASERED'
-                  WHEN ((F.CFOP = 6152 AND F.PERCICMS = 4) OR (F.CFOP = 6108 AND F.PERCICMS <> 0)) THEN
+                  WHEN (F.CFOP = 6108 AND F.PERCICMS <> 0) THEN
+                   'SAID_COMPETE_CONSUM_FINAL'
+                  WHEN (F.CFOP = 6152 AND F.PERCICMS = 4) THEN
                    'SAID FORA TRANSF COMPETE'
                   WHEN (F.CFOP = 6202 OR F.PERCICMS = 0) THEN
                    'SAID FORA COMPETE'
@@ -66,7 +74,9 @@ CREATE OR REPLACE VIEW VIEW_BI_SINC_APURA_COMPETE AS
           VALORICMS
      FROM BI_SINC_FISCAL F
     WHERE F.CODFILIAL = '11'
-      AND F.ESPECIE <> 'NS'),
+      AND F.ESPECIE <> 'NS'
+   AND TO_DATE(TRUNC(TO_DATE(F.DATA, 'DD/MM/YYYY'), 'MM')) = '01/03/2025'
+   ),
  
  TIPOS_AGG AS
   (SELECT DATA,
@@ -88,6 +98,8 @@ CREATE OR REPLACE VIEW VIEW_BI_SINC_APURA_COMPETE AS
           (CASE CODTIPO
             WHEN 1 THEN
              'VLICMS_ENT_IMP'
+            WHEN 8 THEN
+             'VLICMS_ENT_IMP'
             WHEN 2 THEN
              'VLICMS_ENT_NAC'
             WHEN 4 THEN
@@ -96,13 +108,15 @@ CREATE OR REPLACE VIEW VIEW_BI_SINC_APURA_COMPETE AS
              'VLCONT_SAID_FORA_TRANSF'
             WHEN 7 THEN
              'VLCONT_SAID_COMPETE'
+            WHEN 9 THEN
+             'VLCONT_SAID_COMPETE'
             ELSE
              NULL
           END) TIPO_VALOR,
           (CASE
-            WHEN CODTIPO IN (1, 2) THEN
+            WHEN CODTIPO IN (1, 2, 8) THEN
              VLICMS
-            WHEN CODTIPO IN (4, 5, 7) THEN
+            WHEN CODTIPO IN (4, 5, 7, 9) THEN
              VLCONTABIL
             ELSE
              NULL
@@ -122,7 +136,7 @@ CREATE OR REPLACE VIEW VIEW_BI_SINC_APURA_COMPETE AS
    SELECT DATA,
           'VLICMS_SAID_COMPETE' TIPO_VALOR,
           (CASE
-            WHEN CODTIPO IN (7) THEN
+            WHEN CODTIPO IN (7, 9) THEN
              VLICMS
             ELSE
              NULL
