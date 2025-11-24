@@ -2599,7 +2599,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_BI_CONTABILIDADE IS
                      ----------VALOR
                      (CASE
                        WHEN NVL(L.PERCRATEIO, 0) = 0 THEN
-                        ROUND(ABS(L.VLRATEIO) - (NVL(L.VLDESCONTO, 0) + NVL(L.VLDEVOLUCAO, 0)), 2)
+                        ROUND(ABS(L.VLRATEIO) - (NVL(ABS(L.VLDESCONTO), 0) + NVL(L.VLDEVOLUCAO, 0)), 2)
                        WHEN NVL(L.VLDESCONTO, 0) < 1 THEN
                         ROUND(ABS(L.VLRATEIO) - (L.PERCRATEIODESC * (NVL(L.VLDESCONTO, 0) + NVL(L.VLDEVOLUCAO, 0)) / 100),
                               2)
