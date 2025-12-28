@@ -64,21 +64,21 @@ BEGIN
   LOOP
     BEGIN
       UPDATE BI_SINC_PLANO_CONTAS_JC
-         SET CONTA        = r .. CONTA,
-             NIVEL        = r .. NIVEL,
-             TIPOCONTA    = r .. TIPOCONTA,
-             CODGERENCIAL = r .. CODGERENCIAL,
-             CODCONTABIL  = r .. CODCONTABIL,
-             CODBALANCO   = r .. CODBALANCO,
-             CODDRE       = r .. CODDRE,
-             CODEBTIDA    = r .. CODEBTIDA,
-             CONTAN1      = r .. CONTAN1,
-             CONTAN2      = r .. CONTAN2,
-             CONTAN3      = r .. CONTAN3,
-             CONTAN4      = r .. CONTAN4,
-             CONTAN5      = r .. CONTAN5,
+         SET CONTA        = r.CONTA,
+             NIVEL        = r.NIVEL,
+             TIPOCONTA    = r.TIPOCONTA,
+             CODGERENCIAL = r.CODGERENCIAL,
+             CODCONTABIL  = r.CODCONTABIL,
+             CODBALANCO   = r.CODBALANCO,
+             CODDRE       = r.CODDRE,
+             CODEBTIDA    = r.CODEBTIDA,
+             CONTAN1      = r.CONTAN1,
+             CONTAN2      = r.CONTAN2,
+             CONTAN3      = r.CONTAN3,
+             CONTAN4      = r.CONTAN4,
+             CONTAN5      = r.CONTAN5,
              DT_UPDATE    = TRUNC(SYSDATE)
-       WHERE CODCLASSIFICA = r.. CODCLASSIFICA;
+       WHERE CODCLASSIFICA = r.CODCLASSIFICA;
     
       IF SQL%NOTFOUND THEN
         INSERT INTO BI_SINC_PLANO_CONTAS_JC
@@ -98,20 +98,20 @@ BEGIN
            CONTAN5,
            DT_UPDATE)
         VALUES
-          (r.. CODCLASSIFICA,
-           r.. CONTA,
-           r.. NIVEL,
-           r.. TIPOCONTA,
-           r.. CODGERENCIAL,
-           r.. CODCONTABIL,
-           r.. CODBALANCO,
-           r.. CODDRE,
-           r.. CODEBTIDA,
-           r.. CONTAN1,
-           r.. CONTAN2,
-           r.. CONTAN3,
-           r.. CONTAN4,
-           r.. CONTAN5,
+          (r.CODCLASSIFICA,
+           r.CONTA,
+           r.NIVEL,
+           r.TIPOCONTA,
+           r.CODGERENCIAL,
+           r.CODCONTABIL,
+           r.CODBALANCO,
+           r.CODDRE,
+           r.CODEBTIDA,
+           r.CONTAN1,
+           r.CONTAN2,
+           r.CONTAN3,
+           r.CONTAN4,
+           r.CONTAN5,
            SYSDATE);
       END IF;
     EXCEPTION
